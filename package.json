@@ -1,7 +1,7 @@
 {
   "name": "freepdf",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "predev": "node scripts/copy-pdfjs-assets.mjs",
@@ -41,7 +41,7 @@
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
   },
-  "description": "FreePDF — a free, privacy-first PDF toolkit that runs entirely in the browser.",
+  "description": "FreePDF \u2014 a free, privacy-first PDF toolkit that runs entirely in the browser.",
   "license": "MIT",
   "engines": {
     "node": ">=22.13"
