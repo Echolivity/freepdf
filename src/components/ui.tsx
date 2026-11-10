@@ -1,5 +1,7 @@
 import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
+import { useI18n } from '../i18n/react'
+import type { Message } from '../i18n/core'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -27,6 +29,7 @@ export function Button({
 }
 
 export function Notice({ tone = 'info', children, onDismiss }: { tone?: 'info' | 'error' | 'ok'; children: ReactNode; onDismiss?: () => void }) {
+  const { t } = useI18n()
   const cls = {
     info: 'border-line bg-surface text-ink',
     error: 'border-danger/30 bg-danger-soft text-ink',
@@ -38,7 +41,7 @@ export function Notice({ tone = 'info', children, onDismiss }: { tone?: 'info' |
       <Icon name={icon} size={20} className={`mt-0.5 shrink-0 ${tone === 'error' ? 'text-danger' : tone === 'ok' ? 'text-ok' : 'text-accent'}`} />
       <div className="min-w-0 flex-1 text-[15px]">{children}</div>
       {onDismiss && (
-        <button type="button" onClick={onDismiss} className="-m-1 rounded-md p-1 text-muted hover:text-ink" aria-label="Dismiss">
+        <button type="button" onClick={onDismiss} className="-m-1 rounded-md p-1 text-muted hover:text-ink" aria-label={t('common.dismiss')}>
           <Icon name="x" size={18} />
         </button>
       )}
@@ -46,12 +49,13 @@ export function Notice({ tone = 'info', children, onDismiss }: { tone?: 'info' |
   )
 }
 
-export function Rejections({ items, onDismiss }: { items: string[]; onDismiss: () => void }) {
+export function Rejections({ items, onDismiss }: { items: Message[]; onDismiss: () => void }) {
+  const { tm } = useI18n()
   if (!items.length) return null
   return (
     <Notice tone="error" onDismiss={onDismiss}>
-      {items.length === 1 ? items[0] : (
-        <ul className="list-disc space-y-1 pl-4">{items.map((r, i) => <li key={i}>{r}</li>)}</ul>
+      {items.length === 1 ? tm(items[0]) : (
+        <ul className="list-disc space-y-1 ps-4">{items.map((r, i) => <li key={i}>{tm(r)}</li>)}</ul>
       )}
     </Notice>
   )
@@ -96,10 +100,11 @@ export function Segmented<T extends string | number>({
 
 /** Options panel + primary action, shown beside (desktop) or below (mobile) the workspace. */
 export function Workspace({ main, side }: { main: ReactNode; side: ReactNode }) {
+  const { t } = useI18n()
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
       <div className="min-w-0">{main}</div>
-      <aside className="rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-24" aria-label="Options">
+      <aside className="rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-24" aria-label={t('common.options')}>
         <div className="space-y-5">{side}</div>
       </aside>
     </div>
@@ -107,10 +112,11 @@ export function Workspace({ main, side }: { main: ReactNode; side: ReactNode }) 
 }
 
 export function LocalBadge() {
+  const { t } = useI18n()
   return (
     <p className="flex items-center gap-2 text-sm text-muted">
       <Icon name="shield" size={16} className="shrink-0 text-ok" />
-      Processed on this device. Nothing is uploaded.
+      {t('common.local')}
     </p>
   )
 }

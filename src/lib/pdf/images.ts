@@ -1,5 +1,6 @@
 import { PDFDocument, pushGraphicsState, popGraphicsState, concatTransformationMatrix, drawObject, type PDFImage } from 'pdf-lib'
 import { UserFacingError } from '../validate'
+import { msg } from '../../i18n/core'
 import { saveDoc, noProgress, type ProgressFn } from './core'
 
 export interface ImageInput {
@@ -81,7 +82,7 @@ export async function imagesToPdf(
   opts: ImagesToPdfOptions,
   onProgress: ProgressFn = noProgress,
 ): Promise<Uint8Array> {
-  if (!images.length) throw new UserFacingError('Add at least one image.')
+  if (!images.length) throw new UserFacingError('err.imageNone')
   const doc = await PDFDocument.create()
   doc.setProducer('FreePDF')
   doc.setCreator('FreePDF')
@@ -89,12 +90,12 @@ export async function imagesToPdf(
 
   for (let i = 0; i < images.length; i++) {
     const img = images[i]
-    onProgress(i / images.length, `Adding ${img.name}`)
+    onProgress(i / images.length, msg('prog.adding', { name: img.name }))
     let embedded: PDFImage
     try {
       embedded = img.kind === 'jpeg' ? await doc.embedJpg(img.bytes) : await doc.embedPng(img.bytes)
     } catch {
-      throw new UserFacingError(`“${img.name}” couldn't be read. It may be damaged.`)
+      throw new UserFacingError('err.imageBroken', { name: img.name })
     }
     const orientation = img.kind === 'jpeg' ? jpegOrientation(img.bytes) : 1
     const swap = orientation >= 5
@@ -135,7 +136,7 @@ export async function imagesToPdf(
       popGraphicsState(),
     )
   }
-  onProgress(0.97, 'Saving')
+  onProgress(0.97, msg('prog.saving'))
   const out = await saveDoc(doc)
   onProgress(1)
   return out

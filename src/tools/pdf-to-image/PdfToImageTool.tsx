@@ -12,6 +12,7 @@ import type { OutputFile } from '../../lib/output'
 import { canvasToBlob, closePdf, openPdf, PasswordRequiredError, releaseCanvas, renderPage } from '../../lib/render/pdfjs'
 import type { FileKind } from '../../lib/validate'
 import { CancelledError } from '../../lib/workerClient'
+import { useI18n } from '../../i18n/react'
 
 const ACCEPT: FileKind[] = ['pdf']
 type Format = 'jpg' | 'png'
@@ -19,6 +20,7 @@ type Dpi = 72 | 150 | 300
 type LockState = { status: 'checking' } | { status: 'open' } | { status: 'locked'; wrong?: boolean } | { status: 'unlocked'; password: string }
 
 export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
+  const { t } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: true })
   const job = useJob()
   const [format, setFormat] = useState<Format>(tool.slug === 'pdf-to-png' ? 'png' : 'jpg')
@@ -74,7 +76,11 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
           const pad = String(doc.numPages).length
           for (let p = 1; p <= doc.numPages; p++) {
             if (signal.aborted) throw new CancelledError()
-            progress((fi + (p - 1) / doc.numPages) / sel.files.length, `${sel.files.length > 1 ? `${f.name}: ` : ''}page ${p} of ${doc.numPages}`)
+            const step = t('p2i.pageProgress', { page: p, total: doc.numPages })
+            progress(
+              (fi + (p - 1) / doc.numPages) / sel.files.length,
+              sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step } } : { key: 'p2i.pageProgress', params: { page: p, total: doc.numPages } },
+            )
             const { canvas, scaleUsed } = await renderPage(doc, p, dpi / 72)
             try {
               const blob = await canvasToBlob(canvas, mime, format === 'jpg' ? quality : undefined)
@@ -82,7 +88,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
               out.push({
                 name: deriveName(f.name, `-page-${String(p).padStart(pad, '0')}`, format),
                 blob,
-                note: `${canvas.width}×${canvas.height}px${reduced ? ' (reduced: page too large for full resolution)' : ''}`,
+                note: { key: reduced ? 'p2i.dimsReduced' : 'p2i.dims', params: { w: canvas.width, h: canvas.height } },
               })
             } finally {
               releaseCanvas(canvas)
@@ -113,7 +119,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
                 onRemove={sel.remove}
                 extra={(f) => {
                   const s = locks[f.id]?.status
-                  return s === 'locked' ? ' · password needed' : s === 'unlocked' ? ' · unlocked' : ''
+                  return s === 'locked' ? t('p2i.passwordNeeded') : s === 'unlocked' ? t('p2i.unlocked') : ''
                 }}
               />
               {locked.map((f) => (
@@ -123,7 +129,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
                   className="fade-in rounded-xl border border-line bg-surface p-4"
                 >
                   <label className="mb-2 flex items-center gap-2 font-semibold" htmlFor={`pw-${f.id}`}>
-                    <Icon name="lock" size={18} className="text-accent" /> “{f.name}” is password-protected
+                    <Icon name="lock" size={18} className="shrink-0 text-accent" /> <span dir="auto">{t('p2i.locked', { name: f.name })}</span>
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -133,12 +139,12 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
                       value={pwInput[f.id] ?? ''}
                       onChange={(e) => setPwInput((p) => ({ ...p, [f.id]: e.target.value }))}
                       className="h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
-                      placeholder="Enter the document password"
+                      placeholder={t('p2i.pwPlaceholder')}
                     />
-                    <Button type="submit" variant="secondary">Unlock</Button>
+                    <Button type="submit" variant="secondary">{t('p2i.unlock')}</Button>
                   </div>
-                  {(locks[f.id] as { wrong?: boolean }).wrong && <p className="mt-2 text-sm font-semibold text-danger" role="alert">That password isn’t correct.</p>}
-                  <p className="mt-2 text-sm text-muted">The password is used only in this tab to open the file and is never stored.</p>
+                  {(locks[f.id] as { wrong?: boolean }).wrong && <p className="mt-2 text-sm font-semibold text-danger" role="alert">{t('p2i.wrongPw')}</p>}
+                  <p className="mt-2 text-sm text-muted">{t('p2i.pwNote')}</p>
                 </form>
               ))}
               <Dropzone accept={ACCEPT} multiple compact onFiles={sel.add} />
@@ -146,25 +152,25 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
           }
           side={
             <>
-              <Segmented<Format> label="Image format" value={format} onChange={setFormat} options={[{ value: 'jpg', label: 'JPG', hint: 'Smaller files' }, { value: 'png', label: 'PNG', hint: 'Lossless' }]} />
+              <Segmented<Format> label={t('p2i.format')} value={format} onChange={setFormat} options={[{ value: 'jpg', label: 'JPG', hint: t('p2i.jpgHint') }, { value: 'png', label: 'PNG', hint: t('p2i.pngHint') }]} />
               <Segmented<Dpi>
-                label="Resolution"
+                label={t('p2i.resolution')}
                 value={dpi}
                 onChange={setDpi}
                 options={[
-                  { value: 72, label: 'Low', hint: '72 DPI' },
-                  { value: 150, label: 'Medium', hint: '150 DPI' },
-                  { value: 300, label: 'High', hint: '300 DPI' },
+                  { value: 72, label: t('p2i.low'), hint: t('p2i.dpi', { n: 72 }) },
+                  { value: 150, label: t('p2i.medium'), hint: t('p2i.dpi', { n: 150 }) },
+                  { value: 300, label: t('p2i.high'), hint: t('p2i.dpi', { n: 300 }) },
                 ]}
               />
               {format === 'jpg' && (
-                <Segmented<0.92 | 0.8> label="JPG quality" value={quality} onChange={setQuality} options={[{ value: 0.92, label: 'High' }, { value: 0.8, label: 'Standard' }]} />
+                <Segmented<0.92 | 0.8> label={t('p2i.quality')} value={quality} onChange={setQuality} options={[{ value: 0.92, label: t('p2i.qHigh') }, { value: 0.8, label: t('p2i.qStd') }]} />
               )}
-              {locked.length > 0 && <Notice tone="info">Unlock the protected file{locked.length > 1 ? 's' : ''} first, or remove {locked.length > 1 ? 'them' : 'it'}.</Notice>}
+              {locked.length > 0 && <Notice tone="info">{t('p2i.unlockFirst', { count: locked.length })}</Notice>}
               <Button variant="primary" size="lg" icon="imageOut" className="w-full" disabled={locked.length > 0 || checking} onClick={convert} data-testid="run">
-                Convert to {format.toUpperCase()}
+                {t('p2i.run', { fmt: format.toUpperCase() })}
               </Button>
-              <p className="text-sm text-muted">One image per page. Several images download together as a ZIP.</p>
+              <p className="text-sm text-muted">{t('p2i.note')}</p>
               <LocalBadge />
             </>
           }

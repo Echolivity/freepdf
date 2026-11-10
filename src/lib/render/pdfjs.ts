@@ -56,7 +56,7 @@ export async function openPdf(data: Uint8Array, opts: { password?: string; name?
     task.destroy().catch(() => {})
     const e = err as { name?: string; code?: number; message?: string }
     if (e?.name === 'PasswordException') throw new PasswordRequiredError(e.code === pdfjs.PasswordResponses.INCORRECT_PASSWORD)
-    throw new UserFacingError(`“${opts.name ?? 'This file'}” couldn't be opened. It may be damaged or not a real PDF.`)
+    throw new UserFacingError('err.cantOpen', { name: opts.name ?? 'PDF' })
   }
 }
 

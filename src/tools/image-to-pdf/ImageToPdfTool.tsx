@@ -10,12 +10,14 @@ import { pdfBlob, type OutputFile } from '../../lib/output'
 import type { Orientation, PageSize } from '../../lib/pdf/images'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
+import { useI18n } from '../../i18n/react'
 
 const ACCEPT: FileKind[] = ['jpeg', 'png', 'webp']
 type Margin = 0 | 18 | 36
 type Output = 'single' | 'each'
 
 export default function ImageToPdfTool() {
+  const { t } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: true })
   const job = useJob()
   const [pageSize, setPageSize] = useState<PageSize>('a4')
@@ -26,7 +28,7 @@ export default function ImageToPdfTool() {
 
   const convert = () =>
     job.run(async ({ signal, progress }) => {
-      progress(0, 'Reading images')
+      progress(0, { key: 'prog.readingImages' })
       const images = await Promise.all(
         sel.files.map(async (f) => ({ name: f.name, kind: f.kind as 'jpeg' | 'png' | 'webp', bytes: await readBytes(f) })),
       )
@@ -34,11 +36,11 @@ export default function ImageToPdfTool() {
       if (output === 'single' || images.length === 1) {
         const pdf = await runInWorker('imagesToPdf', { images, options }, { signal, onProgress: progress })
         const name = images.length === 1 ? deriveName(images[0].name, '', 'pdf') : deriveName(images[0].name, '-and-more', 'pdf')
-        return [{ name, blob: pdfBlob(pdf), note: `${images.length} page${images.length === 1 ? '' : 's'}` }]
+        return [{ name, blob: pdfBlob(pdf), note: { key: 'note.pages', params: { count: images.length } } }]
       }
       const out: OutputFile[] = []
       for (let i = 0; i < images.length; i++) {
-        progress(i / images.length, `Converting ${images[i].name}`)
+        progress(i / images.length, { key: 'i2p.converting', params: { name: images[i].name } })
         const pdf = await runInWorker('imagesToPdf', { images: [images[i]], options }, { signal })
         out.push({ name: deriveName(images[i].name, '', 'pdf'), blob: pdfBlob(pdf) })
       }
@@ -59,8 +61,8 @@ export default function ImageToPdfTool() {
           main={
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted">Each image becomes a page, in this order.</p>
-                <Button variant="ghost" size="sm" onClick={sel.sortByName}>Sort A–Z</Button>
+                <p className="text-sm text-muted">{t('i2p.hint')}</p>
+                <Button variant="ghost" size="sm" onClick={sel.sortByName}>{t('common.sortAZ')}</Button>
               </div>
               <FileList files={sel.files} reorderable onMove={sel.move} onRemove={sel.remove} />
               <Dropzone accept={ACCEPT} multiple compact onFiles={sel.add} />
@@ -69,52 +71,52 @@ export default function ImageToPdfTool() {
           side={
             <>
               <Segmented<PageSize>
-                label="Page size"
+                label={t('i2p.pageSize')}
                 value={pageSize}
                 onChange={setPageSize}
                 options={[
-                  { value: 'a4', label: 'A4' },
-                  { value: 'letter', label: 'Letter' },
-                  { value: 'fit', label: 'Fit image' },
+                  { value: 'a4', label: t('i2p.a4') },
+                  { value: 'letter', label: t('i2p.letter') },
+                  { value: 'fit', label: t('i2p.fit') },
                 ]}
               />
               {pageSize !== 'fit' && (
                 <Segmented<Orientation>
-                  label="Orientation"
+                  label={t('i2p.orientation')}
                   value={orientation}
                   onChange={setOrientation}
                   options={[
-                    { value: 'auto', label: 'Auto' },
-                    { value: 'portrait', label: 'Portrait' },
-                    { value: 'landscape', label: 'Landscape' },
+                    { value: 'auto', label: t('i2p.auto') },
+                    { value: 'portrait', label: t('i2p.portrait') },
+                    { value: 'landscape', label: t('i2p.landscape') },
                   ]}
                 />
               )}
               <Segmented<Margin>
-                label="Margin"
+                label={t('i2p.margin')}
                 value={margin}
                 onChange={setMargin}
                 options={[
-                  { value: 0, label: 'None' },
-                  { value: 18, label: 'Small' },
-                  { value: 36, label: 'Large' },
+                  { value: 0, label: t('i2p.none') },
+                  { value: 18, label: t('i2p.small') },
+                  { value: 36, label: t('i2p.large') },
                 ]}
               />
               {sel.files.length > 1 && (
                 <Segmented<Output>
-                  label="Output"
+                  label={t('i2p.output')}
                   value={output}
                   onChange={setOutput}
                   options={[
-                    { value: 'single', label: 'One PDF' },
-                    { value: 'each', label: 'PDF per image' },
+                    { value: 'single', label: t('i2p.single') },
+                    { value: 'each', label: t('i2p.each') },
                   ]}
                 />
               )}
               <Button variant="primary" size="lg" icon="imageIn" className="w-full" onClick={convert} data-testid="run">
-                Convert to PDF
+                {t('i2p.run')}
               </Button>
-              <p className="text-sm text-muted">Images are embedded at full quality — JPGs are not re-compressed.</p>
+              <p className="text-sm text-muted">{t('i2p.note')}</p>
               <LocalBadge />
             </>
           }

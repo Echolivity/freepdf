@@ -1,10 +1,11 @@
 import { uniqueNames } from './files'
+import type { Message } from '../i18n/core'
 
 export interface OutputFile {
   name: string
   blob: Blob
-  /** Optional one-line note shown under the file (e.g. size saved). */
-  note?: string
+  /** Optional one-line note shown under the file (e.g. size saved); translated at display time. */
+  note?: Message
 }
 
 export function pdfBlob(bytes: Uint8Array): Blob {

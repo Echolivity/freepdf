@@ -12,6 +12,7 @@ import {
 import pako from 'pako'
 import { loadPdf, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
 import { removeUnreachable } from './structure'
+import { msg } from '../../i18n/core'
 export { removeUnreachable }
 
 export type CompressionLevel = 'light' | 'balanced' | 'strong'
@@ -62,7 +63,7 @@ export async function compressPdf(
   const cfg = LEVELS[level]
   const doc = await loadPdf(input.bytes, input.name)
   const ctx = doc.context
-  onProgress(0.05, 'Analysing')
+  onProgress(0.05, msg('prog.analysing'))
 
   removeUnreachable(ctx)
 
@@ -78,7 +79,7 @@ export async function compressPdf(
   let imagesRecompressed = 0
   for (let i = 0; i < entries.length; i++) {
     const [ref, obj] = entries[i]
-    if (i % 25 === 0) onProgress(0.05 + 0.85 * (i / entries.length), 'Optimising images and streams')
+    if (i % 25 === 0) onProgress(0.05 + 0.85 * (i / entries.length), msg('prog.optimising'))
     if (!(obj instanceof PDFRawStream)) continue
     const dict = obj.dict
     if (dict.get(N('Subtype')) === N('Image')) {
@@ -88,7 +89,7 @@ export async function compressPdf(
     }
   }
 
-  onProgress(0.93, 'Saving')
+  onProgress(0.93, msg('prog.saving'))
   const bytes = await saveDoc(doc)
   onProgress(1)
   if (bytes.length >= input.bytes.length) {

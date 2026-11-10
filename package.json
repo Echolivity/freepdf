@@ -1,7 +1,7 @@
 {
   "name": "freepdf",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "predev": "node scripts/copy-pdfjs-assets.mjs",
@@ -13,11 +13,14 @@
     "lint": "oxlint src tests",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:all": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e"
+    "test:all": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e",
+    "fixtures:arabic": "node scripts/make-arabic-fixture.mjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/readex-pro": "^5.3.0",
     "@fontsource/atkinson-hyperlegible-next": "^5.3.0",
+    "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
     "jszip": "^3.10.2",
     "pako": "^1.0.11",
     "pdf-lib": "^1.17.1",

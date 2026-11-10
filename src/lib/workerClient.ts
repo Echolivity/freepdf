@@ -1,5 +1,6 @@
 import type { OpName, WorkerOps, WorkerResponse } from '../workers/protocol'
 import { UserFacingError } from './validate'
+import type { Message } from '../i18n/core'
 
 export class CancelledError extends Error {
   constructor() {
@@ -16,7 +17,7 @@ export class CancelledError extends Error {
 export function runInWorker<K extends OpName>(
   op: K,
   args: WorkerOps[K][0],
-  opts: { onProgress?: (value: number, label?: string) => void; signal?: AbortSignal } = {},
+  opts: { onProgress?: (value: number, label?: Message) => void; signal?: AbortSignal } = {},
 ): Promise<WorkerOps[K][1]> {
   return new Promise((resolve, reject) => {
     if (opts.signal?.aborted) return reject(new CancelledError())
@@ -40,12 +41,12 @@ export function runInWorker<K extends OpName>(
         resolve(msg.result as WorkerOps[K][1])
       } else {
         cleanup()
-        reject(msg.userFacing ? new UserFacingError(msg.message) : new Error(msg.message))
+        reject(new UserFacingError(msg.error.key, msg.error.params))
       }
     }
-    worker.onerror = (e) => {
+    worker.onerror = () => {
       cleanup()
-      reject(new Error(e.message || 'The processing worker crashed — the file may be too large for this device.'))
+      reject(new UserFacingError('err.worker'))
     }
     // Copy (not transfer) inputs so the page can retry without re-reading files.
     worker.postMessage({ id, op, args })

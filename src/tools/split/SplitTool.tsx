@@ -10,13 +10,16 @@ import { usePdfDoc } from '../../components/thumbs'
 import { deriveName } from '../../lib/files'
 import { pdfBlob } from '../../lib/output'
 import { chunkGroups, formatRanges, parseRanges } from '../../lib/ranges'
-import type { FileKind } from '../../lib/validate'
+import { UserFacingError, type FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
+import { useI18n } from '../../i18n/react'
+import type { Message } from '../../i18n/core'
 
 const ACCEPT: FileKind[] = ['pdf']
 type Mode = 'ranges' | 'every' | 'chunk'
 
 export default function SplitTool() {
+  const { t, tm } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: false })
   const file = sel.files[0] ?? null
   const { doc, error: docError, loading } = usePdfDoc(file)
@@ -28,17 +31,17 @@ export default function SplitTool() {
   const startOver = () => { job.reset(); sel.clear(); setRangeText('') }
 
   const count = doc?.numPages ?? 0
-  const plan = useMemo((): { groups: number[][] | null; error: string | null } => {
+  const defaultRanges = count > 1 ? `1-${Math.ceil(count / 2)}, ${Math.ceil(count / 2) + 1}-${count}` : '1'
+  const plan = useMemo((): { groups: number[][] | null; error: Message | null } => {
     if (!count) return { groups: null, error: null }
     try {
       if (mode === 'every') return { groups: chunkGroups(count, 1), error: null }
       if (mode === 'chunk') return { groups: chunkGroups(count, chunk), error: null }
-      const text = rangeText.trim() || (count > 1 ? `1-${Math.ceil(count / 2)}, ${Math.ceil(count / 2) + 1}-${count}` : '1')
-      return { groups: parseRanges(text, count), error: null }
+      return { groups: parseRanges(rangeText.trim() || defaultRanges, count), error: null }
     } catch (e) {
-      return { groups: null, error: (e as Error).message }
+      return { groups: null, error: e instanceof UserFacingError ? e.toMessage() : { key: 'rng.empty' } }
     }
-  }, [count, mode, rangeText, chunk])
+  }, [count, mode, rangeText, chunk, defaultRanges])
 
   const partOf = useMemo(() => {
     const m = new Map<number, number[]>()
@@ -67,6 +70,8 @@ export default function SplitTool() {
       })
     })
 
+  const inputCls = 'h-11 w-full rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15'
+
   return (
     <ToolFrame
       job={job}
@@ -80,9 +85,9 @@ export default function SplitTool() {
         <Workspace
           main={
             <div className="space-y-4">
-              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? ` · ${count} pages` : '')} />}
-              {docError && <Notice tone="error">{docError}</Notice>}
-              {loading && <p className="text-muted" role="status">Reading pages…</p>}
+              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? t('files.pages', { count }) : '')} />}
+              {docError && <Notice tone="error">{tm(docError)}</Notice>}
+              {loading && <p className="text-muted" role="status">{t('common.readingPages')}</p>}
               {doc && (
                 <PageGrid
                   doc={doc}
@@ -90,8 +95,8 @@ export default function SplitTool() {
                   pages={Array.from({ length: count }, (_, i) => ({ key: String(i), index: i, rotation: 0 }))}
                   labelFor={(p) => {
                     const parts = partOf.get(p.index)
-                    if (!parts) return willMerge ? undefined : 'not included'
-                    return willMerge ? 'included' : `file ${parts.join(', ')}`
+                    if (!parts) return willMerge ? undefined : t('split.notIncluded')
+                    return willMerge ? t('split.included') : t('split.file', { list: parts.join(', ') })
                   }}
                 />
               )}
@@ -100,57 +105,55 @@ export default function SplitTool() {
           side={
             <>
               <Segmented<Mode>
-                label="Split method"
+                label={t('split.method')}
                 value={mode}
                 onChange={setMode}
                 options={[
-                  { value: 'ranges', label: 'Ranges' },
-                  { value: 'every', label: 'Every page' },
-                  { value: 'chunk', label: 'Every N' },
+                  { value: 'ranges', label: t('split.ranges') },
+                  { value: 'every', label: t('split.every') },
+                  { value: 'chunk', label: t('split.everyN') },
                 ]}
               />
               {mode === 'ranges' && (
                 <div className="space-y-3">
                   <label className="block">
-                    <span className="mb-1.5 block text-sm font-semibold">Page ranges</span>
+                    <span className="mb-1.5 block text-sm font-semibold">{t('split.rangesLabel')}</span>
                     <input
                       value={rangeText}
                       onChange={(e) => setRangeText(e.target.value)}
-                      placeholder={count > 1 ? `1-${Math.ceil(count / 2)}, ${Math.ceil(count / 2) + 1}-${count}` : '1'}
-                      className="h-11 w-full rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
+                      placeholder={defaultRanges}
+                      dir="ltr"
+                      inputMode="numeric"
+                      className={inputCls}
                       aria-describedby="range-help"
                       data-testid="ranges"
                     />
-                    <span id="range-help" className="mt-1.5 block text-sm text-muted">Each comma-separated range becomes its own file. Example: 1-3, 5, 8-</span>
+                    <span id="range-help" className="mt-1.5 block text-sm text-muted">{t('split.rangesHelp')}</span>
                   </label>
                   <label className="flex items-start gap-2.5 text-[15px]">
                     <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--accent)]" checked={mergeRanges} onChange={(e) => setMergeRanges(e.target.checked)} />
-                    Put all ranges into one PDF
+                    {t('split.mergeRanges')}
                   </label>
                 </div>
               )}
               {mode === 'chunk' && (
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold">Pages per file</span>
+                  <span className="mb-1.5 block text-sm font-semibold">{t('split.perFile')}</span>
                   <input
                     type="number"
                     min={1}
                     max={Math.max(1, count)}
                     value={chunk}
                     onChange={(e) => setChunk(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="h-11 w-full rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
+                    className={inputCls}
                   />
                 </label>
               )}
-              {!plan.error && !willMerge && outputs > 40 && (
-                <p className="text-sm text-muted">With more than 40 parts, page content is kept but bookmarks and fillable form fields are not.</p>
-              )}
-              {plan.error && <p className="text-sm font-semibold text-danger" role="alert">{plan.error}</p>}
-              {!plan.error && outputs > 0 && (
-                <p className="text-sm text-muted">Creates <strong className="text-ink">{outputs}</strong> PDF{outputs === 1 ? '' : 's'}{outputs > 1 ? ', downloadable as a ZIP' : ''}.</p>
-              )}
+              {!plan.error && !willMerge && outputs > 40 && <p className="text-sm text-muted">{t('split.manyParts')}</p>}
+              {plan.error && <p className="text-sm font-semibold text-danger" role="alert">{tm(plan.error)}</p>}
+              {!plan.error && outputs > 0 && <p className="text-sm text-muted" data-testid="plan">{t('split.creates', { count: outputs })}</p>}
               <Button variant="primary" size="lg" icon="split" className="w-full" disabled={!plan.groups || !doc} onClick={split} data-testid="run">
-                Split PDF
+                {t('split.run')}
               </Button>
               <LocalBadge />
             </>

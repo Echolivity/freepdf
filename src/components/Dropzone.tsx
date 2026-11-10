@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import type { FileKind } from '../lib/validate'
 import { LIMITS, MB } from '../config'
+import { useI18n } from '../i18n/react'
 
 const ACCEPT: Record<FileKind, string> = {
   pdf: '.pdf,application/pdf',
@@ -27,11 +28,12 @@ export function Dropzone({
   onFiles: (files: File[]) => void
   compact?: boolean
 }) {
+  const { t } = useI18n()
   const input = useRef<HTMLInputElement>(null)
   const [over, setOver] = useState(false)
   const depth = useRef(0)
   const kinds = accept.map((k) => LABEL[k]).join(', ')
-  const noun = accept.length === 1 && accept[0] === 'pdf' ? 'PDF' : 'image'
+  const isPdf = accept.length === 1 && accept[0] === 'pdf'
   const choose = () => input.current?.click()
 
   const picker = (
@@ -71,7 +73,7 @@ export function Dropzone({
       <div {...dragHandlers} className={`rounded-xl border-2 border-dashed transition-colors ${over ? 'border-accent bg-accent-soft' : 'border-line-strong'}`}>
         {picker}
         <button type="button" onClick={choose} className="flex w-full items-center justify-center gap-2 px-4 py-3 text-[15px] font-semibold text-muted hover:text-ink">
-          <Icon name="plus" size={18} /> {over ? 'Drop to add' : `Add more ${noun}s`}
+          <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : 'drop.addMoreImages')}
         </button>
       </div>
     )
@@ -93,18 +95,18 @@ export function Dropzone({
         onClick={choose}
         className="rounded-2xl bg-accent px-7 py-3.5 text-lg font-semibold text-on-accent transition-colors hover:bg-accent-hover"
       >
-        Select {noun} {multiple ? 'files' : 'file'}
+        {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : multiple ? 'drop.selectImages' : 'drop.selectImage')}
       </button>
       <p className="mt-4 text-muted">
-        {over ? 'Drop to add' : <>or drop {multiple ? 'them' : 'it'} here</>}
+        {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}
       </p>
       <p className="mt-6 text-sm text-muted">
-        {kinds} · up to {LIMITS.maxFileBytes / MB} MB each
+        {t('drop.limits', { kinds, mb: LIMITS.maxFileBytes / MB })}
       </p>
       <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
         <Icon name="shield" size={16} className="text-ok" />
-        Your file stays on this device.{' '}
-        <Link to="/privacy" className="font-semibold underline decoration-line-strong underline-offset-4 hover:text-ink">How it works</Link>
+        {t('drop.stays')}{' '}
+        <Link to="/privacy" className="font-semibold underline decoration-line-strong underline-offset-4 hover:text-ink">{t('nav.how')}</Link>
       </p>
     </div>
   )

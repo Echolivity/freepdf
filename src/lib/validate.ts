@@ -1,11 +1,20 @@
 import { LIMITS, MB } from '../config'
+import { msg, translate, type Message, type MessageKey, type Params } from '../i18n/core'
 
 export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp'
 
+/** An error meant for the person using the app. Carries a message key so it can be shown in any language. */
 export class UserFacingError extends Error {
-  constructor(message: string) {
-    super(message)
+  key: MessageKey
+  params?: Params
+  constructor(key: MessageKey, params?: Params) {
+    super(translate('en', key, params))
     this.name = 'UserFacingError'
+    this.key = key
+    this.params = params
+  }
+  toMessage(): Message {
+    return { key: this.key, params: this.params }
   }
 }
 
@@ -113,40 +122,40 @@ export async function validateFiles(
   accept: FileKind[],
   existingBytes = 0,
   existingCount = 0,
-): Promise<{ accepted: ValidatedFile[]; rejected: string[] }> {
+): Promise<{ accepted: ValidatedFile[]; rejected: Message[] }> {
   const accepted: ValidatedFile[] = []
-  const rejected: string[] = []
+  const rejected: Message[] = []
   let total = existingBytes
-  const expected = accept.map((k) => KIND_LABEL[k]).join(' or ')
+  const expected = accept.map((k) => KIND_LABEL[k]).join('/')
 
   for (const file of files) {
     if (existingCount + accepted.length >= LIMITS.maxFiles) {
-      rejected.push(`Only ${LIMITS.maxFiles} files can be processed at once; the rest were skipped.`)
+      rejected.push(msg('val.tooMany', { max: LIMITS.maxFiles }))
       break
     }
-    if (file.size === 0) { rejected.push(`“${file.name}” is empty.`); continue }
+    if (file.size === 0) { rejected.push(msg('val.empty', { name: file.name })); continue }
     if (file.size > LIMITS.maxFileBytes) {
-      rejected.push(`“${file.name}” is ${Math.round(file.size / MB)} MB. The limit per file is ${LIMITS.maxFileBytes / MB} MB so your browser doesn't run out of memory.`)
+      rejected.push(msg('val.fileTooBig', { name: file.name, size: Math.round(file.size / MB), limit: LIMITS.maxFileBytes / MB }))
       continue
     }
     if (total + file.size > LIMITS.maxJobBytes) {
-      rejected.push(`“${file.name}” would take this job over ${LIMITS.maxJobBytes / MB} MB in total. Process it in a separate batch.`)
+      rejected.push(msg('val.jobTooBig', { name: file.name, limit: LIMITS.maxJobBytes / MB }))
       continue
     }
     const head = new Uint8Array(await file.slice(0, 64 * 1024).arrayBuffer())
     const kind = sniffKind(head)
     if (!kind || !accept.includes(kind)) {
-      rejected.push(`“${file.name}” isn't a ${expected} file${kind ? ` (it looks like ${KIND_LABEL[kind]})` : ''}.`)
+      rejected.push(kind ? msg('val.wrongTypeLooks', { name: file.name, expected, actual: KIND_LABEL[kind] }) : msg('val.wrongType', { name: file.name, expected }))
       continue
     }
     if (kind !== 'pdf') {
       const dims = imageDimensions(head, kind) ?? (kind === 'jpeg' ? await jpegDimensionsFromFile(file) : null)
       if (!dims || !dims.width || !dims.height) {
-        rejected.push(`“${file.name}” couldn't be read as an image (its size information is missing or damaged).`)
+        rejected.push(msg('val.noDims', { name: file.name }))
         continue
       }
       if (dims.width * dims.height > LIMITS.maxImagePixels) {
-        rejected.push(`“${file.name}” is ${dims.width}×${dims.height} pixels, which is too large to process safely.`)
+        rejected.push(msg('val.tooManyPixels', { name: file.name, w: dims.width, h: dims.height }))
         continue
       }
     }

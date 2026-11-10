@@ -51,8 +51,9 @@
 }
 
 @theme inline {
-  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  /* Latin faces first; Arabic glyphs fall through to the Arabic faces (whose files load only when needed). */
+  --font-display: "Bricolage Grotesque Variable", "Readex Pro Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible Next", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -89,6 +90,11 @@ h1, h2, h3, .font-display {
   font-optical-sizing: auto;
   letter-spacing: -0.02em;
 }
+
+/* Arabic is cursive: letter-spacing breaks the joins, and the script needs more vertical room. */
+:lang(ar) h1, :lang(ar) h2, :lang(ar) h3, :lang(ar) .font-display { letter-spacing: 0; }
+:lang(ar) body { line-height: 1.7; }
+:lang(ar) h1 { line-height: 1.25; }
 
 :focus-visible {
   outline: 2.5px solid var(--accent);

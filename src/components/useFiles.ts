@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { validateFiles, type FileKind, type ValidatedFile } from '../lib/validate'
 import { moveItem } from '../lib/output'
+import type { Message } from '../i18n/core'
 
 /** Selected-file state with validation and ordering. */
 export function useFiles(accept: FileKind[], opts: { multiple: boolean }) {
   const [files, setFilesState] = useState<ValidatedFile[]>([])
-  const [rejections, setRejections] = useState<string[]>([])
+  const [rejections, setRejections] = useState<Message[]>([])
   // The ref is the source of truth so rapid successive adds (two drops before React re-renders) validate
   // against the real current list; the queue makes each add see the previous one's result.
   const current = useRef<ValidatedFile[]>([])
@@ -21,7 +22,7 @@ export function useFiles(accept: FileKind[], opts: { multiple: boolean }) {
         const base = opts.multiple ? current.current : []
         const pool = opts.multiple ? incoming : incoming.slice(0, 1)
         const { accepted, rejected } = await validateFiles(pool, accept, base.reduce((s, f) => s + f.size, 0), base.length)
-        if (!opts.multiple && incoming.length > 1) rejected.push('This tool works on one file at a time; only the first file was added.')
+        if (!opts.multiple && incoming.length > 1) rejected.push({ key: 'val.oneAtATime' })
         setRejections(rejected)
         if (accepted.length) setFiles(opts.multiple ? [...current.current, ...accepted] : accepted.slice(0, 1))
       }

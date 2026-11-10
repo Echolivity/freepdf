@@ -2,6 +2,7 @@ import type { NamedBytes } from '../lib/pdf/core'
 import type { PageOp } from '../lib/pdf/organize'
 import type { CompressionLevel, CompressResult } from '../lib/pdf/compress'
 import type { ImagesToPdfOptions } from '../lib/pdf/images'
+import type { Message } from '../i18n/core'
 
 export interface RawImage {
   name: string
@@ -27,6 +28,6 @@ export type OpName = keyof WorkerOps
 export type WorkerRequest = { [K in OpName]: { id: number; op: K; args: WorkerOps[K][0] } }[OpName]
 
 export type WorkerResponse =
-  | { id: number; type: 'progress'; value: number; label?: string }
+  | { id: number; type: 'progress'; value: number; label?: Message }
   | { id: number; type: 'done'; result: unknown }
-  | { id: number; type: 'error'; message: string; userFacing: boolean }
+  | { id: number; type: 'error'; error: Message; userFacing: boolean }

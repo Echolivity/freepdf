@@ -11,11 +11,13 @@ import { deriveName } from '../../lib/files'
 import { moveItem, pdfBlob } from '../../lib/output'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
+import { useI18n } from '../../i18n/react'
 
 const ACCEPT: FileKind[] = ['pdf']
 const initial = (n: number): GridPage[] => Array.from({ length: n }, (_, i) => ({ key: `p${i}`, index: i, rotation: 0 }))
 
 export default function OrganizeTool() {
+  const { t, tm } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: false })
   const file = sel.files[0] ?? null
   const { doc, error: docError, loading } = usePdfDoc(file)
@@ -34,7 +36,7 @@ export default function OrganizeTool() {
       const bytes = await readBytes(file)
       const ops = pages.map((p) => ({ index: p.index, rotate: p.rotation % 360 }))
       const out = await runInWorker('organize', { file: { name: file.name, bytes }, ops }, { signal, onProgress: progress })
-      return [{ name: deriveName(file.name, '-organized', 'pdf'), blob: pdfBlob(out), note: `${pages.length} pages` }]
+      return [{ name: deriveName(file.name, '-organized', 'pdf'), blob: pdfBlob(out), note: { key: 'note.pages', params: { count: pages.length } } }]
     })
 
   return (
@@ -49,12 +51,12 @@ export default function OrganizeTool() {
         <Workspace
           main={
             <div className="space-y-4">
-              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? ` · ${count} pages` : '')} />}
-              {docError && <Notice tone="error">{docError}</Notice>}
-              {loading && <p className="text-muted" role="status">Reading pages…</p>}
+              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? t('files.pages', { count }) : '')} />}
+              {docError && <Notice tone="error">{tm(docError)}</Notice>}
+              {loading && <p className="text-muted" role="status">{t('common.readingPages')}</p>}
               {doc && (
                 <>
-                  <p className="text-sm text-muted">Drag pages to reorder. Use the buttons on each page to move, rotate or delete it.</p>
+                  <p className="text-sm text-muted">{t('org.hint')}</p>
                   <PageGrid
                     doc={doc}
                     mode="organize"
@@ -70,18 +72,18 @@ export default function OrganizeTool() {
           side={
             <>
               <div>
-                <p className="font-display text-3xl font-semibold">{pages.length} <span className="text-lg text-muted">pages</span></p>
-                {count > 0 && pages.length !== count && <p className="text-sm text-muted">{count - pages.length} removed</p>}
+                <p className="font-display text-3xl font-semibold">{pages.length} <span className="text-lg text-muted">{t('org.unit', { count: pages.length })}</span></p>
+                {count > 0 && pages.length !== count && <p className="text-sm text-muted">{t('org.removed', { count: count - pages.length })}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" icon="rotate" onClick={() => setPages((ps) => ps.map((p) => ({ ...p, rotation: p.rotation + 90 })))} disabled={!pages.length}>Rotate all</Button>
-                <Button size="sm" onClick={() => setPages((ps) => [...ps].reverse())} disabled={pages.length < 2}>Reverse order</Button>
-                <Button size="sm" variant="ghost" onClick={() => setPages(initial(count))} disabled={!changed}>Reset</Button>
+                <Button size="sm" icon="rotate" onClick={() => setPages((ps) => ps.map((p) => ({ ...p, rotation: p.rotation + 90 })))} disabled={!pages.length}>{t('org.rotateAll')}</Button>
+                <Button size="sm" onClick={() => setPages((ps) => [...ps].reverse())} disabled={pages.length < 2}>{t('org.reverse')}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setPages(initial(count))} disabled={!changed}>{t('org.reset')}</Button>
               </div>
               <Button variant="primary" size="lg" icon="check" className="w-full" disabled={!doc || !changed || !pages.length} onClick={save} data-testid="run">
-                Save PDF
+                {t('org.save')}
               </Button>
-              {doc && !changed && <p className="text-sm text-muted">Make a change to enable saving.</p>}
+              {doc && !changed && <p className="text-sm text-muted">{t('org.makeChange')}</p>}
               <LocalBadge />
             </>
           }

@@ -123,7 +123,9 @@ Libraries are code-split: the homepage ships React + the directory only. `pdf-li
 ## 6. Roadmap
 
 ### Phase 2 (next)
-1. **Arabic and right-to-left support (first item).**
+1. ✅ **Arabic and right-to-left support (first item).** Shipped in 0.2.0: the full interface is
+   translated and right-to-left. Arabic shaping for tools that *write* text onto pages comes with
+   those tools (items 2–4).
    - The interface: Arabic/English switcher (only the chosen language is saved), `dir="rtl"`,
      logical CSS properties, mirrored direction icons, a self-hosted Arabic typeface, full
      translation including error messages, and Arabic search keywords.

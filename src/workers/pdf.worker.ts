@@ -5,6 +5,7 @@ import { imagesToPdf, type ImageInput } from '../lib/pdf/images'
 import { UserFacingError } from '../lib/validate'
 import { canvasCodec, toPng } from './codec'
 import type { WorkerRequest, WorkerResponse } from './protocol'
+import type { Message } from '../i18n/core'
 
 declare const self: DedicatedWorkerGlobalScope
 
@@ -25,7 +26,7 @@ function transferablesOf(value: unknown): Transferable[] {
 
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const req = e.data
-  const progress = (value: number, label?: string) => post({ id: req.id, type: 'progress', value, label })
+  const progress = (value: number, label?: Message) => post({ id: req.id, type: 'progress', value, label })
   try {
     let result: unknown
     switch (req.op) {
@@ -44,7 +45,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
             try {
               images.push({ name: img.name, kind: 'png', bytes: await toPng(img.bytes, 'image/webp') })
             } catch {
-              throw new UserFacingError(`“${img.name}” couldn't be decoded. It may be damaged.`)
+              throw new UserFacingError('err.imageDecode', { name: img.name })
             }
           } else images.push({ name: img.name, kind: img.kind, bytes: img.bytes })
         }
@@ -60,7 +61,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       id: req.id,
       type: 'error',
       userFacing,
-      message: userFacing ? (err as Error).message : `Processing failed: ${(err as Error)?.message ?? String(err)}`,
+      error: userFacing ? (err as UserFacingError).toMessage() : { key: 'err.processing', params: { detail: (err as Error)?.message ?? String(err) } },
     })
   }
 }

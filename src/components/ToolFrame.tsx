@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Job } from './useJob'
 import { JobStatus } from './JobPanels'
 import { Rejections } from './ui'
+import type { Message } from '../i18n/core'
 
 /**
  * Shared page flow for every tool:
@@ -20,7 +21,7 @@ export function ToolFrame({
 }: {
   job: Job
   hasInput: boolean
-  rejections: string[]
+  rejections: Message[]
   onDismissRejections: () => void
   dropzone: ReactNode
   workspace: ReactNode

@@ -1,12 +1,13 @@
 import { PDFDocument, EncryptedPDFError, degrees } from 'pdf-lib'
 import { UserFacingError } from '../validate'
+import type { Message } from '../../i18n/core'
 
 export interface NamedBytes {
   name: string
   bytes: Uint8Array
 }
 
-export type ProgressFn = (fraction: number, label?: string) => void
+export type ProgressFn = (fraction: number, label?: Message) => void
 export const noProgress: ProgressFn = () => {}
 
 // updateFieldAppearances:false — we never change form values, and regenerating appearances would embed fonts and alter forms.
@@ -19,19 +20,17 @@ export async function loadPdf(bytes: Uint8Array, name = 'This file'): Promise<PD
     doc = await PDFDocument.load(bytes, { updateMetadata: false, throwOnInvalidObject: false })
   } catch (err) {
     if (err instanceof EncryptedPDFError || /encrypt/i.test(String((err as Error)?.message))) {
-      throw new UserFacingError(
-        `“${name}” is password-protected. Remove the password in the app you used to set it, then try again.`,
-      )
+      throw new UserFacingError('err.encrypted', { name })
     }
-    throw new UserFacingError(`“${name}” couldn't be read. It may be damaged or not a real PDF.`)
+    throw new UserFacingError('err.unreadable', { name })
   }
   let count = 0
   try {
     count = doc.getPageCount()
   } catch {
-    throw new UserFacingError(`“${name}” is damaged: its page list can't be read.`)
+    throw new UserFacingError('err.noPageList', { name })
   }
-  if (count === 0) throw new UserFacingError(`“${name}” has no pages.`)
+  if (count === 0) throw new UserFacingError('err.noPages', { name })
   return doc
 }
 

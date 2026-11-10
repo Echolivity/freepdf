@@ -3,6 +3,9 @@ import { imageDimensions, sniffKind, validateFiles } from '../../src/lib/validat
 import { parseRanges, parsePageSet, formatRanges } from '../../src/lib/ranges'
 import { sanitizeFilename, deriveName, uniqueNames } from '../../src/lib/files'
 import { fixture } from './helpers'
+import { translateMsg, type Message } from '../../src/i18n/core'
+
+const en = (m: Message) => translateMsg('en', m)
 
 const asFile = (bytes: Uint8Array, name: string, type = '') => new File([bytes as BlobPart], name, { type })
 
@@ -27,12 +30,12 @@ describe('file signatures', () => {
       ['pdf'],
     )
     expect(accepted.map((a) => a.name)).toEqual(['real.pdf'])
-    expect(rejected[0]).toMatch(/fake\.pdf/)
+    expect(en(rejected[0])).toMatch(/fake\.pdf/)
   })
 
   it('rejects a JPEG named .pdf and names what it is', async () => {
     const { rejected } = await validateFiles([asFile(fixture('photo.jpg'), 'x.pdf')], ['pdf'])
-    expect(rejected[0]).toMatch(/looks like JPG/)
+    expect(en(rejected[0])).toMatch(/looks like JPG/)
   })
 
   it('blocks image decompression bombs by header dimensions', async () => {
@@ -43,12 +46,12 @@ describe('file signatures', () => {
     dv.setUint32(20, 50000)
     const { accepted, rejected } = await validateFiles([asFile(png, 'bomb.png')], ['png'])
     expect(accepted).toHaveLength(0)
-    expect(rejected[0]).toMatch(/too large/)
+    expect(en(rejected[0])).toMatch(/too large/)
   })
 
   it('rejects empty files', async () => {
     const { rejected } = await validateFiles([asFile(new Uint8Array(), 'e.pdf')], ['pdf'])
-    expect(rejected[0]).toMatch(/empty/)
+    expect(en(rejected[0])).toMatch(/empty/)
   })
 })
 
@@ -122,14 +125,14 @@ describe('JPEG dimension check beyond the first 64 KB', () => {
   it('rejects a decompression bomb whose frame header is hidden past 64 KB', async () => {
     const { accepted, rejected } = await validateFiles([asFile(padded([60000, 60000]), 'hidden-bomb.jpg')], ['jpeg'])
     expect(accepted).toHaveLength(0)
-    expect(rejected[0]).toMatch(/too large/)
+    expect(en(rejected[0])).toMatch(/too large/)
   })
 
   it('rejects a JPEG with no frame header at all', async () => {
     const bad = new Uint8Array(200)
     bad.set([0xff, 0xd8, 0xff, 0xd9])
     const { rejected } = await validateFiles([asFile(bad, 'empty.jpg')], ['jpeg'])
-    expect(rejected[0]).toMatch(/couldn't be read as an image/)
+    expect(en(rejected[0])).toMatch(/couldn't be read as an image/)
   })
 })
 

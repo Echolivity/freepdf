@@ -24,6 +24,16 @@ stay free.
 Downloads come as single files or as a ZIP. The roadmap and an analysis of which of the 35 planned
 tools can run in the browser are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+## Languages
+
+English and Arabic. The Arabic interface is fully right-to-left, and Arabic-language browsers get it
+by default. Strings live in `src/i18n/en.ts` (source of truth) and `src/i18n/ar.ts`. TypeScript
+refuses to build if a translation is missing, and a unit test checks that placeholders match.
+
+To add a language:
+1. Copy `ar.ts`, translate it, and register the dictionary in `src/i18n/core.ts`.
+2. Add the language code to `theme-init.js`.
+
 ## Privacy model
 
 - **Local processing:** pdf-lib runs in a Web Worker (a new worker per job, terminated afterwards).

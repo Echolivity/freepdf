@@ -69,3 +69,25 @@ network request outside the origin.
 
 - Safari (macOS/iOS) and Firefox: run one job per tool. CI covers Chromium only.
 - A real phone with a 100 MB+ scanned PDF: check that compression completes and memory isn't exceeded.
+
+## Arabic (Phase 2)
+
+- **`tests/unit/arabic.test.ts`:**
+  - **Dictionary:** key parity with English, no empty strings, placeholders preserved.
+  - **Plurals and isolation:** all six Arabic plural forms; bidi isolation of Latin file names.
+  - **Input and search:** Arabic-Indic digits and the Arabic comma in ranges; Arabic search with
+    hamza normalisation.
+  - **Arabic PDF fidelity:** pixel-identical renders and extractable Arabic text after
+    Remove, Extract, Organize and Merge.
+- **`tests/e2e/arabic.spec.ts`** runs on desktop and on the Pixel 7 viewport with locale `ar-SA`.
+  - **Language:** RTL by default, and the language toggle is persisted.
+  - **Untranslated-text scan:** fails on any 3+ letter Latin word that isn't a brand, format, unit
+    or file name.
+  - **Translated output:** validation, engine errors and progress are all in Arabic.
+  - **Input:** Arabic digits work in Split.
+  - **Downloads:** Arabic file names are preserved.
+  - **Mirrored controls:** they still move pages in reading order.
+- **`scripts/make-arabic-fixture.mjs`** regenerates `tests/fixtures/arabic.pdf`.
+
+Note: Chromium on Linux needs a UTF-8 locale to save downloads whose names aren't ASCII.
+`playwright.config.ts` sets `C.UTF-8` when the environment has no UTF-8 locale.

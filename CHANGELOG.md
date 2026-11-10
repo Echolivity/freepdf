@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.2.0 — 2026-11-10 (Phase 2, part 1: Arabic)
+
+### Added
+- **Full Arabic interface** with right-to-left layout.
+  - Language switch in the header. The choice is remembered, and Arabic-language browsers get Arabic
+    by default.
+  - The language and direction are applied before the first paint, so there's no flash.
+  - Every message is translated: interface, validation, page-range errors, and the errors and progress
+    sent from the processing worker. Messages travel as keys and are translated on screen.
+- **Arabic plurals:** all six forms (zero, one, two, few, many, other) via `Intl.PluralRules`.
+- **Arabic typefaces:** Readex Pro for headings and IBM Plex Sans Arabic for body text. They're
+  self-hosted and only the Arabic subset loads, and only when Arabic text is on screen. Letter-spacing
+  is disabled for Arabic so the cursive joins stay intact.
+- **Layout mirroring:** direction-aware CSS (logical properties) throughout. Direction icons are
+  mirrored: back links, and "move earlier / later" on page thumbnails.
+- **Mixed-direction text:** file names and sizes are isolated so mixed Arabic/Latin text displays in
+  the correct order.
+- **Arabic input:** page ranges accept Arabic-Indic and Persian digits, the Arabic comma and dash
+  variants (`١-٢، ٥`).
+- **Bilingual search:** every tool is found from either language, with Arabic normalisation (hamza
+  forms, tāʾ marbūṭa, diacritics).
+
+### Tests
+- **Dictionary checks:** the Arabic dictionary has the same keys as English, no empty strings, and
+  keeps every placeholder.
+- **Arabic PDF fixture** (`arabic.pdf`, shaped by Chromium with an embedded Arabic font):
+  - Remove, Extract, Organize and Merge outputs render pixel-identical to the source pages.
+  - Arabic text remains extractable.
+- **Arabic E2E on desktop and mobile:**
+  - The page defaults to RTL for Arabic browsers, and the language toggle is persisted.
+  - Arabic search works.
+  - Engine errors arrive in Arabic.
+  - Arabic digits work in Split.
+  - Arabic file names survive into downloads.
+  - Mirrored controls still move pages in reading order.
+  - An untranslated-text scan covers whole pages.
+
 ## 0.1.1 — 2026-11-10 (audit fixes)
 
 ### Fixed

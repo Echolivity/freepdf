@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { closePdf, openPdf, renderPage, PasswordRequiredError, type PDFDocumentProxy } from '../lib/render/pdfjs'
 import { UserFacingError, type ValidatedFile } from '../lib/validate'
 import { Icon } from './Icon'
+import { useI18n } from '../i18n/react'
+import type { Message } from '../i18n/core'
 
 /* ---------- tiny render scheduler: at most 2 thumbnails rendering at once ---------- */
 const MAX_CONCURRENT = 2
@@ -27,7 +29,7 @@ function next() {
 
 /* ---------- open a PDF for previews ---------- */
 export function usePdfDoc(file: ValidatedFile | null) {
-  const [state, setState] = useState<{ doc: PDFDocumentProxy | null; error: string | null; loading: boolean }>({ doc: null, error: null, loading: !!file })
+  const [state, setState] = useState<{ doc: PDFDocumentProxy | null; error: Message | null; loading: boolean }>({ doc: null, error: null, loading: !!file })
   useEffect(() => {
     if (!file) { setState({ doc: null, error: null, loading: false }); return }
     let doc: PDFDocumentProxy | null = null
@@ -41,10 +43,10 @@ export function usePdfDoc(file: ValidatedFile | null) {
         setState({ doc, error: null, loading: false })
       } catch (err) {
         if (dead) return
-        const msg = err instanceof PasswordRequiredError
-          ? `“${file.name}” is password-protected. Remove the password in the app you used to set it, then try again.`
-          : err instanceof UserFacingError ? err.message : `“${file.name}” couldn't be opened.`
-        setState({ doc: null, error: msg, loading: false })
+        const error: Message = err instanceof PasswordRequiredError
+          ? { key: 'err.encrypted', params: { name: file.name } }
+          : err instanceof UserFacingError ? err.toMessage() : { key: 'err.cantOpen', params: { name: file.name } }
+        setState({ doc: null, error, loading: false })
       }
     })()
     return () => { dead = true; closePdf(doc) }
@@ -57,6 +59,7 @@ export function PageThumb({ doc, pageNumber, width = 160, rotation = 0 }: { doc:
   const host = useRef<HTMLDivElement>(null)
   const [aspect, setAspect] = useState<number | null>(null)
   const [failed, setFailed] = useState(false)
+  const { t } = useI18n()
 
   useEffect(() => {
     const el = host.current
@@ -101,7 +104,7 @@ export function PageThumb({ doc, pageNumber, width = 160, rotation = 0 }: { doc:
         <div ref={host} style={{ aspectRatio: `1 / ${a}` }} className={aspect ? '' : 'animate-pulse bg-surface-2'} />
       </div>
       {failed && (
-        <span className="absolute inset-0 grid place-items-center text-xs text-muted">Preview unavailable</span>
+        <span className="absolute inset-0 grid place-items-center text-xs text-muted">{t('thumb.unavailable')}</span>
       )}
     </div>
   )

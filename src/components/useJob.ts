@@ -2,24 +2,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OutputFile } from '../lib/output'
 import { CancelledError } from '../lib/workerClient'
 import { UserFacingError } from '../lib/validate'
+import type { Message } from '../i18n/core'
 
 export type JobStatus = 'idle' | 'running' | 'done' | 'error'
 
 export interface JobContext {
   signal: AbortSignal
-  progress: (value: number, label?: string) => void
+  progress: (value: number, label?: Message) => void
 }
 
 export function useJob() {
   const [status, setStatus] = useState<JobStatus>('idle')
   const [progress, setProgress] = useState(0)
-  const [label, setLabel] = useState<string>()
-  const [error, setError] = useState<string>()
+  const [label, setLabel] = useState<Message>()
+  const [error, setError] = useState<Message>()
   const [results, setResults] = useState<OutputFile[]>([])
-  const [summary, setSummary] = useState<string>()
+  const [summary, setSummary] = useState<Message>()
   const abortRef = useRef<AbortController | null>(null)
 
-  const run = useCallback(async (fn: (ctx: JobContext) => Promise<OutputFile[] | { files: OutputFile[]; summary?: string }>) => {
+  const run = useCallback(async (fn: (ctx: JobContext) => Promise<OutputFile[] | { files: OutputFile[]; summary?: Message }>) => {
     abortRef.current?.abort()
     const ac = new AbortController()
     abortRef.current = ac
@@ -52,10 +53,10 @@ export function useJob() {
       console.error(err instanceof Error ? err.name : 'error') // never log document data
       setError(
         err instanceof UserFacingError
-          ? err.message
+          ? err.toMessage()
           : err instanceof Error && /memory|allocation|Array buffer/i.test(err.message)
-            ? 'Your browser ran out of memory. Try fewer or smaller files, or use a desktop browser.'
-            : `Something went wrong while processing. ${err instanceof Error ? err.message : ''}`.trim(),
+            ? { key: 'err.memory' }
+            : { key: 'err.generic', params: { detail: err instanceof Error ? err.message : '' } },
       )
       setStatus('error')
     }

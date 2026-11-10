@@ -10,10 +10,13 @@ import { pdfBlob, type OutputFile } from '../../lib/output'
 import type { CompressionLevel } from '../../lib/pdf/compress'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
+import { useI18n } from '../../i18n/react'
+import type { Message } from '../../i18n/core'
 
 const ACCEPT: FileKind[] = ['pdf']
 
 export default function CompressTool() {
+  const { t, tm } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: true })
   const job = useJob()
   const [level, setLevel] = useState<CompressionLevel>('balanced')
@@ -31,7 +34,11 @@ export default function CompressTool() {
         const res = await runInWorker(
           'compress',
           { file: { name: f.name, bytes: await readBytes(f) }, level },
-          { signal, onProgress: (v, l) => progress(base + v / sel.files.length, sel.files.length > 1 ? `${f.name}: ${l ?? ''}` : l) },
+          {
+            signal,
+            onProgress: (v, l) =>
+              progress(base + v / sel.files.length, sel.files.length > 1 && l ? { key: 'cmp.fileProgress', params: { name: f.name, step: tm(l) } } : l),
+          },
         )
         before += res.originalSize
         after += res.bytes.length
@@ -41,15 +48,15 @@ export default function CompressTool() {
           name: deriveName(f.name, res.unchanged ? '' : '-compressed', 'pdf'),
           blob: pdfBlob(res.bytes),
           note: res.unchanged
-            ? 'Already well optimised — returned unchanged'
-            : `${formatBytes(res.originalSize)} → ${formatBytes(res.bytes.length)} (−${Math.round(saved * 100)}%)`,
+            ? { key: 'cmp.unchangedNote' }
+            : { key: 'cmp.savedNote', params: { before: formatBytes(res.originalSize), after: formatBytes(res.bytes.length), pct: Math.round(saved * 100) } },
         })
       }
       const pct = before ? Math.round((1 - after / before) * 100) : 0
-      const summary =
+      const summary: Message =
         unchanged === sel.files.length
-          ? 'These files were already well optimised; no smaller version could be made, so the originals are returned. Text-only PDFs usually can’t shrink much.'
-          : `${formatBytes(before)} → ${formatBytes(after)} · ${pct}% smaller`
+          ? { key: 'cmp.allUnchanged' }
+          : { key: 'cmp.summary', params: { before: formatBytes(before), after: formatBytes(after), pct } }
       return { files: out, summary }
     })
 
@@ -73,23 +80,18 @@ export default function CompressTool() {
           side={
             <>
               <Segmented<CompressionLevel>
-                label="Compression"
+                label={t('cmp.label')}
                 value={level}
                 onChange={setLevel}
                 options={[
-                  { value: 'light', label: 'Light', hint: 'Best quality' },
-                  { value: 'balanced', label: 'Balanced', hint: 'Recommended' },
-                  { value: 'strong', label: 'Strong', hint: 'Smallest' },
+                  { value: 'light', label: t('cmp.light'), hint: t('cmp.lightHint') },
+                  { value: 'balanced', label: t('cmp.balanced'), hint: t('cmp.balancedHint') },
+                  { value: 'strong', label: t('cmp.strong'), hint: t('cmp.strongHint') },
                 ]}
               />
-              <p className="text-sm text-muted">
-                Photos and scans inside the PDF are re-encoded as JPEG at {level === 'light' ? 'high' : level === 'balanced' ? 'medium' : 'lower'} quality
-                {level !== 'light' ? ' and downscaled if very large' : ''}. This is lossy for images at every level. Text, vector
-                graphics, links and forms are untouched, and images with transparency are left as they are. If a file can’t be made
-                smaller, you get the original back.
-              </p>
+              <p className="text-sm text-muted">{t(`cmp.explain.${level}`)}</p>
               <Button variant="primary" size="lg" icon="compress" className="w-full" onClick={compress} data-testid="run">
-                Compress {sel.files.length > 1 ? `${sel.files.length} PDFs` : 'PDF'}
+                {t('cmp.run', { count: sel.files.length })}
               </Button>
               <LocalBadge />
             </>

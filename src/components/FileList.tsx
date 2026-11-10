@@ -4,6 +4,7 @@ import { formatBytes } from '../lib/files'
 import { LIMITS, LOW_MEMORY } from '../config'
 import { Icon } from './Icon'
 import { FileThumb } from './thumbs'
+import { useI18n } from '../i18n/react'
 
 export function FileList({
   files,
@@ -18,6 +19,7 @@ export function FileList({
   reorderable?: boolean
   extra?: (f: ValidatedFile) => ReactNode
 }) {
+  const { t } = useI18n()
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
@@ -27,10 +29,10 @@ export function FileList({
     {total > LIMITS.warnJobBytes && (
       <p role="status" className="mb-2 flex items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted">
         <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-accent" />
-        {formatBytes(total)} is a lot to process in a browser{LOW_MEMORY ? ' on this device' : ''}. It may take a while; closing other tabs helps. If the tab runs out of memory, try fewer files at a time.
+        {t(LOW_MEMORY ? 'files.bigWarningLow' : 'files.bigWarning', { size: formatBytes(total) })}
       </p>
     )}
-    <ol className="space-y-2" aria-label="Selected files">
+    <ol className="space-y-2" aria-label={t('files.label')}>
       {files.map((f, i) => (
         <li
           key={f.id}
@@ -51,20 +53,20 @@ export function FileList({
             <FileThumb file={f} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold" title={f.name}>{f.name}</span>
-            <span className="block text-sm text-muted">{formatBytes(f.size)}{extra?.(f)}</span>
+            <span className="block truncate font-semibold" title={f.name} dir="auto">{f.name}</span>
+            <span className="block text-sm text-muted"><bdi dir="ltr">{formatBytes(f.size)}</bdi>{extra?.(f)}</span>
           </span>
           {reorderable && onMove && (
             <span className="flex">
-              <button type="button" className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-30" disabled={i === 0} onClick={() => onMove(i, i - 1)} aria-label={`Move ${f.name} up`}>
+              <button type="button" className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-30" disabled={i === 0} onClick={() => onMove(i, i - 1)} aria-label={t('files.moveUp', { name: f.name })}>
                 <Icon name="arrowUp" size={18} />
               </button>
-              <button type="button" className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-30" disabled={i === files.length - 1} onClick={() => onMove(i, i + 1)} aria-label={`Move ${f.name} down`}>
+              <button type="button" className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-30" disabled={i === files.length - 1} onClick={() => onMove(i, i + 1)} aria-label={t('files.moveDown', { name: f.name })}>
                 <Icon name="arrowDown" size={18} />
               </button>
             </span>
           )}
-          <button type="button" className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger" onClick={() => onRemove(f.id)} aria-label={`Remove ${f.name}`}>
+          <button type="button" className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger" onClick={() => onRemove(f.id)} aria-label={t('files.remove', { name: f.name })}>
             <Icon name="x" size={18} />
           </button>
         </li>

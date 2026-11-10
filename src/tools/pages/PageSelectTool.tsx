@@ -12,18 +12,22 @@ import { pdfBlob } from '../../lib/output'
 import { formatRanges, parsePageSet } from '../../lib/ranges'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
+import { UserFacingError } from '../../lib/validate'
+import { useI18n } from '../../i18n/react'
+import type { Message } from '../../i18n/core'
 
 const ACCEPT: FileKind[] = ['pdf']
 
 /** Shared UI for Extract pages and Remove pages: pick pages by clicking thumbnails or typing ranges. */
 export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
+  const { t, tm } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: false })
   const file = sel.files[0] ?? null
   const { doc, error: docError, loading } = usePdfDoc(file)
   const job = useJob()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [text, setText] = useState('')
-  const [textError, setTextError] = useState<string | null>(null)
+  const [textError, setTextError] = useState<Message | null>(null)
   const anchor = useRef<number | null>(null)
   const count = doc?.numPages ?? 0
   const isRemove = variant === 'remove'
@@ -54,7 +58,7 @@ export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
       setSelected(new Set(parsePageSet(v, count)))
       setTextError(null)
     } catch (e) {
-      setTextError((e as Error).message)
+      setTextError(e instanceof UserFacingError ? e.toMessage() : { key: 'rng.empty' })
     }
   }
 
@@ -69,7 +73,8 @@ export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
       const indices = [...selected].sort((a, b) => a - b)
       const out = await runInWorker(variant, { file: { name: file.name, bytes }, indices }, { signal, onProgress: progress })
       const suffix = isRemove ? '-edited' : `-pages-${formatRanges(indices).replace(/, /g, '_')}`
-      return [{ name: deriveName(file.name, suffix.slice(0, 60), 'pdf'), blob: pdfBlob(out), note: isRemove ? `${count - n} of ${count} pages kept` : `${n} page${n === 1 ? '' : 's'}` }]
+      const note: Message = isRemove ? { key: 'note.pagesKept', params: { kept: count - n, total: count } } : { key: 'note.pages', params: { count: n } }
+      return [{ name: deriveName(file.name, suffix.slice(0, 60), 'pdf'), blob: pdfBlob(out), note }]
     })
 
   return (
@@ -84,12 +89,12 @@ export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
         <Workspace
           main={
             <div className="space-y-4">
-              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? ` · ${count} pages` : '')} />}
-              {docError && <Notice tone="error">{docError}</Notice>}
-              {loading && <p className="text-muted" role="status">Reading pages…</p>}
+              {file && <FileList files={[file]} onRemove={startOver} extra={() => (count ? t('files.pages', { count }) : '')} />}
+              {docError && <Notice tone="error">{tm(docError)}</Notice>}
+              {loading && <p className="text-muted" role="status">{t('common.readingPages')}</p>}
               {doc && (
                 <>
-                  <p className="text-sm text-muted">Click pages to {isRemove ? 'mark them for removal' : 'select them'}. Shift-click selects a run of pages.</p>
+                  <p className="text-sm text-muted">{t(isRemove ? 'select.hintRemove' : 'select.hintExtract')}</p>
                   <PageGrid
                     doc={doc}
                     mode="select"
@@ -105,29 +110,31 @@ export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
           side={
             <>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold">{isRemove ? 'Pages to remove' : 'Pages to extract'}</span>
+                <span className="mb-1.5 block text-sm font-semibold">{t(isRemove ? 'select.labelRemove' : 'select.labelExtract')}</span>
                 <input
                   value={text}
                   onChange={(e) => onText(e.target.value)}
-                  placeholder="e.g. 1-3, 7"
+                  placeholder={t('select.placeholder')}
                   disabled={!count}
+                  dir="ltr"
+                  inputMode="numeric"
                   className="h-11 w-full rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
                   data-testid="ranges"
                 />
               </label>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => commit(new Set(Array.from({ length: count }, (_, i) => i)))} disabled={!count}>Select all</Button>
-                <Button size="sm" variant="ghost" onClick={() => commit(new Set())} disabled={!n}>Clear</Button>
+                <Button size="sm" onClick={() => commit(new Set(Array.from({ length: count }, (_, i) => i)))} disabled={!count}>{t('select.all')}</Button>
+                <Button size="sm" variant="ghost" onClick={() => commit(new Set())} disabled={!n}>{t('select.clear')}</Button>
               </div>
-              {textError && <p className="text-sm font-semibold text-danger" role="alert">{textError}</p>}
-              {!textError && isRemove && n >= count && count > 0 && <p className="text-sm font-semibold text-danger" role="alert">At least one page has to stay.</p>}
+              {textError && <p className="text-sm font-semibold text-danger" role="alert">{tm(textError)}</p>}
+              {!textError && isRemove && n >= count && count > 0 && <p className="text-sm font-semibold text-danger" role="alert">{t('select.keepOne')}</p>}
               {!textError && n > 0 && !(isRemove && n >= count) && (
                 <p className="text-sm text-muted">
-                  {isRemove ? <>Removes <strong className="text-ink">{n}</strong> page{n === 1 ? '' : 's'}; {count - n} will remain.</> : <>New PDF with <strong className="text-ink">{n}</strong> page{n === 1 ? '' : 's'}.</>}
+                  {isRemove ? t('select.removes', { count: n, remain: t('note.pages', { count: count - n }) }) : t('select.newPdf', { count: n })}
                 </p>
               )}
               <Button variant="primary" size="lg" icon={isRemove ? 'remove' : 'extract'} className="w-full" disabled={invalid || !doc} onClick={run} data-testid="run">
-                {isRemove ? 'Remove pages' : 'Extract pages'}
+                {t(isRemove ? 'select.runRemove' : 'select.runExtract')}
               </Button>
               <LocalBadge />
             </>
