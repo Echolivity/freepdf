@@ -83,8 +83,10 @@ export default function CompressTool() {
                 ]}
               />
               <p className="text-sm text-muted">
-                Photos and scans inside the PDF are re-encoded{level !== 'light' ? ' and downscaled if very large' : ''}. Text, vector
-                graphics, links and forms are untouched. If a file can’t be made smaller, you get the original back.
+                Photos and scans inside the PDF are re-encoded as JPEG at {level === 'light' ? 'high' : level === 'balanced' ? 'medium' : 'lower'} quality
+                {level !== 'light' ? ' and downscaled if very large' : ''}. This is lossy for images at every level. Text, vector
+                graphics, links and forms are untouched, and images with transparency are left as they are. If a file can’t be made
+                smaller, you get the original back.
               </p>
               <Button variant="primary" size="lg" icon="compress" className="w-full" onClick={compress} data-testid="run">
                 Compress {sel.files.length > 1 ? `${sel.files.length} PDFs` : 'PDF'}

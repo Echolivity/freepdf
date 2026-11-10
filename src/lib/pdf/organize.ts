@@ -2,6 +2,22 @@ import { PDFDocument, degrees } from 'pdf-lib'
 import { UserFacingError } from '../validate'
 export { chunkGroups } from '../ranges'
 import { assemble, loadPdf, normalizeAngle, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
+import { rebuildPageTree } from './structure'
+
+/** Splits with at most this many parts re-parse the source per part, so each part keeps forms/bookmarks. */
+const MAX_FULL_FIDELITY_PARTS = 40
+
+/**
+ * Keep pages in `ops` order, editing the original document in place so forms, bookmarks, links,
+ * metadata and attachments survive. Falls back to copying pages only when a page repeats.
+ */
+async function rearrange(input: NamedBytes, ops: PageOp[]): Promise<Uint8Array> {
+  const src = await loadPdf(input.bytes, input.name)
+  assertIndices(ops.map((o) => o.index), src.getPageCount())
+  if (new Set(ops.map((o) => o.index)).size !== ops.length) return assemble(src, ops)
+  rebuildPageTree(src, ops)
+  return saveDoc(src)
+}
 
 /** Merge PDFs in the given order. */
 export async function mergePdfs(inputs: NamedBytes[], onProgress: ProgressFn = noProgress): Promise<Uint8Array> {
@@ -31,9 +47,11 @@ export async function splitPdf(
   const count = src.getPageCount()
   assertIndices(groups.flat(), count)
   const results: Uint8Array[] = []
+  const fullFidelity = groups.length <= MAX_FULL_FIDELITY_PARTS
   for (let i = 0; i < groups.length; i++) {
     onProgress(i / groups.length, `Creating part ${i + 1} of ${groups.length}`)
-    results.push(await assemble(src, groups[i].map((index) => ({ index }))))
+    const ops = groups[i].map((index) => ({ index }))
+    results.push(fullFidelity ? await rearrange(input, ops) : await assemble(src, ops))
   }
   onProgress(1)
   return results
@@ -42,9 +60,7 @@ export async function splitPdf(
 /** Keep only the given pages (in the given order). */
 export async function extractPages(input: NamedBytes, indices: number[]): Promise<Uint8Array> {
   if (!indices.length) throw new UserFacingError('Select at least one page to extract.')
-  const src = await loadPdf(input.bytes, input.name)
-  assertIndices(indices, src.getPageCount())
-  return assemble(src, indices.map((index) => ({ index })))
+  return rearrange(input, indices.map((index) => ({ index })))
 }
 
 /** Delete the given pages. */
@@ -55,8 +71,7 @@ export async function removePages(input: NamedBytes, indices: number[]): Promise
   const drop = new Set(indices)
   if (!drop.size) throw new UserFacingError('Select at least one page to remove.')
   if (drop.size >= count) throw new UserFacingError("You can't remove every page — at least one has to stay.")
-  // Remove from the end so indices stay valid; keeps forms, outlines and other document-level data intact.
-  ;[...drop].sort((a, b) => b - a).forEach((i) => src.removePage(i))
+  rebuildPageTree(src, src.getPageIndices().filter((i) => !drop.has(i)).map((index) => ({ index })))
   return saveDoc(src)
 }
 
@@ -80,9 +95,7 @@ export interface PageOp {
 /** Re-build a PDF from an ordered list of pages, with per-page rotation. Pages not listed are dropped. */
 export async function organizePdf(input: NamedBytes, ops: PageOp[]): Promise<Uint8Array> {
   if (!ops.length) throw new UserFacingError('The document needs at least one page.')
-  const src = await loadPdf(input.bytes, input.name)
-  assertIndices(ops.map((o) => o.index), src.getPageCount())
-  return assemble(src, ops)
+  return rearrange(input, ops)
 }
 
 export async function getPageCount(input: NamedBytes): Promise<number> {

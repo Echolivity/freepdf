@@ -17,7 +17,10 @@ export function guardPage(page: Page) {
   })
   page.on('request', (r) => {
     const u = new URL(r.url())
-    if (!['localhost', '127.0.0.1'].includes(u.hostname) && !['blob:', 'data:'].includes(u.protocol)) external.push(r.url())
+    if (['blob:', 'data:'].includes(u.protocol)) return
+    if (!['localhost', '127.0.0.1'].includes(u.hostname)) external.push(r.url())
+    // Same-origin requests are allowed by CSP, so check them here: only bodiless GETs for app assets.
+    if (r.method() !== 'GET' || r.postDataBuffer()) external.push(`${r.method()} ${r.url()} (request with body/non-GET)`)
   })
   return {
     assertClean() {

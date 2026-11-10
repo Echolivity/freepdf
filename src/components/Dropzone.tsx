@@ -1,4 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import type { FileKind } from '../lib/validate'
 import { LIMITS, MB } from '../config'
@@ -98,7 +99,12 @@ export function Dropzone({
         {over ? 'Drop to add' : <>or drop {multiple ? 'them' : 'it'} here</>}
       </p>
       <p className="mt-6 text-sm text-muted">
-        {kinds} · up to {LIMITS.maxFileBytes / MB} MB each · stays on your device
+        {kinds} · up to {LIMITS.maxFileBytes / MB} MB each
+      </p>
+      <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
+        <Icon name="shield" size={16} className="text-ok" />
+        Your file stays on this device.{' '}
+        <Link to="/privacy" className="font-semibold underline decoration-line-strong underline-offset-4 hover:text-ink">How it works</Link>
       </p>
     </div>
   )

@@ -1,4 +1,5 @@
 import type { EncodedImage, ImageCodec } from '../lib/pdf/compress'
+import { LIMITS } from '../config'
 
 /** Image codec built on OffscreenCanvas; works inside Web Workers in all current browsers. */
 
@@ -18,10 +19,34 @@ function ctx2d(canvas: OffscreenCanvas) {
   return c
 }
 
+/** Number of colour components declared in a JPEG's SOF segment (null if not found). */
+export function jpegComponents(b: Uint8Array): number | null {
+  let i = 2
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xff) return null
+    const m = b[i + 1]
+    if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { i += 2; continue }
+    const len = (b[i + 2] << 8) | b[i + 3]
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return b[i + 9]
+    i += 2 + len
+  }
+  return null
+}
+
+function assertSafeDimensions(w: number, h: number) {
+  if (w * h > LIMITS.maxImagePixels) throw new Error('Image too large to process safely')
+}
+
 export const canvasCodec: ImageCodec = {
   async recompressJpeg(jpeg, maxDim, quality): Promise<EncodedImage | null> {
-    const bitmap = await createImageBitmap(new Blob([jpeg as BlobPart], { type: 'image/jpeg' }), { imageOrientation: 'none' })
+    // CMYK/YCCK JPEGs can't be faithfully round-tripped through an RGB canvas.
+    const comps = jpegComponents(jpeg)
+    if (comps !== 3 && comps !== 1) return null
+    // colorSpaceConversion 'none': pixel values pass through unchanged, so the PDF's own colour space /
+    // ICC profile (kept on the image dictionary) still describes them correctly after re-encoding.
+    const bitmap = await createImageBitmap(new Blob([jpeg as BlobPart], { type: 'image/jpeg' }), { imageOrientation: 'none', colorSpaceConversion: 'none' })
     try {
+      assertSafeDimensions(bitmap.width, bitmap.height)
       const { width, height } = fit(bitmap.width, bitmap.height, maxDim)
       const canvas = new OffscreenCanvas(width, height)
       const c = ctx2d(canvas)
@@ -62,6 +87,7 @@ export const canvasCodec: ImageCodec = {
 export async function toPng(bytes: Uint8Array, mime: string): Promise<Uint8Array> {
   const bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: mime }))
   try {
+    assertSafeDimensions(bitmap.width, bitmap.height)
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
     ctx2d(canvas).drawImage(bitmap, 0, 0)
     const blob = await canvas.convertToBlob({ type: 'image/png' })

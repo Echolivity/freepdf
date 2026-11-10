@@ -38,7 +38,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'merge-pdf', title: 'Merge PDF', icon: 'merge', category: 'organize', component: Merge,
     short: 'Combine several PDFs into one, in the order you choose.',
-    description: 'Combine PDFs into a single document. Drag files to set the order.',
+    description: 'Combine PDFs into a single document. Drag files to set the order. Bookmarks and fillable form fields aren’t carried over yet — form contents stay visible but become non-editable.',
     keywords: ['combine', 'join', 'append', 'concatenate'],
   },
   {
@@ -56,7 +56,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'remove-pages', title: 'Remove pages', icon: 'remove', category: 'organize', component: Remove,
     short: 'Delete pages you don’t need.',
-    description: 'Select pages to delete. Everything else in the document — links, forms, bookmarks — is kept.',
+    description: 'Select pages to delete. Remaining form fields, bookmarks and links are kept; any that pointed at a removed page are cleaned up.',
     keywords: ['delete', 'drop', 'erase'],
   },
   {

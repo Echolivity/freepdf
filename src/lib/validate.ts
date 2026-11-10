@@ -69,6 +69,29 @@ export function imageDimensions(bytes: Uint8Array, kind: FileKind): { width: num
   return null
 }
 
+/**
+ * Walk JPEG marker segments through the whole file (reading only each segment header), for files whose
+ * metadata (EXIF, ICC, thumbnails) pushes the frame header past the first bytes we sniffed.
+ */
+export async function jpegDimensionsFromFile(file: Blob): Promise<{ width: number; height: number } | null> {
+  let i = 2
+  for (let guard = 0; guard < 10_000 && i + 9 < file.size; guard++) {
+    const h = new Uint8Array(await file.slice(i, i + 10).arrayBuffer())
+    if (h[0] !== 0xff) return null
+    const m = h[1]
+    if (m === 0xff) { i++; continue }
+    if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { i += 2; continue }
+    if (m === 0xd9 || m === 0xda) return null // end of image / start of scan before any frame header
+    const len = (h[2] << 8) | h[3]
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
+      return { height: (h[5] << 8) | h[6], width: (h[7] << 8) | h[8] }
+    }
+    if (len < 2) return null
+    i += 2 + len
+  }
+  return null
+}
+
 export interface ValidatedFile {
   id: string
   file: File
@@ -117,8 +140,12 @@ export async function validateFiles(
       continue
     }
     if (kind !== 'pdf') {
-      const dims = imageDimensions(head, kind)
-      if (dims && dims.width * dims.height > LIMITS.maxImagePixels) {
+      const dims = imageDimensions(head, kind) ?? (kind === 'jpeg' ? await jpegDimensionsFromFile(file) : null)
+      if (!dims || !dims.width || !dims.height) {
+        rejected.push(`“${file.name}” couldn't be read as an image (its size information is missing or damaged).`)
+        continue
+      }
+      if (dims.width * dims.height > LIMITS.maxImagePixels) {
         rejected.push(`“${file.name}” is ${dims.width}×${dims.height} pixels, which is too large to process safely.`)
         continue
       }

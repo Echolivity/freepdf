@@ -1,33 +1,45 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { validateFiles, type FileKind, type ValidatedFile } from '../lib/validate'
 import { moveItem } from '../lib/output'
 
 /** Selected-file state with validation and ordering. */
 export function useFiles(accept: FileKind[], opts: { multiple: boolean }) {
-  const [files, setFiles] = useState<ValidatedFile[]>([])
+  const [files, setFilesState] = useState<ValidatedFile[]>([])
   const [rejections, setRejections] = useState<string[]>([])
+  // The ref is the source of truth so rapid successive adds (two drops before React re-renders) validate
+  // against the real current list; the queue makes each add see the previous one's result.
+  const current = useRef<ValidatedFile[]>([])
+  const queue = useRef<Promise<void>>(Promise.resolve())
+  const setFiles = useCallback((next: ValidatedFile[] | ((fs: ValidatedFile[]) => ValidatedFile[])) => {
+    current.current = typeof next === 'function' ? next(current.current) : next
+    setFilesState(current.current)
+  }, [])
 
   const add = useCallback(
-    async (incoming: File[]) => {
-      const current = opts.multiple ? files : []
-      const pool = opts.multiple ? incoming : incoming.slice(0, 1)
-      const { accepted, rejected } = await validateFiles(pool, accept, current.reduce((s, f) => s + f.size, 0), current.length)
-      if (!opts.multiple && incoming.length > 1) rejected.push('This tool works on one file at a time; only the first file was added.')
-      setRejections(rejected)
-      if (accepted.length) setFiles(opts.multiple ? [...current, ...accepted] : accepted.slice(0, 1))
+    (incoming: File[]) => {
+      const run = async () => {
+        const base = opts.multiple ? current.current : []
+        const pool = opts.multiple ? incoming : incoming.slice(0, 1)
+        const { accepted, rejected } = await validateFiles(pool, accept, base.reduce((s, f) => s + f.size, 0), base.length)
+        if (!opts.multiple && incoming.length > 1) rejected.push('This tool works on one file at a time; only the first file was added.')
+        setRejections(rejected)
+        if (accepted.length) setFiles(opts.multiple ? [...current.current, ...accepted] : accepted.slice(0, 1))
+      }
+      queue.current = queue.current.then(run, run)
+      return queue.current
     },
-    [accept, files, opts.multiple],
+    [accept, opts.multiple, setFiles],
   )
 
-  const remove = useCallback((id: string) => setFiles((fs) => fs.filter((f) => f.id !== id)), [])
-  const move = useCallback((from: number, to: number) => setFiles((fs) => moveItem(fs, from, to)), [])
+  const remove = useCallback((id: string) => setFiles((fs) => fs.filter((f) => f.id !== id)), [setFiles])
+  const move = useCallback((from: number, to: number) => setFiles((fs) => moveItem(fs, from, to)), [setFiles])
   const clear = useCallback(() => {
     setFiles([])
     setRejections([])
-  }, [])
+  }, [setFiles])
   const sortByName = useCallback(
     () => setFiles((fs) => [...fs].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))),
-    [],
+    [setFiles],
   )
 
   return { files, rejections, setRejections, add, remove, move, clear, sortByName }

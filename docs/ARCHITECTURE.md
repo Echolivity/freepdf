@@ -26,9 +26,11 @@ which is what makes "free, no limits" sustainable.
 └────────────────────┘
 ```
 
-The Content-Security-Policy shipped in `public/_headers` sets `connect-src 'self'`, so even a bug or a
-compromised dependency cannot send document bytes to another origin. This is enforced by the browser,
-not by a promise.
+The Content-Security-Policy shipped in `public/_headers` sets `connect-src 'self'`, so the browser refuses
+connections to any *other* origin. Note what this does not cover: same-origin requests are still
+allowed. That gap is closed by design rather than by CSP: the app never issues requests carrying file
+data, the static host has no endpoint that accepts uploads, and the E2E suite fails on any non-GET
+request or any request with a body.
 
 ### Why not Cloudflare Workers for processing?
 
@@ -116,7 +118,7 @@ Libraries are code-split: the homepage ships React + the directory only. `pdf-li
 | Encrypted PDFs | Detected and reported clearly; PDF→image prompts for the password (PDF.js decrypts locally) |
 | Filenames with path/control chars | Sanitised before use in downloads and ZIP entries |
 | Data retention | Only in-memory Blobs; object URLs revoked on "Start over" / navigation; no IndexedDB, no service-worker cache of user files; `localStorage` holds only theme + recent tool slugs |
-| Exfiltration | CSP `connect-src 'self'`, no third-party scripts, fonts self-hosted |
+| Exfiltration | CSP `connect-src 'self'` blocks third-party origins; no third-party scripts; fonts self-hosted; static host with no upload endpoint; E2E fails on any request with a body |
 
 ## 6. Roadmap
 

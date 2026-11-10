@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
-import { fixtureBytes, guardPage, runAndDownload, runAndDownloadZip, upload } from './helpers'
+import { fixtureBytes, fixturePath, guardPage, runAndDownload, runAndDownloadZip, upload } from './helpers'
+import { meanDiff, renderPage } from '../unit/render'
 
 const pageCount = async (b: Uint8Array) => (await PDFDocument.load(b)).getPageCount()
 
@@ -104,6 +105,9 @@ test.describe('Phase 1 tools (end-to-end in a real browser)', () => {
     const original = fixtureBytes('scan.pdf').length
     expect(bytes.length).toBeLessThan(original * 0.6)
     expect(await pageCount(bytes)).toBe(2)
+    // Visual check: the compressed page must still look like the original (mean channel error < 4/255).
+    const diff = meanDiff(await renderPage(new Uint8Array(fixtureBytes('scan.pdf')), 1, 0.5), await renderPage(new Uint8Array(bytes), 1, 0.5))
+    expect(diff).toBeLessThan(4)
     await expect(page.getByText(/% smaller/)).toBeVisible()
     g.assertClean()
   })
@@ -197,6 +201,23 @@ test.describe('Robustness and privacy', () => {
     const [dl] = await Promise.all([page.waitForEvent('download'), btn.click()])
     const zip = await JSZip.loadAsync(readFileSync((await dl.path())!))
     expect(Object.keys(zip.files)).toHaveLength(400)
+  })
+
+  test('two drops in the same instant keep both batches (no lost files)', async ({ page }) => {
+    await page.goto('/merge-pdf')
+    const a = [...fixtureBytes('text-8p.pdf')]
+    const b = [...fixtureBytes('scan.pdf')]
+    await page.evaluate(([a, b]) => {
+      const zone = document.querySelector('[data-testid="file-input"]')!.parentElement!
+      const drop = (bytes: number[], name: string) => {
+        const dt = new DataTransfer()
+        dt.items.add(new File([new Uint8Array(bytes)], name, { type: 'application/pdf' }))
+        zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+      }
+      drop(a, 'first.pdf')
+      drop(b, 'second.pdf') // fired before the first batch has been validated
+    }, [a, b])
+    await expect(page.getByRole('list', { name: 'Selected files' }).getByRole('listitem')).toHaveCount(2)
   })
 
   test('nothing about documents is persisted in browser storage', async ({ page }) => {

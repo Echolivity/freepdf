@@ -8,10 +8,11 @@ import {
   PDFStream,
   decodePDFRawStream,
   type PDFContext,
-  type PDFObject,
 } from 'pdf-lib'
 import pako from 'pako'
 import { loadPdf, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
+import { removeUnreachable } from './structure'
+export { removeUnreachable }
 
 export type CompressionLevel = 'light' | 'balanced' | 'strong'
 
@@ -32,6 +33,7 @@ export interface ImageCodec {
 
 export const LEVELS: Record<CompressionLevel, { quality: number; maxDim: number; convertLossless: boolean }> = {
   // Lossless restructuring plus gentle re-encoding of oversized photos.
+  // All levels are lossy for photos; "light" only touches JPEG photos and never downscales below 3500px.
   light: { quality: 0.85, maxDim: 3500, convertLossless: false },
   balanced: { quality: 0.72, maxDim: 2200, convertLossless: true },
   strong: { quality: 0.55, maxDim: 1500, convertLossless: true },
@@ -95,40 +97,6 @@ export async function compressPdf(
   return { bytes, originalSize: input.bytes.length, unchanged: false, imagesRecompressed }
 }
 
-/** Delete indirect objects not reachable from the trailer (left behind by incremental edits). */
-export function removeUnreachable(ctx: PDFContext): number {
-  const seen = new Set<string>()
-  const stack: PDFObject[] = []
-  const { Root, Info } = ctx.trailerInfo
-  if (Root) stack.push(Root)
-  if (Info) stack.push(Info)
-  while (stack.length) {
-    const o = stack.pop()!
-    if (o instanceof PDFRef) {
-      const key = o.toString()
-      if (seen.has(key)) continue
-      seen.add(key)
-      const target = ctx.lookup(o)
-      if (target) stack.push(target)
-    } else if (o instanceof PDFDict) {
-      for (const [, v] of o.entries()) stack.push(v)
-    } else if (o instanceof PDFArray) {
-      for (const v of o.asArray()) stack.push(v)
-    } else if (o instanceof PDFStream) {
-      stack.push(o.dict)
-    }
-  }
-  if (!Root) return 0 // can't reason about reachability; leave everything
-  let removed = 0
-  for (const [ref] of ctx.enumerateIndirectObjects()) {
-    if (!seen.has(ref.toString())) {
-      ctx.delete(ref)
-      removed++
-    }
-  }
-  return removed
-}
-
 function filterNames(dict: PDFDict): string[] | null {
   const f = dict.lookup(N('Filter'))
   if (!f) return []
@@ -184,8 +152,9 @@ async function recompressImage(
 ): Promise<boolean> {
   const dict = stream.dict
   if (stream.contents.length < MIN_IMAGE_BYTES) return false
-  // Masks, colour-key masks and decode arrays don't survive lossy re-encoding faithfully.
-  if (dict.lookup(N('ImageMask')) || dict.lookup(N('Mask')) || dict.lookup(N('Decode'))) return false
+  // Masks, colour-key masks and decode arrays don't survive lossy re-encoding faithfully. Images with a
+  // soft mask (transparency) are left alone so the mask and the image can never get out of step.
+  if (dict.lookup(N('ImageMask')) || dict.lookup(N('Mask')) || dict.lookup(N('SMask')) || dict.lookup(N('SMaskInData')) || dict.lookup(N('Decode'))) return false
   if (num(dict, 'BitsPerComponent') !== 8) return false
   const width = num(dict, 'Width')
   const height = num(dict, 'Height')

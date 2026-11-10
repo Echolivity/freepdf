@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { ValidatedFile } from '../lib/validate'
 import { formatBytes } from '../lib/files'
+import { LIMITS, LOW_MEMORY } from '../config'
 import { Icon } from './Icon'
 import { FileThumb } from './thumbs'
 
@@ -20,7 +21,15 @@ export function FileList({
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
+  const total = files.reduce((s, f) => s + f.size, 0)
   return (
+    <>
+    {total > LIMITS.warnJobBytes && (
+      <p role="status" className="mb-2 flex items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted">
+        <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-accent" />
+        {formatBytes(total)} is a lot to process in a browser{LOW_MEMORY ? ' on this device' : ''}. It may take a while; closing other tabs helps. If the tab runs out of memory, try fewer files at a time.
+      </p>
+    )}
     <ol className="space-y-2" aria-label="Selected files">
       {files.map((f, i) => (
         <li
@@ -61,5 +70,6 @@ export function FileList({
         </li>
       ))}
     </ol>
+    </>
   )
 }

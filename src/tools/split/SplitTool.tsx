@@ -142,6 +142,9 @@ export default function SplitTool() {
                   />
                 </label>
               )}
+              {!plan.error && !willMerge && outputs > 40 && (
+                <p className="text-sm text-muted">With more than 40 parts, page content is kept but bookmarks and fillable form fields are not.</p>
+              )}
               {plan.error && <p className="text-sm font-semibold text-danger" role="alert">{plan.error}</p>}
               {!plan.error && outputs > 0 && (
                 <p className="text-sm text-muted">Creates <strong className="text-ink">{outputs}</strong> PDF{outputs === 1 ? '' : 's'}{outputs > 1 ? ', downloadable as a ZIP' : ''}.</p>

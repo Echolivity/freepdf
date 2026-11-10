@@ -11,10 +11,10 @@ stay free.
 
 | Tool | What it does |
 |------|--------------|
-| Merge PDF | Combine PDFs in any order (drag or arrow buttons) |
-| Split PDF | Custom ranges (`1-3, 5, 8-`), every page, or every N pages; optionally into one file |
-| Extract pages | Pick pages from thumbnails (shift-click for runs) or by range |
-| Remove pages | Delete pages, keeping forms, links and bookmarks intact |
+| Merge PDF | Combine PDFs in any order (drag or arrow buttons). Bookmarks and fillable form fields are not merged yet: form contents stay visible but are no longer editable |
+| Split PDF | Custom ranges (`1-3, 5, 8-`), every page, or every N pages; optionally into one file. Splits into 40 or fewer parts keep fields and bookmarks; larger splits keep page content only |
+| Extract pages | Pick pages from thumbnails (shift-click for runs) or by range. Their fields and bookmarks come along |
+| Remove pages | Delete pages. Remaining form fields, bookmarks and links are kept; those pointing at removed pages are cleaned up |
 | Organize PDF | Thumbnail view: reorder, rotate and delete individual pages |
 | Rotate PDF | Rotate every page of one or many PDFs by 90°, 180° or 270° |
 | Compress PDF | Re-encodes embedded photos and scans, deflates uncompressed streams, drops orphaned objects. Returns the original if no saving is possible. |
@@ -28,8 +28,10 @@ tools can run in the browser are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.m
 
 - **Local processing:** pdf-lib runs in a Web Worker (a new worker per job, terminated afterwards).
   PDF.js handles rendering. Canvas and OffscreenCanvas handle images.
-- **Enforced by the browser:** `public/_headers` ships a strict CSP (`connect-src 'self'`, no
-  third-party origins). The E2E suite fails if any request leaves the origin or a CSP violation occurs.
+- **Third parties blocked by the browser:** `public/_headers` ships a strict CSP (`connect-src 'self'`).
+  CSP doesn't restrict same-origin requests, so that case is covered differently. The app never sends
+  file data, and the static host has no endpoint that accepts uploads. The E2E suite fails on any
+  request outside the origin, any non-GET request, any request with a body, and any CSP violation.
 - **No retention:** results exist only as in-memory Blobs until "Start over" or the tab closes.
   `localStorage` holds only the theme and recently used tool slugs, never file names. A test verifies
   this.

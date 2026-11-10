@@ -89,3 +89,56 @@ describe('filenames', () => {
     expect(uniqueNames(['a.pdf', 'a.pdf', 'A.pdf', 'b'])).toEqual(['a.pdf', 'a (2).pdf', 'A (3).pdf', 'b'])
   })
 })
+
+describe('JPEG dimension check beyond the first 64 KB', () => {
+  /** photo.jpg with two 60 KB APP15 segments inserted after SOI, optionally with forged frame size. */
+  function padded(forge?: [number, number]) {
+    const jpg = fixture('photo.jpg')
+    const seg = new Uint8Array(4 + 60_000)
+    seg.set([0xff, 0xef, (60_002 >> 8) & 0xff, 60_002 & 0xff])
+    const out = new Uint8Array(jpg.length + seg.length * 2)
+    out.set(jpg.subarray(0, 2), 0)
+    out.set(seg, 2)
+    out.set(seg, 2 + seg.length)
+    out.set(jpg.subarray(2), 2 + seg.length * 2)
+    if (forge) {
+      // find SOF0 and overwrite height/width
+      for (let i = 2 + seg.length * 2; i < out.length - 9; i++) {
+        if (out[i] === 0xff && out[i + 1] === 0xc0) {
+          out[i + 5] = forge[1] >> 8; out[i + 6] = forge[1] & 0xff
+          out[i + 7] = forge[0] >> 8; out[i + 8] = forge[0] & 0xff
+          break
+        }
+      }
+    }
+    return out
+  }
+
+  it('finds the frame size deep in the file and accepts a normal photo', async () => {
+    const { accepted } = await validateFiles([asFile(padded(), 'meta-heavy.jpg')], ['jpeg'])
+    expect(accepted).toHaveLength(1)
+  })
+
+  it('rejects a decompression bomb whose frame header is hidden past 64 KB', async () => {
+    const { accepted, rejected } = await validateFiles([asFile(padded([60000, 60000]), 'hidden-bomb.jpg')], ['jpeg'])
+    expect(accepted).toHaveLength(0)
+    expect(rejected[0]).toMatch(/too large/)
+  })
+
+  it('rejects a JPEG with no frame header at all', async () => {
+    const bad = new Uint8Array(200)
+    bad.set([0xff, 0xd8, 0xff, 0xd9])
+    const { rejected } = await validateFiles([asFile(bad, 'empty.jpg')], ['jpeg'])
+    expect(rejected[0]).toMatch(/couldn't be read as an image/)
+  })
+})
+
+describe('Arabic and right-to-left filenames', () => {
+  it('keeps Arabic names intact and derives outputs from them', () => {
+    expect(sanitizeFilename('تقرير الربع الأول.pdf')).toBe('تقرير الربع الأول.pdf')
+    expect(deriveName('عقد إيجار.pdf', '-merged', 'pdf')).toBe('عقد إيجار-merged.pdf')
+  })
+  it('still strips bidi override characters used to disguise extensions', () => {
+    expect(sanitizeFilename('فاتورة‮fdp.exe')).toBe('فاتورةfdp.exe')
+  })
+})

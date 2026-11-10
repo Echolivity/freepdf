@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Icon, type IconName } from '../components/Icon'
-import { LIMITS, MB } from '../config'
+import { LIMITS, LOW_MEMORY, MB } from '../config'
 
 const POINTS: { icon: IconName; title: string; body: string }[] = [
   {
@@ -10,8 +10,8 @@ const POINTS: { icon: IconName; title: string; body: string }[] = [
   },
   {
     icon: 'lock',
-    title: 'The browser enforces it',
-    body: 'The site ships with a Content-Security-Policy that only allows network requests back to this site’s own address, for loading the app itself. Even a bug in our code couldn’t send your document somewhere else; the browser would block it.',
+    title: 'Third parties are blocked by the browser',
+    body: 'The site sends a Content-Security-Policy that tells your browser to refuse network connections to any other website, so a third-party script or service can’t receive your files. The app itself is designed never to send files back to this site either: its only requests load the app’s own code and fonts, and our automated tests fail if a document is ever sent anywhere. The site’s hosting has no endpoint that accepts uploads.',
   },
   {
     icon: 'trash',
@@ -63,8 +63,8 @@ export function Privacy() {
         <p className="mt-2 text-muted">
           These aren’t usage limits. They stop a very large file from crashing your browser tab: up to{' '}
           {LIMITS.maxFileBytes / MB} MB per file, {LIMITS.maxJobBytes / MB} MB per job, and images up to{' '}
-          {LIMITS.maxImagePixels / 1_000_000} megapixels. Files are checked by their actual contents, not just their names.
-          On phones with little memory, very large documents may still be slow.
+          {LIMITS.maxImagePixels / 1_000_000} megapixels{LOW_MEMORY ? ' (lower than on computers, because this looks like a phone or low-memory device)' : ' (phones and low-memory devices get lower limits)'}. Files are checked by their actual contents, not just their names.
+          Very large or unusual PDFs can still need a lot of memory, so the page warns you before processing big batches.
         </p>
       </section>
     </div>

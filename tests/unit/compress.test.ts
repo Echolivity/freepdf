@@ -69,3 +69,20 @@ describe('compress', () => {
     expect(pako).toBeDefined()
   })
 })
+
+describe('compress safety', () => {
+  it('never re-encodes images that have transparency (soft mask)', async () => {
+    const doc = await PDFDocument.create()
+    const img = await doc.embedPng(fixture('alpha-noise.png'))
+    doc.addPage([300, 300]).drawImage(img, { x: 0, y: 0, width: 300, height: 300 })
+    const bytes = await doc.save()
+    let calls = 0
+    const spy: ImageCodec = {
+      recompressJpeg: async () => { calls++; return { bytes: smallJpeg, width: 400, height: 300 } },
+      encodeRaw: async () => { calls++; return { bytes: smallJpeg, width: 400, height: 300 } },
+    }
+    const res = await compressPdf({ name: 'a.pdf', bytes }, 'strong', spy)
+    expect(calls).toBe(0)
+    expect(res.imagesRecompressed).toBe(0)
+  })
+})
