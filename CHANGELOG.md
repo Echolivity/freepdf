@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.0 — 2026-11-11 (stable; release hardening)
+
+See [docs/RELEASE_NOTES_v1.0.0.md](docs/RELEASE_NOTES_v1.0.0.md) and
+[docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md). The app's behaviour is unchanged from rc.1.
+
+- **Fixed (release pipeline):**
+  - `npm run qa` / `qa:cloudflare` exited 0 when QA scenarios failed;
+  - QA and unit-test validators (qpdf, pyHanko) were silently skipped when missing; now mandatory in CI;
+  - CI didn't run the real-world QA (the rc.1 notes said it did; corrected);
+  - CI accepted tests that only passed on retry;
+  - `package-lock.json` version out of sync;
+  - obsolete `freepdf-phase1.zip` in the source tree (removed; `*.zip` ignored).
+- **CI:** split into `checks`, `chromium`, `cross-engine` and `cloudflare` jobs, each suite run once;
+  deploy needs all of them.
+- **Tests added:**
+  - embedded PDF JavaScript never executes;
+  - console leak detection in the privacy guard, with 2 new self-tests;
+  - a route crawl in EN/AR;
+  - a real 404 on Cloudflare;
+  - a WebKitGTK WebDriver smoke suite.
+- **Docs:** TESTING, SECURITY, PRIVACY, DEPLOYMENT, RELEASE_CHECKLIST and README brought in line with CI
+  and with 1.0.0.
+
 ## 1.0.0-rc.1 — 2026-11-10 (production release candidate)
 
 See [docs/RELEASE_NOTES_v1.0.0-rc.1.md](docs/RELEASE_NOTES_v1.0.0-rc.1.md),

@@ -43,3 +43,20 @@ test('guard passes normal app use (startup, navigation, processing)', async ({ p
   await page.getByRole('link', { name: /Merge PDF/ }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Merge PDF')
 })
+
+test('guard fails a test that logs a document file name to the console', async ({ page }) => {
+  test.fail()
+  await page.goto('/')
+  await page.evaluate(() => console.info('processing Employment Contract.pdf'))
+  await page.waitForTimeout(200)
+})
+
+test('guard fails a test that logs document bytes from a worker', async ({ page }) => {
+  test.fail()
+  await page.goto('/')
+  await page.evaluate(() => {
+    const src = `console.log(${JSON.stringify('%PDF-1.7 leaked header')})`
+    new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })))
+  })
+  await page.waitForTimeout(500)
+})

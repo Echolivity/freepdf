@@ -34,9 +34,15 @@ export async function rotations(bytes: Uint8Array): Promise<number[]> {
 
 const hasQpdf = spawnSync('qpdf', ['--version']).status === 0
 
-/** Structural validation with qpdf when installed (CI installs it). Returns true when skipped. */
+/**
+ * Structural validation with qpdf. Skipped locally when qpdf isn't installed; in CI a missing qpdf is an
+ * error, so the check can't silently disappear from the pipeline.
+ */
 export function qpdfCheck(bytes: Uint8Array): boolean {
-  if (!hasQpdf) return true
+  if (!hasQpdf) {
+    if (process.env.CI) throw new Error('qpdf is required in CI (apt-get install qpdf)')
+    return true
+  }
   const dir = mkdtempSync(join(tmpdir(), 'freepdf-'))
   const f = join(dir, 'out.pdf')
   writeFileSync(f, bytes)

@@ -1,170 +1,83 @@
-# FreePDF 1.0.0-rc.1: test and QA report
+# FreePDF 1.0.0: test and QA report
 
-All results come from a **fresh clone** of the release commit (`npm ci`), run in the build environment on
-2026-11-10: 2 vCPU Intel Xeon @ 2.1 GHz, 8 GB RAM, Linux, Node 22.23.4, Chromium 153 (headless). Nothing
-here is simulated or hand-edited. Tests that weren't executed are listed as such.
+All results below were executed on 2026-11-11 in the release build environment: 2 vCPU Intel Xeon
+@ 2.1 GHz, 8 GB RAM, Linux, Node 22.23.4, Chromium 153 (headless), WebKitGTK 2.52 (MiniBrowser under
+Xvfb). Nothing here is simulated or hand-edited. What wasn't executed is listed as such.
 
 ## 1. Summary
 
 | Suite | Command | Result |
 |-------|---------|--------|
+| Clean install | `npm ci` in a fresh `git clone` | ✅ lockfile in sync; install succeeds unchanged |
 | TypeScript | `npm run typecheck` | ✅ pass |
-| Lint (oxlint) | `npm run lint` | ✅ 0 errors, **0 warnings** (9 before this release) |
-| Unit / integration (Vitest, Node) | `npm test` | ✅ **109 / 109** (12 files) |
-| Production build | `npm run build` | ✅ pass. Homepage JS about 99.7 KB gzipped. |
-| Browser: Chromium device profiles (`vite preview` with production headers) | `npm run test:e2e` | ✅ **172 / 172** (android-midrange 31 · desktop 63 · mobile 31 · narrow-320 16 · tablet-android 31) |
-| Browser: inside Cloudflare's Pages runtime (`wrangler pages dev` / workerd) | `npm run test:cloudflare` | ✅ **63 / 63** |
-| Real-world QA, inside the Cloudflare runtime | `npm run qa:cloudflare` | ✅ **30 / 30** scenarios (section 3) |
-| Dependency audit | `npm audit` | ✅ **0 vulnerabilities** (dev and production) |
-| Firefox (Gecko) | `ALL_BROWSERS=1 npm run test:e2e` | ⚠️ **Not executed**: browser binaries can't be downloaded in the build environment. Configured to run in CI. |
-| WebKit (Safari engine), iPad and iPhone SE profiles | same | ⚠️ **Not executed** (same reason) |
-| Physical Android / iOS devices | manual | ⚠️ **Not executed**: no hardware available |
+| Lint | `oxlint src tests qa scripts` | ✅ 0 errors, 0 warnings |
+| Unit / integration (Vitest, `CI=1`: qpdf mandatory) | `npm test` | ✅ **110 / 110** (12 files) |
+| Production build | `npm run build` | ✅ pass; homepage JS 97.5 KB gzipped; `dist/` 6.8 MB, 264 files |
+| Browser, Chromium, 5 profiles (`CI=1`: flaky = fail) | `npm run test:e2e` | ✅ **180 passed, 1 skipped**: desktop 72 (1 skip: the real-404 test, Cloudflare-only) · tablet-android 31 · android-midrange 31 · mobile 31 · narrow-320 16 |
+| Browser, inside Cloudflare's Pages runtime | `npm run test:cloudflare` | ✅ **72 / 72** |
+| Real-world QA, inside the Cloudflare runtime (strict validators) | `npm run qa:cloudflare` | ✅ **30 / 30** ([QA_REPORT.md](QA_REPORT.md)) |
+| WebKit engine (WebKitGTK 2.52 via WebDriver) | `node qa/webkitgtk-smoke.mjs` | ✅ **10 / 10** on `vite preview`; ✅ **10 / 10** on the Cloudflare runtime over HTTPS with the full production CSP |
+| Dependency audit | `npm audit` | ✅ 0 vulnerabilities |
+| Playwright Firefox / WebKit / iPad / iPhone SE projects | `ALL_BROWSERS=1 npm run test:e2e` | ⛔ **BLOCKED**: downloads refused by the sandbox network policy. Runs in CI (`cross-engine`). |
+| Firefox in any form | — | ⛔ **BLOCKED**: no package source reachable |
+| Safari (macOS / iOS), physical devices | manual | ⚪ **NOT TESTED**: no hardware |
+| Live production URL | manual | ⛔ **BLOCKED**: Cloudflare is not reachable from the build environment; nothing was deployed |
 
-The device profiles are Chromium **emulations** of real devices (viewport, touch, pixel ratio, user agent):
-Galaxy Tab S4, Galaxy A55, Pixel 7, Galaxy S9+ (320 px wide). They are not physical devices.
+Device profiles are Chromium **emulations** (Galaxy Tab S4, Galaxy A55, Pixel 7, Galaxy S9+ at 320 px).
+WebKitGTK is the WebKit engine on Linux, not Safari.
 
-## 2. What the automated suites check
+## 2. WebKit engine results (`qa/webkitgtk-smoke.mjs`, Cloudflare runtime, HTTPS)
 
-- **Privacy guard on every browser test** (`tests/e2e/fixtures.ts`). The test fails on any of these:
-  - a request to another origin;
-  - a non-GET request, or any request body;
-  - an unexpected path or query string;
-  - data-like URLs or tracking hosts;
-  - CSP violations or page errors;
-  - storage beyond the 3 documented keys or their allowed values.
+| Check | Result |
+|-------|--------|
+| All 13 routes render (English) | ✅ |
+| Arabic: `dir=rtl`, `lang=ar`, translated heading ("دمج PDF") | ✅ |
+| Merge 2 PDFs | ✅ 12 pages, qpdf ok |
+| Rotate 180° | ✅ 8 pages all at 180°, qpdf ok |
+| Split (default ranges, ZIP) | ✅ 2 PDFs, all qpdf-valid |
+| Compress (Balanced; JPEG re-encode in WebKit's canvas) | ✅ 2,126,343 → 352,235 bytes, qpdf ok |
+| PDF → PNG (PDF.js rendering) | ✅ 8 PNGs |
+| JPG → PDF incl. an EXIF-rotated photo | ✅ 2 pages, qpdf ok |
+| Organize: thumbnails render; a PDF with an OpenAction script runs nothing (no dialog, no navigation) | ✅ |
+| CSP blocks an outbound `fetch`; only documented storage keys | ✅ |
 
-  The guard is self-tested (5 deliberate violations must fail), and a unit test stops specs bypassing it.
-- **PDF integrity:**
-  - **Validation:** generated PDFs are checked with `qpdf --check` and re-rendered with PDF.js.
-  - **Pixel comparison:** Remove, Organize and Merge output must be pixel-identical to the source pages.
-  - **Structure matrix:** fields, bookmarks, internal and external links, annotations, attachments,
-    mixed page sizes, rotations and Arabic metadata.
-  - **Signatures and encryption:** detection of signed, certified, empty-field and encrypted files,
-    including false-positive cases; no-op operations return the original bytes.
-- **Compression** with a real JPEG encoder:
-  - **Inputs:** image-heavy, vector-only, greyscale scans, transparency, RGB/CMYK/grey/lossless/ICC
-    images, already-compressed files, CID-font Arabic files.
-  - **Assertions:** level ordering, resolution caps, quality-error budgets, that the Lossless level
-    leaves pixels untouched, that skip reasons add up, and that output never grows.
-- **Lifecycle:** worker termination after success, cancel and repeat; object-URL release; crash
-  recovery; concurrent tabs; closing a tab mid-job.
-- **Arabic and accessibility:**
-  - **Arabic:** RTL default, a scan for untranslated text, Arabic engine errors, Arabic digits,
-    Arabic file names.
-  - **Accessibility:** axe-core WCAG 2.1 AA (including contrast) in EN/AR and light/dark; keyboard-only
-    flow; focus management.
-- **Deployment:** per-route HTML and metadata, security headers, and (inside the Cloudflare runtime)
-  routing, 308 redirects, the 404 page, MIME types and cache policy.
+The same suite over **plain http** against the Cloudflare runtime fails to render in WebKit: the
+production CSP's `upgrade-insecure-requests` makes WebKit upgrade `http://127.0.0.1` sub-resources to
+https, while Chromium exempts loopback. This affects only local http testing; production is HTTPS-only.
 
-## 3. Real-world QA (executed, generated)
+## 3. What the automated suites check
 
-Generated by `qa/report.mjs` from `qa/real-world.spec.ts` and reproduced unchanged below. Inputs are
-synthetic (random pixels, generated text, test certificates). No personal data is used.
+See [TESTING.md](TESTING.md) for the full list. New in 1.0.0:
 
+- **Embedded PDF JavaScript** (`security.spec.ts`): scripts in OpenAction, `/Names/JavaScript`, page
+  `/AA` and a link action never run on Organize, Rotate or PDF→PNG: no dialog, no navigation, no
+  request for a scripting engine, no external request. The QuickJS engine is absent from `dist`.
+- **Console leaks**: the privacy guard fails any test whose page or worker console mentions a file name
+  or carries PDF/base64 content (two new self-tests prove it catches both).
+- **Route crawl** of all 13 pages in English and Arabic: no console errors, no 4xx/5xx.
+- **Real 404** with `noindex` for unknown paths on the Cloudflare runtime.
 
-_Generated by `npm run qa` (qa/real-world.spec.ts → qa/report.mjs). Every row below was executed; results are not edited by hand._
+## 4. Real-world QA
 
-### Environment
+The 30 scenarios (153 MB file, 800 pages, password-protected, signed and certified, Arabic, corrupted
+inputs, low memory, interruption, repeated runs) are in the generated [QA_REPORT.md](QA_REPORT.md).
+Highlights, measured inside the Cloudflare runtime:
 
-| | |
+| Operation | Time |
 |---|---|
-| Date | 2026-11-10T19:27:38.923Z |
-| Browser | Chromium 153.0.8010.12 (Playwright, headless) |
-| Server | Cloudflare Pages runtime (wrangler pages dev) at http://127.0.0.1:8788 |
-| Machine | 2 × Intel(R) Xeon(R) Processor @ 2.10GHz, 8 GB RAM, linux 6.18.44-fc-v338 |
-| Node | v22.23.4 |
-| Validators | qpdf --check, pypdf (strict mode), pyHanko (signatures); network checked against the privacy-guard rules on every request |
+| Compress (Balanced) 153 MB, 20 photo pages → 27.7 MB (−82%) | 5.9 s |
+| Split 800 pages into 800 files | about 2 s |
+| Open 800 page thumbnails | about 0.5 s |
+| Render 800 pages to PNG | about 14 s |
+| 20 repeated compressions, JS heap after GC | 4.3 → 4.8 MB (no leak) |
 
-**Result: 30 of 30 scenarios passed.**
-
-### Large PDF
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| L1 | large.pdf (153.0 MB; 20 pages of 3000×2200 incompressible photos) | Compress (Balanced) | Smaller, valid PDF, all pages | 153.0 MB → 27.7 MB (−82%); qpdf ok; pypdf strict ok (20 p.) | 5.8 s | 27.7 MB | ✅ PASS |
-| L2 | large.pdf (153.0 MB; 20 pages of 3000×2200 incompressible photos) | Compress (Lossless) | Never larger; images untouched; valid | 153.0 MB → 152.9 MB; qpdf ok; pypdf strict ok (20 p.) | 913 ms | 152.9 MB | ✅ PASS |
-| L3 | large.pdf (153.0 MB; 20 pages of 3000×2200 incompressible photos) | Split into 2 ranges | ZIP with 2 valid PDFs covering all pages | 2 files, 20 pages total, all qpdf + pypdf ok | 1.6 s | 152.9 MB | ✅ PASS |
-| L4 | large.pdf (153.0 MB; 20 pages of 3000×2200 incompressible photos) + text-8p.pdf | Merge | 28 pages, valid | qpdf ok; pypdf strict ok (28 p.) | 1.8 s | 152.9 MB | ✅ PASS |
-| L5 | large.pdf (153.0 MB; 20 pages of 3000×2200 incompressible photos) | PDF → JPG (72 DPI) | 20 JPEGs | 20 JPEG images | 4.5 s | 3.3 MB | ✅ PASS |
-
-### Multi-hundred pages
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| P1 | pages-800.pdf (678 KB; 800 text pages) | Split every page | 800 single-page PDFs | 800 files; last part validated (qpdf + pypdf, 1 page) | 2.2 s | 1.1 MB | ✅ PASS |
-| P2 | pages-800.pdf (678 KB; 800 text pages) | Extract pages 1–400 | 400 pages, page 400 text intact | qpdf ok; pypdf strict ok (400 p.); page 400 text verified | 611 ms | 251 KB | ✅ PASS |
-| P3 | pages-800.pdf (678 KB; 800 text pages) | Organize: open 800 thumbnails, delete page 1, save | Grid renders lazily; 799 pages saved | grid ready in 554 ms; qpdf ok; pypdf strict ok (799 p.) | 552 ms | 501 KB | ✅ PASS |
-| P4 | pages-800.pdf (678 KB; 800 text pages) | PDF → PNG, 800 pages (72 DPI) | 800 PNGs | 800 PNG images | 14.2 s | 63.6 MB | ✅ PASS |
-
-### Password-protected
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| S1 | encrypted-user.pdf (5 KB; AES-256, user password) | Merge (before running) | Flagged as protected before processing | Warning shown on file add | — | — | ✅ PASS |
-| S2 | encrypted-user.pdf (5 KB; AES-256, user password) | Merge (run anyway) | Clear error; app stays usable | Error: “encrypted-user.pdf is password-protected…” | — | — | ✅ PASS |
-| S3 | encrypted-user.pdf (5 KB; AES-256) | PDF → PNG, wrong password | Rejected with message | Rejected: “That password isn’t correct.” | — | — | ✅ PASS |
-| S4 | encrypted-user.pdf (5 KB; AES-256) | PDF → PNG, correct password | 8 PNGs, decrypted locally | 8 PNG images | 1.7 s | 116 KB | ✅ PASS |
-| S5 | encrypted-owner.pdf (5 KB; owner password only (permissions)) | PDF → PNG | Opens without asking for a password | 8 PNG images, no prompt | 1.3 s | 116 KB | ✅ PASS |
-
-### Digitally signed
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| G1 | signed.pdf (13 KB; PAdES signature, self-signed test cert) | Rotate (warning) | Signature warning before processing | Warning shown on file add | — | — | ✅ PASS |
-| G2 | signed.pdf (13 KB; PAdES signature, self-signed test cert) | Rotate (run) | Valid PDF; signature no longer intact (as warned) | qpdf ok; pypdf strict ok (4 p.); pyHanko intact=false | 254 ms | 5 KB | ✅ PASS |
-| G3 | signed.pdf (13 KB; PAdES signature, self-signed test cert) | Extract all pages (no-op) | Original returned byte-for-byte; signature still intact | identical to input; pyHanko intact=true | 162 ms | 13 KB | ✅ PASS |
-| G4 | certified.pdf (13 KB; certification (DocMDP: no changes)) | Remove pages (warning) | Certification warning | Certification warning shown | — | — | ✅ PASS |
-
-### Arabic
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| A1 | arabic.pdf (73 KB; 3 pages, Arabic + Latin, embedded CID fonts) | Merge in Arabic UI (Arabic file name) | 11 pages; Arabic name kept; Arabic text extractable | qpdf ok; pypdf strict ok (11 p.); file “عقد إيجار-merged.pdf”; Arabic text extracted | 251 ms | 68 KB | ✅ PASS |
-| A2 | arabic.pdf (73 KB; 3 pages, Arabic + Latin, embedded CID fonts) | Split with Arabic-Indic digits “١، ٢-٣” | 2 parts (1 + 2 pages) | 2 valid parts | 349 ms | 130 KB | ✅ PASS |
-| A3 | arabic.pdf (73 KB; 3 pages, Arabic + Latin, embedded CID fonts) | Compress (Balanced) | Text and fonts untouched; never larger | qpdf ok; pypdf strict ok (3 p.) | 167 ms | 67 KB | ✅ PASS |
-
-### Corrupted / malformed
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| C-zero-bytes.pdf | zero-bytes.pdf (empty file) | Rotate | Rejected on add | Rejected: “zero-bytes.pdf” is empty. | 13 ms | — | ✅ PASS |
-| C-png-renamed.pdf | png-renamed.pdf (PNG renamed to .pdf) | Rotate | Rejected on add (content check) | Rejected: “png-renamed.pdf” isn't a PDF file (it looks like PNG). | 8 ms | — | ✅ PASS |
-| C-header-then-garbage.pdf | header-then-garbage.pdf (%PDF header + 50 KB random bytes) | Rotate | Clear error naming the file, no crash | Error shown: “header-then-garbage.pdf” is damaged: its page list can't be read. | 408 ms | — | ✅ PASS |
-| C-truncated-half.pdf | truncated-half.pdf (valid PDF cut in half) | Rotate | Recovered or clear error, no crash | Error shown: “truncated-half.pdf” couldn't be read. It may be damaged or not a real PDF. | 195 ms | — | ✅ PASS |
-| C-xref-destroyed.pdf | xref-destroyed.pdf (cross-reference table overwritten) | Rotate | Recovered (pages rebuilt) or clear error | Recovered: qpdf ok; pypdf strict ok (8 p.) | 1.2 s | 2 KB | ✅ PASS |
-
-### Low memory
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| M1 | large.pdf (153.0 MB; device reports 2 GB) | Add file | Refused up front with the 100 MB limit stated | “large.pdf” is 153 MB. The limit per file is 100 MB so your browser doesn't run out of memory. | — | — | ✅ PASS |
-
-### Interrupted processing
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| M2 | large.pdf (153.0 MB; large) | Cancel mid-compression, then run again | Worker stops; second run completes | cancelled cleanly; rerun ok (27.7 MB) | 5.2 s | 27.7 MB | ✅ PASS |
-| M3 | large.pdf (153.0 MB; large) | Close tab mid-job, use another tab | Other tab unaffected | qpdf ok; pypdf strict ok (10 p.) | 213 ms | 1.3 MB | ✅ PASS |
-
-### Memory leaks
-
-| ID | Input | Operation | Expected | Actual | Time | Output | Status |
-|---|---|---|---|---|---|---|---|
-| M4 | photos.pdf (2.0 MB; 3 photos) | Compress 20× in one tab (start over each time) | Heap after run 20 ≤ run 3 + 10 MB | JS heap after GC: run 3 4.3 MB, run 20 4.8 MB | 19.8 s | — | ✅ PASS |
-
-### Not executed in this environment
-
-| Area | Status | Why / what to do |
-|---|---|---|
-| Firefox, WebKit (Safari engine) | **Not executed** | The sandbox cannot download Playwright's Firefox/WebKit builds. CI installs them and runs the full suite with `ALL_BROWSERS=1`. |
-| Physical Android / iOS devices | **Not executed** | No hardware is available. Device projects in the automated suite are Chromium **emulations** (viewport, touch, DPR, UA). Manual steps: docs/RELEASE_CHECKLIST.md. |
-| Real low-memory termination (OS killing a tab) | **Not executed** | Approximated by refusing over-limit files on a device reporting 2 GB, and by a simulated worker crash (automated suite). |
-
-## 4. Defects found by testing during this release
+## 5. Defects found during 1.0.0 hardening
 
 | Severity | Defect | Found by | Fix |
 |----------|--------|----------|-----|
-| Medium | No-op operations rewrote signed PDFs, breaking the signature | QA design and pyHanko | Identity operations return the original bytes (QA G3) |
-| Medium | Signature detector matched the bare keyword | New false-positive tests | Structural patterns; certified and encrypted variants |
-| Low | Stale expectation of 3 compression levels | Run inside the Cloudflare runtime | Test updated for 4 levels |
-| Test-only | QA harness selector ambiguity, mixed file inputs, an over-narrow error pattern | First QA run | Harness fixed; app behaviour was correct |
+| Medium | `npm run qa` / `qa:cloudflare` exited 0 when scenarios failed | Audit (reading the script) | `qa/run.mjs` propagates failures; verified with an injected FAIL row → exit 1 |
+| Medium | Validators silently skipped when qpdf/pyHanko were missing | Audit | Strict under `CI`; verified with qpdf removed from `PATH` → error |
+| Medium | CI did not run the real-world QA (docs said it did) | Audit | CI `cloudflare` job runs it |
+| Low | Flaky tests passed on retry in CI | Audit | `failOnFlakyTests` |
+| Low | Lockfile version 0.3.0; obsolete `freepdf-phase1.zip` in the source | Audit | Synced; removed and `*.zip` ignored |
+| Test-only | WebKit harness: `fetch(blob:)` is blocked by the app's own `connect-src` CSP | First WebKit run | Harness reads the Blob via `FileReader` instead (the CSP is correct) |

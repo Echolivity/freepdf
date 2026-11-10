@@ -40,6 +40,9 @@ quotas.
   (`wrangler pages dev`), locally and in CI. This checks headers, routing, redirects, 404s, MIME types
   and caching.
 
+  > **Correction (1.0.0 audit):** in rc.1, CI ran only the browser suite inside the Pages runtime; the
+  > real-world QA was run locally, not in CI. CI runs both from 1.0.0 on.
+
 ## Performance
 
 - Homepage JavaScript: about 108.9 → 99.7 KB gzipped. The Arabic dictionary now loads only for Arabic

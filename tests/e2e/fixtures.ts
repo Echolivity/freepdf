@@ -12,6 +12,8 @@ import { test as base, expect, type Page, type Request } from '@playwright/test'
  *  - URLs that look like they carry document data (PDF magic, long base64 runs);
  *  - known analytics/tracking hosts (reported by name for a clearer failure);
  *  - CSP violations and uncaught page errors;
+ *  - console output (pages and workers) that mentions a document file name or carries PDF/base64
+ *    content: the app must never log what the user is working on;
  *  - persistent browser storage beyond the documented keys/values (checked at teardown).
  *
  * Documented exceptions: none are needed today. A test can allow a specific, justified pattern
@@ -73,6 +75,12 @@ export function inspectRequest(req: Request, appOrigin: string): string | null {
   return null
 }
 
+/** File names (pdf/jpg/png) or document bytes must never reach the console. */
+const CONSOLE_LEAK = /[\w\u0600-\u06FF)\]-]\.(pdf|jpe?g|png)(?![\w-]|\.\w)|%PDF-|JVBERi0|[A-Za-z0-9+/]{200,}/i
+export function inspectConsole(text: string): string | null {
+  return CONSOLE_LEAK.test(text) ? `console output mentions a document or file name: ${text.slice(0, 160)}` : null
+}
+
 async function inspectStorage(page: Page, appOrigin: string): Promise<string[]> {
   if (page.isClosed() || !page.url().startsWith(appOrigin)) return []
   const snapshot = await page
@@ -116,7 +124,15 @@ export const test = base.extend<{ privacyGuard: void }>({
         page.on('pageerror', (e) => { if (!allowPageErrors) violations.push(`uncaught page error: ${e.message}`) })
         page.on('console', (m) => {
           if (m.type() === 'error' && /Content Security Policy|Refused to (connect|load|execute|frame)/i.test(m.text())) violations.push(`CSP violation: ${m.text()}`)
+          const leak = inspectConsole(m.text())
+          if (leak) violations.push(leak)
         })
+        page.on('worker', (w) =>
+          w.on('console', (m) => {
+            const leak = inspectConsole(m.text())
+            if (leak) violations.push(`(worker) ${leak}`)
+          }),
+        )
       }
       context.pages().forEach(watch)
       context.on('page', watch)

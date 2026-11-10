@@ -41,9 +41,14 @@ md += `## Not executed in this environment
 
 | Area | Status | Why / what to do |
 |---|---|---|
-| Firefox, WebKit (Safari engine) | **Not executed** | The sandbox cannot download Playwright's Firefox/WebKit builds. CI installs them and runs the full suite with \`ALL_BROWSERS=1\`. |
+| This QA suite in Firefox / WebKit | **Not executed** | The QA suite runs on desktop Chromium only. Firefox and WebKit are covered by the browser suite in CI's \`cross-engine\` job and by \`qa/webkitgtk-smoke.mjs\` (see docs/TESTING.md). |
 | Physical Android / iOS devices | **Not executed** | No hardware is available. Device projects in the automated suite are Chromium **emulations** (viewport, touch, DPR, UA). Manual steps: docs/RELEASE_CHECKLIST.md. |
 | Real low-memory termination (OS killing a tab) | **Not executed** | Approximated by refusing over-limit files on a device reporting 2 GB, and by a simulated worker crash (automated suite). |
 `
 writeFileSync(new URL('../docs/QA_REPORT.md', import.meta.url), md)
 console.log(`QA report: ${pass}/${rows.length} passed → docs/QA_REPORT.md`)
+if (process.argv.includes('--strict') && (rows.length === 0 || pass !== rows.length)) {
+  // A scenario that never ran is caught by Playwright's own exit code (qa/run.mjs combines both).
+  console.error(`QA FAILED: ${rows.length - pass} of ${rows.length} recorded scenarios did not pass.`)
+  process.exit(1)
+}

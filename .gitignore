@@ -11,3 +11,7 @@ qa/.inputs
 qa/results/raw.jsonl
 qa/test-results
 .wrangler
+
+# Release archives are built outside the repo; never commit them
+*.zip
+qa/results/webkitgtk.json

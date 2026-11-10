@@ -7,9 +7,9 @@ back to you on your own device, and they are never uploaded. There's no account,
 daily quota, no watermark and no advertising. The site is plain static files, so it costs almost nothing
 to host, which is how it can stay free.
 
-Version **1.0.0-rc.1** (release candidate). Further reading:
+Version **1.0.0**. Further reading:
 
-- [Release notes](docs/RELEASE_NOTES_v1.0.0-rc.1.md)
+- [Release notes](docs/RELEASE_NOTES_v1.0.0.md)
 - [Test and QA report](docs/TEST_AND_QA_REPORT.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Security](docs/SECURITY.md)
@@ -115,17 +115,21 @@ npm run test:e2e         # browser (Playwright): every tool, Arabic, a11y, lifec
 npm run test:all         # typecheck + lint + unit + build + e2e
 npm run test:cloudflare  # browser suite inside Cloudflare's Pages runtime (wrangler pages dev)
 npm run qa               # real-world QA: >100 MB, 800 pages, protected, signed, Arabic, corrupted… → docs/QA_REPORT.md
-npm run qa:cloudflare    # the same QA inside the Cloudflare runtime
+npm run qa:cloudflare    # the same QA inside the Cloudflare runtime (needs python3 + Pillow, reportlab, pypdf, pyHanko, and qpdf)
 ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright install firefox webkit)
 ```
 
-Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
-- 109 unit tests;
-- 172 browser tests on 5 device profiles;
-- 63 inside the Cloudflare runtime;
-- 30 real-world QA scenarios.
+What CI runs, job by job, is listed in [docs/TESTING.md](docs/TESTING.md).
 
-All passed. Firefox, WebKit and physical devices were **not** executed in the build environment.
+Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
+- 110 unit tests;
+- 180 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
+- 72 inside the Cloudflare runtime;
+- 30 real-world QA scenarios;
+- 10 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
+
+All passed. Playwright's Firefox and WebKit projects, Safari and physical devices were **not** executed
+in the build environment; CI runs the Firefox and WebKit projects.
 
 - **Privacy guard:** an automatic fixture (`tests/e2e/fixtures.ts`) wraps **every** browser test. The
   test fails if any of these happens:
@@ -133,10 +137,11 @@ All passed. Firefox, WebKit and physical devices were **not** executed in the bu
   - a non-GET request, or a request with a body;
   - an unexpected path or query string;
   - analytics hosts, CSP violations or uncaught page errors;
+  - file names or document content in the console (pages and workers);
   - storage beyond the three documented keys.
 
   A unit test makes sure no spec can bypass the guard.
-- **Real output checks:** generated PDFs are checked with `qpdf --check` (when installed),
+- **Real output checks:** generated PDFs are checked with `qpdf --check` (mandatory in CI),
   re-rendered and pixel-compared, and compression uses a real JPEG encoder in Node.
 - Details and the list of what is *not* covered are in [docs/TESTING.md](docs/TESTING.md).
 

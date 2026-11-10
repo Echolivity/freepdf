@@ -1,5 +1,14 @@
 name: CI / Deploy
 
+# What runs where (each suite runs exactly once; docs/TESTING.md mirrors this table):
+#   checks        npm audit, typecheck, lint, unit tests (with qpdf), production build
+#   chromium      e2e on emulated Chromium devices (tablet, mid-range Android, Pixel, 320 px) vs `vite preview`
+#   cross-engine  e2e on Firefox + WebKit (desktop, iPad, iPhone SE emulation) vs `vite preview`
+#   cloudflare    full desktop e2e suite + 30-scenario real-world QA vs Cloudflare's Pages runtime
+#                 (`wrangler pages dev` → workerd), with qpdf / pypdf / pyHanko validators
+#   deploy        only after ALL of the above pass, and only when vars.DEPLOY_ENABLED == 'true'
+# Any test failure, or a test that only passes on retry, fails the workflow.
+
 on:
   push:
     branches: [main]
@@ -7,21 +16,19 @@ on:
 
 permissions:
   contents: read
-  deployments: write
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: 'true'
+  SITE_URL: ${{ vars.SITE_URL }} # optional: enables canonical links + sitemap
+
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      CI: 'true'
-      ALL_BROWSERS: '1' # Firefox + WebKit projects in addition to Chromium devices
-      SITE_URL: ${{ vars.SITE_URL }} # optional: enables canonical links + sitemap
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,33 +38,118 @@ jobs:
       - run: npm ci
       - name: Dependency audit (fail on high/critical)
         run: npm audit --audit-level=high
-      - name: Install qpdf (structural validation of generated PDFs)
+      - name: Install qpdf (structural validation in unit tests)
         run: sudo apt-get update && sudo apt-get install -y qpdf
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npm run test:e2e
-      - name: Browser suite against Cloudflare's Pages runtime (wrangler pages dev / workerd)
-        run: npm run test:cloudflare
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report
-          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist
           retention-days: 3
 
-  deploy:
-    needs: test
+  chromium:
+    needs: checks
     runs-on: ubuntu-latest
-    # Forks don't get secrets; skip deploy there instead of failing. Deploys only when secrets exist.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - run: npx playwright install --with-deps chromium
+      # Desktop Chromium runs in the cloudflare job instead, so it isn't executed twice.
+      - run: npx playwright test --project=tablet-android --project=android-midrange --project=mobile --project=narrow-320
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-chromium
+          path: playwright-report
+          retention-days: 7
+
+  cross-engine:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ALL_BROWSERS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npx playwright test --project=firefox --project=webkit --project=ipad-webkit --project=iphone-se-webkit
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-cross-engine
+          path: playwright-report
+          retention-days: 7
+
+  cloudflare:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Install validators (qpdf, pypdf, pyHanko) and QA input generators (Pillow, reportlab)
+        run: |
+          sudo apt-get update && sudo apt-get install -y qpdf
+          python -m pip install pillow reportlab pypdf pyhanko
+      - run: npx playwright install --with-deps chromium
+      - name: Desktop e2e suite on Cloudflare's Pages runtime
+        run: npm run test:cloudflare
+      - name: Real-world QA (30 scenarios) on Cloudflare's Pages runtime
+        run: npm run qa:cloudflare
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-report
+          path: docs/QA_REPORT.md
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-cloudflare
+          path: |
+            playwright-report
+            qa/test-results
+          retention-days: 7
+
+  deploy:
+    needs: [checks, chromium, cross-engine, cloudflare]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    # Forks don't get secrets; skip deploy there instead of failing. Opt-in via repository variable.
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.DEPLOY_ENABLED == 'true'
     steps:
       - uses: actions/download-artifact@v4

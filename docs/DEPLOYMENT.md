@@ -43,11 +43,14 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 
 ## Option C: GitHub Actions (tests, then deploy)
 
-`.github/workflows/ci.yml` runs on every push and pull request:
-1. `npm audit --audit-level=high`.
-2. Typecheck, lint, unit tests, build.
-3. The browser suite on Chromium device profiles, Firefox and WebKit.
-4. The browser suite again inside Cloudflare's Pages runtime (`wrangler pages dev`).
+`.github/workflows/ci.yml` runs on every push and pull request (details in [TESTING.md](TESTING.md)):
+1. `checks`: `npm audit --audit-level=high`, typecheck, lint, unit tests, build.
+2. `chromium`: the browser suite on emulated Chromium device profiles.
+3. `cross-engine`: the browser suite on Firefox, WebKit, iPad and iPhone SE (WebKit) profiles.
+4. `cloudflare`: the desktop browser suite and the 30-scenario real-world QA inside Cloudflare's Pages
+   runtime (`wrangler pages dev`), with qpdf, pypdf and pyHanko validators.
+
+The deploy job needs all four to pass.
 
 It **deploys only when you allow it**. Configure these in **Settings → Secrets and variables → Actions**:
 
@@ -101,19 +104,51 @@ curl -sI https://<site>/merge-pdf/ | grep -i location                   # 308 �
 Then follow [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md): manual browser and device checks, and
 confirming Web Analytics is off.
 
-## Verified behaviour (Cloudflare Pages runtime, `wrangler pages dev` 4.160)
+## Verified behaviour (Cloudflare Pages runtime, `wrangler pages dev` 4.160, 1.0.0 build)
 
 | Check | Result |
 |-------|--------|
 | `/`, `/merge-pdf`, `/privacy` | 200 `text/html; charset=utf-8`, with per-route `<title>` |
 | `/merge-pdf/` and `/merge-pdf.html` | 308 redirect to `/merge-pdf` |
-| Unknown path | 404 with the custom 404 page |
+| Unknown path | 404 with the custom 404 page and `noindex` (automated in `security.spec.ts`) |
 | JS (`.js`, `.mjs`) | `application/javascript`. WASM: `application/wasm`. Fonts: correct font types. |
 | `/assets/*`, `/pdfjs/<version>/*` | `Cache-Control: public, max-age=31536000, immutable` |
 | HTML | `Cache-Control: public, max-age=0, must-revalidate` (Cloudflare default) |
 | Security headers | CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP, CORP and X-Frame-Options all present |
-| Browser suite | 63/63 passed inside the runtime |
-| Real-world QA | 30/30 scenarios passed inside the runtime |
+| Browser suite (Chromium desktop) | 72/72 passed inside the runtime |
+| Real-world QA | 30/30 scenarios passed inside the runtime (strict validators) |
+| WebKit engine (WebKitGTK 2.52) | 10/10 inside the runtime served over HTTPS (`--local-protocol https`) with the unmodified production CSP |
 
-The live Cloudflare edge was not reachable from the build environment. **Re-run the post-deploy checks
-above on the real URL.**
+The live Cloudflare edge was not reachable from the build environment, and no deployment of 1.0.0 was
+made from it. **Run the post-deploy checks above on the real URL.**
+
+## Publishing 1.0.0 (manual steps)
+
+Nothing below has been done on your behalf.
+
+1. **Verify the archives** you received:
+   ```bash
+   sha256sum -c SHA256SUMS.txt
+   ```
+2. **Put the source in Git** (if the repository isn't on GitHub yet):
+   ```bash
+   unzip freepdf-1.0.0-source.zip && cd freepdf-1.0.0
+   git init -b main && git add -A && git commit -m "FreePDF 1.0.0"
+   git remote add origin git@github.com:<you>/freepdf.git && git push -u origin main
+   ```
+   Then let CI run **without** `DEPLOY_ENABLED`, and confirm all four test jobs are green, including
+   `cross-engine` (Firefox/WebKit), which has not been executed anywhere else for 1.0.0.
+3. **Deploy**, choosing one route:
+   - *CI:* set the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets and the `DEPLOY_ENABLED=true`
+     variable, then re-run the workflow on `main`.
+   - *Terminal:* `npm ci && npm run build`, then
+     `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npx wrangler pages deploy dist --project-name=freepdf --branch=main`.
+   - *Dashboard / Drop:* upload the contents of `freepdf-1.0.0-dist.zip` (it unpacks to the site root:
+     `index.html`, `_headers`, `assets/`, `pdfjs/` …).
+4. **Verify the live site** with the `curl` commands above, then work through the "On the deployment"
+   and "After promoting to production" sections of [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+5. **Tag only after steps 2–4 pass:**
+   ```bash
+   git tag -a v1.0.0 -m "FreePDF 1.0.0" && git push origin v1.0.0
+   ```
+   Create the GitHub release from `docs/RELEASE_NOTES_v1.0.0.md` and attach the two ZIPs and `SHA256SUMS.txt`.

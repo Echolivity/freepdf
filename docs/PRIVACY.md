@@ -1,6 +1,6 @@
 # FreePDF privacy policy
 
-_Applies to version 1.0.0-rc.1. The in-app "How it works" page (`/privacy`) says the same thing in English
+_Applies to version 1.0.0. The in-app "How it works" page (`/privacy`) says the same thing in English
 and Arabic._
 
 ## Your documents
@@ -37,7 +37,8 @@ removes the recent list only. Your browser's "clear site data" also removes them
 ## Document scripts
 
 PDFs can contain JavaScript. FreePDF never runs it: PDF.js scripting is disabled, and its script
-sandbox isn't even shipped with the site.
+sandbox isn't even shipped with the site. Output files can keep scripts the input had (FreePDF
+doesn't strip them); whether they run depends on the viewer you open the result in.
 
 ## Analytics, advertising, accounts
 
@@ -62,4 +63,10 @@ in which:
 - the app requests an unexpected path or a URL with a query string;
 - an analytics host is contacted;
 - a CSP violation occurs;
+- the page or one of its workers writes a file name or document content to the console;
 - browser storage contains anything beyond the three entries above.
+
+Page titles, URLs and browser history only ever contain tool names, never file names.
+
+`tests/e2e/security.spec.ts` checks that a PDF carrying JavaScript (in its open action, document-level
+scripts, page actions and links) is rendered and processed without any of it running.

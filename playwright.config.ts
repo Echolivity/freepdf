@@ -36,7 +36,10 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 20_000 },
   fullyParallel: true,
+  // One retry in CI keeps a trace of the first failure, but a test that only passes on retry still
+  // fails the run (failOnFlakyTests), so flakiness can't hide behind a green build.
   retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: !!process.env.CI,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     // PW_BASE_URL runs the suite against another server, e.g. Cloudflare's runtime (npm run test:cloudflare).
