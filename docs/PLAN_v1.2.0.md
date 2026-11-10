@@ -93,8 +93,9 @@ Status: **plan only, nothing implemented yet.** Based on an inspection of the 1.
 4. Overlay layer and the font spike, then Page numbers, then Watermark.
 5. Full regression, the Cloudflare-runtime suites, QA, inspection of the generated PDFs, docs, the v1.2.0 completion report. Then stop.
 
-## 7. Early flags for later phases (no action now)
+## 7. Scope decisions for later phases (agreed 2026-11-11)
 
-- **PDF/A (v1.4):** real validation is normally done with veraPDF, which is Java and doesn't run in the browser. A browser-side validator would be partial and must be labelled as such.
-- **AI tools (v2.0):** local models (WebLLM/WebGPU) mean multi-gigabyte downloads from third-party hosts, which the current CSP blocks. They would need a self-hosted model or explicit consent to fetch it. **OCR:** the Arabic data for Tesseract.js is large, and its accuracy has to be measured before Arabic is claimed.
-- **Redact (v1.3):** true removal means rewriting content streams, including text, images and Form XObjects. Expect "can't guarantee" warnings on some structures.
+- **PDF to PDF/A (v1.4): dropped.** Proper validation needs veraPDF, which doesn't run in the browser.
+- **AI tools (v2.0): dropped.** That covers Chat, Summarize, Translate, Table extraction and Document intelligence.
+- **OCR (v1.4):** English first. Arabic OCR is tested separately later, and isn't advertised until it has been measured.
+- **Redact (v1.3):** true removal needs content-stream rewriting. Expect "can't guarantee" warnings on some structures.
