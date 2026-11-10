@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { PDFDocumentProxy } from '../lib/render/pdfjs'
 import { PageThumb } from './thumbs'
 import { Icon } from './Icon'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 
 export interface GridPage {
   key: string

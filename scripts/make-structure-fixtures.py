@@ -1,7 +1,9 @@
 """Generates structural-integrity fixtures:
   tests/fixtures/rich.pdf    - mixed page sizes + rotations, URI + internal links, text annotation,
                                embedded file, Arabic/English metadata, bookmarks, a form field
-  tests/fixtures/signed.pdf  - the same document, digitally signed (self-signed test certificate)
+  tests/fixtures/signed.pdf     - the same document, digitally signed (self-signed test certificate)
+  tests/fixtures/certified.pdf  - certified (DocMDP: no changes permitted) by the same test certificate
+  tests/fixtures/sig-field.pdf  - an empty, unsigned signature field (must NOT be reported as signed)
 Run: python3 scripts/make-structure-fixtures.py <key.pem> <cert.pem>   (needs reportlab, pypdf, pyhanko)"""
 import io, os, sys
 from reportlab.pdfgen import canvas
@@ -38,4 +40,13 @@ if len(sys.argv) == 3:
     with open(os.path.join(OUT, 'rich.pdf'), 'rb') as inf:
         out = signers.sign_pdf(IncrementalPdfFileWriter(inf), signers.PdfSignatureMetadata(field_name='Signature1'), signer=signer)
     with open(os.path.join(OUT, 'signed.pdf'), 'wb') as f: f.write(out.getvalue())
+    from pyhanko.sign.fields import SigFieldSpec, append_signature_field, MDPPerm
+    with open(os.path.join(OUT, 'rich.pdf'), 'rb') as inf:
+        out = signers.sign_pdf(IncrementalPdfFileWriter(inf), signers.PdfSignatureMetadata(field_name='Certification', certify=True, docmdp_permissions=MDPPerm.NO_CHANGES), signer=signer)
+    with open(os.path.join(OUT, 'certified.pdf'), 'wb') as f: f.write(out.getvalue())
+    with open(os.path.join(OUT, 'rich.pdf'), 'rb') as inf:
+        w = IncrementalPdfFileWriter(inf)
+        append_signature_field(w, SigFieldSpec(sig_field_name='SignHere', on_page=0, box=(40, 40, 240, 90)))
+        buf = io.BytesIO(); w.write(buf)
+    with open(os.path.join(OUT, 'sig-field.pdf'), 'wb') as f: f.write(buf.getvalue())
 print('structure fixtures written')

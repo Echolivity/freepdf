@@ -144,8 +144,8 @@ describe('merge (documented limits)', () => {
 describe('signatures and protection are detected before processing', () => {
   const blob = (name: string) => new Blob([fixture(name) as BlobPart])
   it('flags a digitally signed PDF', async () => {
-    expect(await scanPdfMarkers(blob('signed.pdf'))).toEqual({ signed: true, encrypted: false })
-    expect(await scanPdfMarkers(blob('rich.pdf'))).toEqual({ signed: false, encrypted: false })
+    expect(await scanPdfMarkers(blob('signed.pdf'))).toEqual({ signed: true, certified: false, encrypted: false })
+    expect(await scanPdfMarkers(blob('rich.pdf'))).toEqual({ signed: false, certified: false, encrypted: false })
   })
   it('flags password- and permission-protected PDFs', async () => {
     expect((await scanPdfMarkers(blob('encrypted-user.pdf'))).encrypted).toBe(true)

@@ -29,21 +29,23 @@ export async function closePdf(doc: PDFDocumentProxy | null | undefined) {
   try { await task?.destroy() } catch { /* already gone */ }
 }
 
-const BASE = import.meta.env.BASE_URL
+// Versioned path (see scripts/copy-pdfjs-assets.mjs) so these files can be cached as immutable.
+const BASE = `${import.meta.env.BASE_URL}pdfjs/${pdfjs.version}/`
 
 /**
- * Open a PDF with PDF.js. `data` is copied because PDF.js transfers (detaches) the buffer it receives.
+ * Open a PDF with PDF.js. Takes ownership of `data`: PDF.js transfers (detaches) the buffer, so callers
+ * pass freshly read bytes and don't reuse them (no extra copy of large files).
  * `forExport` renders on this thread so canvases stay readable with toBlob().
  */
 export async function openPdf(data: Uint8Array, opts: { password?: string; name?: string; forExport?: boolean } = {}): Promise<PDFDocumentProxy> {
   const task = pdfjs.getDocument({
-    data: data.slice(),
+    data,
     password: opts.password,
-    cMapUrl: `${BASE}pdfjs/cmaps/`,
+    cMapUrl: `${BASE}cmaps/`,
     cMapPacked: true,
-    standardFontDataUrl: `${BASE}pdfjs/standard_fonts/`,
-    wasmUrl: `${BASE}pdfjs/wasm/`,
-    iccUrl: `${BASE}pdfjs/iccs/`,
+    standardFontDataUrl: `${BASE}standard_fonts/`,
+    wasmUrl: `${BASE}wasm/`,
+    iccUrl: `${BASE}iccs/`,
     enableXfa: false,
     stopAtErrors: false,
     disableWorkerRendering: !!opts.forExport,

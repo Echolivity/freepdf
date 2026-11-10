@@ -110,6 +110,8 @@ export interface ValidatedFile {
   size: number
   /** PDF only: contains a digital signature (editing invalidates it). */
   signed?: boolean
+  /** PDF only: certified by its author (no changes permitted). */
+  certified?: boolean
   /** PDF only: password/permission protected. */
   encrypted?: boolean
 }

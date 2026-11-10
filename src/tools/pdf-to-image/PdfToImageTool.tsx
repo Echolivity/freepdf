@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Dropzone } from '../../components/Dropzone'
 import { FileList } from '../../components/FileList'
 import { ToolFrame } from '../../components/ToolFrame'
@@ -12,7 +12,7 @@ import type { OutputFile } from '../../lib/output'
 import { canvasToBlob, closePdf, openPdf, PasswordRequiredError, releaseCanvas, renderPage } from '../../lib/render/pdfjs'
 import type { FileKind } from '../../lib/validate'
 import { CancelledError } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 
 const ACCEPT: FileKind[] = ['pdf']
 type Format = 'jpg' | 'png'
@@ -28,24 +28,27 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
   const [quality, setQuality] = useState<0.92 | 0.8>(0.92)
   const [locks, setLocks] = useState<Record<string, LockState>>({})
   const [pwInput, setPwInput] = useState<Record<string, string>>({})
-  const startOver = () => { job.reset(); sel.clear(); setLocks({}); setPwInput({}) }
+  const startOver = () => { job.reset(); sel.clear(); setLocks({}); setPwInput({}); probed.current.clear() }
 
-  // Detect password-protected PDFs as they are added (PDF.js decrypts locally once the password is given).
+  // Files the pre-scan marked as encrypted are probed with PDF.js: permission-only protection opens
+  // without a password, a user password needs to be entered. Unencrypted files need no probe.
+  const probed = useRef(new Set<string>())
   useEffect(() => {
     for (const f of sel.files) {
-      if (locks[f.id]) continue
-      setLocks((l) => ({ ...l, [f.id]: { status: 'checking' } }))
+      if (!f.encrypted || probed.current.has(f.id)) continue
+      probed.current.add(f.id)
       ;(async () => {
+        let state: LockState = { status: 'open' }
         try {
-          const doc = await openPdf(await readBytes(f), { name: f.name })
-          await closePdf(doc)
-          setLocks((l) => ({ ...l, [f.id]: { status: 'open' } }))
+          await closePdf(await openPdf(await readBytes(f), { name: f.name }))
         } catch (e) {
-          setLocks((l) => ({ ...l, [f.id]: e instanceof PasswordRequiredError ? { status: 'locked' } : { status: 'open' } }))
+          if (e instanceof PasswordRequiredError) state = { status: 'locked' }
         }
+        setLocks((l) => ({ ...l, [f.id]: state }))
       })()
     }
-  }, [sel.files, locks])
+  }, [sel.files])
+  const lockOf = (f: (typeof sel.files)[number]): LockState => locks[f.id] ?? (f.encrypted ? { status: 'checking' } : { status: 'open' })
 
   const unlock = async (id: string) => {
     const f = sel.files.find((x) => x.id === id)
@@ -60,8 +63,8 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
     }
   }
 
-  const locked = sel.files.filter((f) => locks[f.id]?.status === 'locked')
-  const checking = sel.files.some((f) => !locks[f.id] || locks[f.id].status === 'checking')
+  const locked = sel.files.filter((f) => lockOf(f).status === 'locked')
+  const checking = sel.files.some((f) => lockOf(f).status === 'checking')
 
   const convert = () =>
     job.run(async ({ signal, progress }) => {
@@ -69,7 +72,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
       const mime = format === 'png' ? 'image/png' : 'image/jpeg'
       for (let fi = 0; fi < sel.files.length; fi++) {
         const f = sel.files[fi]
-        const lock = locks[f.id]
+        const lock = lockOf(f)
         const password = lock?.status === 'unlocked' ? lock.password : undefined
         const doc = await openPdf(await readBytes(f), { name: f.name, password, forExport: true })
         try {
@@ -119,7 +122,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
                 modifiesPdf={false}
                 onRemove={sel.remove}
                 extra={(f) => {
-                  const s = locks[f.id]?.status
+                  const s = lockOf(f).status
                   return s === 'locked' ? t('p2i.passwordNeeded') : s === 'unlocked' ? t('p2i.unlocked') : ''
                 }}
               />
@@ -144,7 +147,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
                     />
                     <Button type="submit" variant="secondary">{t('p2i.unlock')}</Button>
                   </div>
-                  {(locks[f.id] as { wrong?: boolean }).wrong && <p className="mt-2 text-sm font-semibold text-danger" role="alert">{t('p2i.wrongPw')}</p>}
+                  {(lockOf(f) as { wrong?: boolean }).wrong && <p className="mt-2 text-sm font-semibold text-danger" role="alert">{t('p2i.wrongPw')}</p>}
                   <p className="mt-2 text-sm text-muted">{t('p2i.pwNote')}</p>
                 </form>
               ))}

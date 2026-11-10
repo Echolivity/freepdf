@@ -1,10 +1,20 @@
-# Test suite (v0.3.0)
+# Test suite (1.0.0-rc.1)
 
 ```bash
 npm run test:all                 # typecheck + lint + unit/integration + build + browser tests
 ALL_BROWSERS=1 npm run test:e2e  # adds Firefox, WebKit, iPad and iPhone SE projects (CI does this)
 npm run fixtures                 # regenerate the compression matrix and Arabic fixtures
+npm run test:cloudflare          # browser suite inside Cloudflare's Pages runtime (wrangler pages dev)
+npm run qa / npm run qa:cloudflare   # real-world QA harness → docs/QA_REPORT.md
 ```
+
+The current release's numbers are in [TEST_AND_QA_REPORT.md](TEST_AND_QA_REPORT.md). The table below
+describes the v0.3.0 baseline; 1.0.0-rc.1 adds:
+- `integrity.test.ts`: signature, certification and encryption detection with false-positive cases;
+  no-op operations returning the original bytes; the Lossless level.
+- `transfer.test.ts`: worker transfer lists.
+- Browser tests for the certified warning and the Lossless level.
+- `qa/real-world.spec.ts`: the real-world harness.
 
 ## Results for this release (run from a fresh clone with `npm ci`)
 

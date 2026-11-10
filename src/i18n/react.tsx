@@ -1,14 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { detectLang, dir, translate, translateMsg, type Lang, type Message, type MessageKey, type Params } from './core'
-
-interface I18n {
-  lang: Lang
-  setLang: (l: Lang) => void
-  t: (key: MessageKey, params?: Params) => string
-  tm: (m: Message | undefined) => string
-}
-
-const Ctx = createContext<I18n | null>(null)
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { detectLang, dir, loadLang, translate, translateMsg, type Lang } from './core'
+import { I18nContext, type I18n } from './context'
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(detectLang)
@@ -25,7 +17,8 @@ export function LangProvider({ children }: { children: ReactNode }) {
     } catch {
       /* storage unavailable */
     }
-    setLangState(l)
+    // Switch only once the dictionary is there, so the interface never shows half-translated text.
+    loadLang(l).then(() => setLangState(l), () => setLangState(l))
   }, [])
 
   const value = useMemo<I18n>(
@@ -37,11 +30,5 @@ export function LangProvider({ children }: { children: ReactNode }) {
     }),
     [lang, setLang],
   )
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
-}
-
-export function useI18n(): I18n {
-  const v = useContext(Ctx)
-  if (!v) throw new Error('useI18n must be used inside LangProvider')
-  return v
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

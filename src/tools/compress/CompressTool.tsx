@@ -10,7 +10,7 @@ import { pdfBlob, type OutputFile } from '../../lib/output'
 import type { CompressionLevel, SkipReason } from '../../lib/pdf/compress'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 import type { Message } from '../../i18n/core'
 
 const ACCEPT: FileKind[] = ['pdf']
@@ -100,6 +100,7 @@ export default function CompressTool() {
                 value={level}
                 onChange={setLevel}
                 options={[
+                  { value: 'lossless', label: t('cmp.lossless'), hint: t('cmp.losslessHint') },
                   { value: 'light', label: t('cmp.light'), hint: t('cmp.lightHint') },
                   { value: 'balanced', label: t('cmp.balanced'), hint: t('cmp.balancedHint') },
                   { value: 'strong', label: t('cmp.strong'), hint: t('cmp.strongHint') },

@@ -39,15 +39,18 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: 'http://localhost:4173',
+    // PW_BASE_URL runs the suite against another server, e.g. Cloudflare's runtime (npm run test:cloudflare).
+    baseURL: process.env.PW_BASE_URL || 'http://localhost:4173',
     acceptDownloads: true,
     trace: 'retain-on-failure',
   },
   projects,
-  webServer: {
-    command: 'npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  webServer: process.env.PW_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run preview',
+        url: 'http://localhost:4173',
+        reuseExistingServer: !process.env.CI,
+        timeout: 60_000,
+      },
 })

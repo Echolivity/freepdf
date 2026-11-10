@@ -6,6 +6,7 @@
   - `npm audit --audit-level=high`.
 
   Keep the Playwright report as evidence.
+- [ ] `docs/QA_REPORT.md` regenerated (`npm run qa:cloudflare`), and the summary copied into `docs/TEST_AND_QA_REPORT.md`.
 - [ ] CHANGELOG and release notes are updated, and the `package.json` version is bumped.
 - [ ] No tool appears on the home page unless it's complete. Roadmap items stay in docs only.
 - [ ] If storage changed: update `src/app/prefs.ts` `STORAGE_KEYS`, the privacy page, `docs/PRIVACY.md`,
@@ -17,8 +18,9 @@
       `content-security-policy` (with `connect-src 'self'` and `worker-src 'self'`),
       `x-content-type-options`, `referrer-policy`, `cross-origin-resource-policy` and
       `strict-transport-security`.
-- [ ] Same-origin assets return 200: `/pdfjs/cmaps/`, `/pdfjs/standard_fonts/`, `/pdfjs/wasm/`,
-      `/pdfjs/iccs/`, `/robots.txt`.
+- [ ] Same-origin assets return 200: `/pdfjs/<version>/cmaps/…`, `/pdfjs/<version>/standard_fonts/…`,
+      `/pdfjs/<version>/wasm/openjpeg.wasm` (`application/wasm`), `/robots.txt`.
+- [ ] Before uploading, `npm run test:cloudflare` and `npm run qa:cloudflare` both pass.
 - [ ] **Cloudflare Web Analytics / "Automatic setup" is OFF** for the project. It injects a third-party
       beacon, which contradicts the privacy policy and is blocked by the CSP.
 - [ ] One job per tool in Chrome, Safari (macOS and iOS) and Firefox, in English and Arabic.

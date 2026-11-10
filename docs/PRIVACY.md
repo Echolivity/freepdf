@@ -1,6 +1,6 @@
 # FreePDF privacy policy
 
-_Applies to version 0.3.0. The in-app "How it works" page (`/privacy`) says the same thing in English
+_Applies to version 1.0.0-rc.1. The in-app "How it works" page (`/privacy`) says the same thing in English
 and Arabic._
 
 ## Your documents
@@ -33,6 +33,11 @@ No cookies, sessionStorage, IndexedDB, Cache Storage or service workers are used
 
 To clear these entries, go to **How it works → Clear these settings**. The home page's **Clear** button
 removes the recent list only. Your browser's "clear site data" also removes them.
+
+## Document scripts
+
+PDFs can contain JavaScript. FreePDF never runs it: PDF.js scripting is disabled, and its script
+sandbox isn't even shipped with the site.
 
 ## Analytics, advertising, accounts
 

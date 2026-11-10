@@ -1,5 +1,4 @@
 import { en, type MessageKey, type Msg } from './en'
-import { ar } from './ar'
 
 export type Lang = 'en' | 'ar'
 export type Params = Record<string, string | number>
@@ -13,7 +12,18 @@ export type { MessageKey }
 export const LANGS: Lang[] = ['en', 'ar']
 export const dir = (lang: Lang) => (lang === 'ar' ? 'rtl' : 'ltr')
 
-const dictionaries: Record<Lang, Record<MessageKey, Msg>> = { en, ar }
+// English is always present (it is also the engine's internal language). Other languages are loaded on
+// demand with loadLang(), so English visitors and the processing worker never download them.
+const dictionaries: Partial<Record<Lang, Record<MessageKey, Msg>>> = { en }
+
+export function registerDictionary(lang: Lang, dict: Record<MessageKey, Msg>) {
+  dictionaries[lang] = dict
+}
+
+export async function loadLang(lang: Lang): Promise<void> {
+  if (dictionaries[lang]) return
+  if (lang === 'ar') registerDictionary('ar', (await import('./ar')).ar)
+}
 const pluralRules: Record<Lang, Intl.PluralRules> = { en: new Intl.PluralRules('en'), ar: new Intl.PluralRules('ar') }
 
 // First-strong isolate / pop: keeps Latin file names from scrambling the order of Arabic sentences.
@@ -21,7 +31,7 @@ const FSI = '⁨'
 const PDI = '⁩'
 
 export function translate(lang: Lang, key: MessageKey, params: Params = {}): string {
-  const entry = dictionaries[lang][key] ?? en[key]
+  const entry = dictionaries[lang]?.[key] ?? en[key]
   let text: string
   if (typeof entry === 'string') text = entry
   else {

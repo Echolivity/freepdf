@@ -4,7 +4,10 @@ import { dirname, join } from 'node:path'
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { en } from '../../src/i18n/en'
 import { ar } from '../../src/i18n/ar'
-import { translate } from '../../src/i18n/core'
+import { loadLang, translate } from '../../src/i18n/core'
+import { beforeAll } from 'vitest'
+
+beforeAll(() => loadLang('ar'))
 import { parseRanges } from '../../src/lib/ranges'
 import { searchTools } from '../../src/tools/registry'
 import { extractPages, mergePdfs, organizePdf, removePages } from '../../src/lib/pdf/organize'

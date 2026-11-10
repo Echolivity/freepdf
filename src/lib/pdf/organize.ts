@@ -15,6 +15,9 @@ const MAX_FULL_FIDELITY_PARTS = 40
 async function rearrange(input: NamedBytes, ops: PageOp[]): Promise<Uint8Array> {
   const src = await loadPdf(input.bytes, input.name)
   assertIndices(ops.map((o) => o.index), src.getPageCount())
+  // Nothing to change (all pages, original order, no rotation): return the original bytes untouched,
+  // so digital signatures, incremental-save history and everything else stay exactly as they were.
+  if (isIdentity(ops, src.getPageCount())) return input.bytes
   if (new Set(ops.map((o) => o.index)).size !== ops.length) return assemble(src, ops)
   rebuildPageTree(src, ops)
   return saveDoc(src)
@@ -100,6 +103,10 @@ export async function organizePdf(input: NamedBytes, ops: PageOp[]): Promise<Uin
 
 export async function getPageCount(input: NamedBytes): Promise<number> {
   return (await loadPdf(input.bytes, input.name)).getPageCount()
+}
+
+export function isIdentity(ops: PageOp[], count: number): boolean {
+  return ops.length === count && ops.every((o, i) => o.index === i && !((o.rotate ?? 0) % 360))
 }
 
 function assertIndices(indices: number[], count: number) {

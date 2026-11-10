@@ -4,7 +4,7 @@ import { toolBySlug, toolKey } from '../tools/registry'
 import { recordRecentTool } from './prefs'
 import { NotFound } from './NotFound'
 import { Icon } from '../components/Icon'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 import { ToolAbout } from './ToolAbout'
 import { useSeo } from './seo'
 

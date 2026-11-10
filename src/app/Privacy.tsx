@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSeo } from './seo'
 import { Icon, type IconName } from '../components/Icon'
 import { LIMIT_PROFILES, LIMITS, LOW_MEMORY, MB } from '../config'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 import { clearAllSettings, STORAGE_KEYS } from './prefs'
 import type { MessageKey } from '../i18n/core'
 

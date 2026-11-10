@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { closePdf, openPdf, renderPage, PasswordRequiredError, type PDFDocumentProxy } from '../lib/render/pdfjs'
-import { UserFacingError, type ValidatedFile } from '../lib/validate'
+import { renderPage, type PDFDocumentProxy } from '../lib/render/pdfjs'
+import { usePdfDoc } from './usePdfDoc'
+import type { ValidatedFile } from '../lib/validate'
 import { Icon } from './Icon'
-import { useI18n } from '../i18n/react'
-import type { Message } from '../i18n/core'
+import { useI18n } from '../i18n/context'
 
 /* ---------- tiny render scheduler: at most 2 thumbnails rendering at once ---------- */
 const MAX_CONCURRENT = 2
@@ -25,33 +25,6 @@ function schedule<T>(task: () => Promise<T>): { promise: Promise<T>; cancel: () 
 }
 function next() {
   while (active < MAX_CONCURRENT && queue.length) queue.shift()!()
-}
-
-/* ---------- open a PDF for previews ---------- */
-export function usePdfDoc(file: ValidatedFile | null) {
-  const [state, setState] = useState<{ doc: PDFDocumentProxy | null; error: Message | null; loading: boolean }>({ doc: null, error: null, loading: !!file })
-  useEffect(() => {
-    if (!file) { setState({ doc: null, error: null, loading: false }); return }
-    let doc: PDFDocumentProxy | null = null
-    let dead = false
-    setState({ doc: null, error: null, loading: true })
-    ;(async () => {
-      try {
-        const bytes = new Uint8Array(await file.file.arrayBuffer())
-        doc = await openPdf(bytes, { name: file.name })
-        if (dead) { closePdf(doc); return }
-        setState({ doc, error: null, loading: false })
-      } catch (err) {
-        if (dead) return
-        const error: Message = err instanceof PasswordRequiredError
-          ? { key: 'err.encrypted', params: { name: file.name } }
-          : err instanceof UserFacingError ? err.toMessage() : { key: 'err.cantOpen', params: { name: file.name } }
-        setState({ doc: null, error, loading: false })
-      }
-    })()
-    return () => { dead = true; closePdf(doc) }
-  }, [file])
-  return state
 }
 
 /* ---------- a single lazily-rendered page thumbnail ---------- */
@@ -117,13 +90,14 @@ export function FileThumb({ file }: { file: ValidatedFile }) {
 }
 
 function ImageThumb({ file }: { file: ValidatedFile }) {
-  const [url, setUrl] = useState<string>()
+  // The object URL lives exactly as long as this element: created and revoked by the same effect.
+  const img = useRef<HTMLImageElement>(null)
   useEffect(() => {
     const u = URL.createObjectURL(file.file)
-    setUrl(u)
+    if (img.current) img.current.src = u
     return () => URL.revokeObjectURL(u)
   }, [file])
-  return url ? <img src={url} alt="" className="h-full w-full object-contain" /> : null
+  return <img ref={img} alt="" className="h-full w-full object-contain" />
 }
 
 function PdfFirstPage({ file }: { file: ValidatedFile }) {

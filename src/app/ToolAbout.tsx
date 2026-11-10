@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon, type IconName } from '../components/Icon'
 import { LIMITS, MB } from '../config'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 import type { MessageKey } from '../i18n/core'
 import type { ToolDef } from '../tools/registry'
 

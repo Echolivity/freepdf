@@ -17,7 +17,8 @@ import { removeUnreachable } from './structure'
 import { msg } from '../../i18n/core'
 export { removeUnreachable }
 
-export type CompressionLevel = 'light' | 'balanced' | 'strong'
+/** 'lossless' never touches image pixels; the other levels re-encode photos (lossy). */
+export type CompressionLevel = 'lossless' | 'light' | 'balanced' | 'strong'
 
 export interface EncodedImage {
   bytes: Uint8Array
@@ -34,12 +35,14 @@ export interface ImageCodec {
   encodeRaw(pixels: Uint8Array, width: number, height: number, components: 1 | 3, maxDim: number, quality: number): Promise<EncodedImage | null>
 }
 
-export const LEVELS: Record<CompressionLevel, { quality: number; maxDim: number; convertLossless: boolean }> = {
+export const LEVELS: Record<CompressionLevel, { quality: number; maxDim: number; convertLossless: boolean; lossy: boolean }> = {
+  // Repacks the file (object streams, deflates uncompressed data, drops leftovers). Pixels untouched.
+  lossless: { quality: 1, maxDim: Number.POSITIVE_INFINITY, convertLossless: false, lossy: false },
   // Lossless restructuring plus gentle re-encoding of oversized photos.
   // All levels are lossy for photos; "light" only touches JPEG photos and never downscales below 3500px.
-  light: { quality: 0.85, maxDim: 3500, convertLossless: false },
-  balanced: { quality: 0.72, maxDim: 2200, convertLossless: true },
-  strong: { quality: 0.55, maxDim: 1500, convertLossless: true },
+  light: { quality: 0.85, maxDim: 3500, convertLossless: false, lossy: true },
+  balanced: { quality: 0.72, maxDim: 2200, convertLossless: true, lossy: true },
+  strong: { quality: 0.55, maxDim: 1500, convertLossless: true, lossy: true },
 }
 
 /** Why an image was left exactly as it was. */
@@ -47,6 +50,7 @@ export type SkipReason =
   | 'transparency' // has a soft mask / colour-key mask: re-encoding could misalign or flatten it
   | 'colourSpace' // CMYK, Indexed, Lab, Separation… can't round-trip through an RGB canvas faithfully
   | 'keptLossless' // lossless image at the Light level, which only touches photos
+  | 'losslessMode' // Lossless level: no image is re-encoded
   | 'small' // too small to be worth it
   | 'encoding' // unusual bit depth, decode array or filter chain
   | 'noGain' // re-encoding didn't save at least 10%
@@ -72,7 +76,7 @@ export interface CompressResult {
   report: CompressReport
 }
 
-const emptySkips = (): Record<SkipReason, number> => ({ transparency: 0, colourSpace: 0, keptLossless: 0, small: 0, encoding: 0, noGain: 0, decodeFailed: 0 })
+const emptySkips = (): Record<SkipReason, number> => ({ transparency: 0, colourSpace: 0, keptLossless: 0, losslessMode: 0, small: 0, encoding: 0, noGain: 0, decodeFailed: 0 })
 
 const N = (s: string) => PDFName.of(s)
 /** Only bother with images whose stream is at least this large. */
@@ -110,7 +114,7 @@ export async function compressPdf(
     if (dict.get(N('Subtype')) === N('Image')) {
       if (softMasks.has(ref.toString())) continue // part of another image
       report.images++
-      const outcome = codec ? await recompressImage(ctx, ref, obj, codec, cfg) : 'encoding'
+      const outcome = !cfg.lossy ? 'losslessMode' : codec ? await recompressImage(ctx, ref, obj, codec, cfg) : 'encoding'
       if (outcome === 'ok') report.recompressed++
       else report.skipped[outcome]++
     } else if (deflateIfUncompressed(ctx, ref, obj)) {

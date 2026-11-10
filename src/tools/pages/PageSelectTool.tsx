@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Dropzone } from '../../components/Dropzone'
 import { FileList } from '../../components/FileList'
 import { PageGrid } from '../../components/PageGrid'
@@ -6,14 +6,14 @@ import { ToolFrame } from '../../components/ToolFrame'
 import { Button, LocalBadge, Notice, Workspace } from '../../components/ui'
 import { readBytes, useFiles } from '../../components/useFiles'
 import { useJob } from '../../components/useJob'
-import { usePdfDoc } from '../../components/thumbs'
+import { usePdfDoc } from '../../components/usePdfDoc'
 import { deriveName } from '../../lib/files'
 import { pdfBlob } from '../../lib/output'
 import { formatRanges, parsePageSet } from '../../lib/ranges'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
 import { UserFacingError } from '../../lib/validate'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 import type { Message } from '../../i18n/core'
 
 const ACCEPT: FileKind[] = ['pdf']
@@ -32,7 +32,13 @@ export function PageSelectTool({ variant }: { variant: 'extract' | 'remove' }) {
   const count = doc?.numPages ?? 0
   const isRemove = variant === 'remove'
 
-  useEffect(() => { setSelected(new Set()); setText(''); setTextError(null) }, [file])
+  const [selectionFor, setSelectionFor] = useState(file)
+  if (selectionFor !== file) {
+    setSelectionFor(file)
+    setSelected(new Set())
+    setText('')
+    setTextError(null)
+  }
 
   const commit = (next: Set<number>) => {
     setSelected(next)

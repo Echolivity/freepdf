@@ -44,6 +44,14 @@ test('signed and password-protected PDFs are flagged before processing', async (
   await expect(warnings).toContainText('“signed.pdf” is digitally signed. Changing it makes that signature invalid')
   await expect(warnings).toContainText('“encrypted-user.pdf” is password-protected, so this tool can’t open it')
   await expect(page.getByText('Signed', { exact: true })).toBeVisible()
+  // Certified documents get the stronger warning; empty signature fields get none.
+  await page.goto('/remove-pages')
+  await upload(page, 'certified.pdf')
+  await expect(page.getByTestId('file-warnings')).toContainText('is certified by its author, who locked it against changes')
+  await page.goto('/organize-pdf')
+  await upload(page, 'sig-field.pdf')
+  await expect(page.getByRole('list', { name: 'Pages' })).toBeVisible()
+  await expect(page.getByTestId('file-warnings')).toHaveCount(0)
   // Read-only conversion doesn't warn about signatures (images carry none to break).
   await page.goto('/pdf-to-png')
   await upload(page, 'signed.pdf')

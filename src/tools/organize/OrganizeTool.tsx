@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Dropzone } from '../../components/Dropzone'
 import { FileList } from '../../components/FileList'
 import { PageGrid, type GridPage } from '../../components/PageGrid'
@@ -6,12 +6,12 @@ import { ToolFrame } from '../../components/ToolFrame'
 import { Button, LocalBadge, Notice, Workspace } from '../../components/ui'
 import { readBytes, useFiles } from '../../components/useFiles'
 import { useJob } from '../../components/useJob'
-import { usePdfDoc } from '../../components/thumbs'
+import { usePdfDoc } from '../../components/usePdfDoc'
 import { deriveName } from '../../lib/files'
 import { moveItem, pdfBlob } from '../../lib/output'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 
 const ACCEPT: FileKind[] = ['pdf']
 const initial = (n: number): GridPage[] => Array.from({ length: n }, (_, i) => ({ key: `p${i}`, index: i, rotation: 0 }))
@@ -23,9 +23,13 @@ export default function OrganizeTool() {
   const { doc, error: docError, loading } = usePdfDoc(file)
   const job = useJob()
   const [pages, setPages] = useState<GridPage[]>([])
+  const [pagesFor, setPagesFor] = useState<typeof doc>(null)
   const count = doc?.numPages ?? 0
-
-  useEffect(() => { setPages(initial(count)) }, [count, doc])
+  // New document → fresh page list. Adjusting state during render avoids an extra effect pass.
+  if (pagesFor !== doc) {
+    setPagesFor(doc)
+    setPages(initial(count))
+  }
 
   const changed = pages.length !== count || pages.some((p, i) => p.index !== i || p.rotation % 360 !== 0)
   const startOver = () => { job.reset(); sel.clear() }

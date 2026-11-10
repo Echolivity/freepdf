@@ -8,7 +8,7 @@ import { deriveName, formatBytes } from '../../lib/files'
 import { pdfBlob } from '../../lib/output'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 
 const ACCEPT: FileKind[] = ['pdf']
 

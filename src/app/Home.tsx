@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { CATEGORIES, TOOLS, searchTools, toolBySlug, toolKey, type Category, type ToolDef } from '../tools/registry'
 import { clearRecentTools, getRecentTools } from './prefs'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 import type { MessageKey } from '../i18n/core'
 import { useSeo } from './seo'
 
-export const CAT_VAR: Record<Category, string> = {
+const CAT_VAR: Record<Category, string> = {
   organize: 'var(--cat-organize)',
   optimize: 'var(--cat-optimize)',
   'convert-to': 'var(--cat-to)',

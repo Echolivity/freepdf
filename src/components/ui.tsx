@@ -1,6 +1,6 @@
 import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 import type { Message } from '../i18n/core'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -79,7 +79,7 @@ export function Segmented<T extends string | number>({
   return (
     <fieldset>
       <legend className="mb-2 text-sm font-semibold">{label}</legend>
-      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(options.length, 3)}, minmax(0, 1fr))` }}>
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length === 4 ? 2 : Math.min(options.length, 3)}, minmax(0, 1fr))` }}>
         {options.map((o) => (
           <label
             key={String(o.value)}

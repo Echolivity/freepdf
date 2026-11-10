@@ -7,8 +7,14 @@ back to you on your own device, and they are never uploaded. There's no account,
 daily quota, no watermark and no advertising. The site is plain static files, so it costs almost nothing
 to host, which is how it can stay free.
 
-Version **0.3.0**. See [CHANGELOG.md](CHANGELOG.md) and the
-[v0.3.0 release notes](docs/RELEASE_NOTES_v0.3.0.md).
+Version **1.0.0-rc.1** (release candidate). Further reading:
+
+- [Release notes](docs/RELEASE_NOTES_v1.0.0-rc.1.md)
+- [Test and QA report](docs/TEST_AND_QA_REPORT.md)
+- [Deployment guide](docs/DEPLOYMENT.md)
+- [Security](docs/SECURITY.md)
+- [Privacy](docs/PRIVACY.md)
+- [Changelog](CHANGELOG.md)
 
 ## Tools available today
 
@@ -20,12 +26,14 @@ Version **0.3.0**. See [CHANGELOG.md](CHANGELOG.md) and the
 | Remove pages | Delete pages | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up. |
 | Organize PDF | Reorder, rotate and delete individual pages | The document is edited in place, so its structure is preserved. |
 | Rotate PDF | Rotate every page of one or more PDFs | Adds to the existing rotation. Lossless. |
-| Compress PDF | Re-encodes photos and scans, losslessly packs uncompressed data, removes leftover objects | Lossy for images at every level. Transparent, CMYK and special-colour images are skipped and reported. Vector content is never rasterised. You get the original back if nothing can be saved. |
+| Compress PDF | **Lossless**: repacks without touching images. **Light / Balanced / Strong** (lossy): re-encode photos and scans. | A per-file report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved. |
 | JPG / PNG to PDF | JPG, PNG or WebP to one PDF, or one PDF per image | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured. |
 | PDF to JPG / PNG | One image per page at 72, 150 or 300 DPI | Password-protected PDFs can be opened here with their password. |
 
-Tools that rewrite a PDF **warn before processing** when a file is digitally signed, because any change
-makes the signature invalid. They also warn when a file is password-protected and they can't open it.
+Tools that rewrite a PDF **warn before processing** when a file is digitally signed or certified, because
+any change makes the signature invalid. They also warn when a file is password-protected and they can't
+open it. Operations that change nothing return your original file untouched, so its signature stays
+valid.
 
 Planned tools (watermarks, page numbers, password protection and more) are listed in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). They are **not** available yet and aren't shown in the app.
@@ -102,11 +110,22 @@ npm run preview      # serves dist/ with the production security headers
 ## Testing
 
 ```bash
-npm test             # unit/integration (Vitest, Node): processing, compression, structure, i18n
-npm run test:e2e     # browser (Playwright): every tool, Arabic, a11y, lifecycle, responsive, headers
-npm run test:all     # typecheck + lint + unit + build + e2e  (what CI runs)
+npm test                 # unit/integration (Vitest, Node): processing, compression, structure, i18n
+npm run test:e2e         # browser (Playwright): every tool, Arabic, a11y, lifecycle, responsive, headers
+npm run test:all         # typecheck + lint + unit + build + e2e
+npm run test:cloudflare  # browser suite inside Cloudflare's Pages runtime (wrangler pages dev)
+npm run qa               # real-world QA: >100 MB, 800 pages, protected, signed, Arabic, corrupted… → docs/QA_REPORT.md
+npm run qa:cloudflare    # the same QA inside the Cloudflare runtime
 ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright install firefox webkit)
 ```
+
+Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
+- 109 unit tests;
+- 172 browser tests on 5 device profiles;
+- 63 inside the Cloudflare runtime;
+- 30 real-world QA scenarios.
+
+All passed. Firefox, WebKit and physical devices were **not** executed in the build environment.
 
 - **Privacy guard:** an automatic fixture (`tests/e2e/fixtures.ts`) wraps **every** browser test. The
   test fails if any of these happens:
@@ -122,6 +141,8 @@ ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright
 - Details and the list of what is *not* covered are in [docs/TESTING.md](docs/TESTING.md).
 
 ## Deployment (Cloudflare, free plan)
+
+The full guide is [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short:
 
 The site is static. It uses no Workers code, KV, D1 or R2. The largest file is about 1.3 MB, against a
 25 MiB limit. Every route is emitted as its own HTML file, so deep links work on Cloudflare Pages,

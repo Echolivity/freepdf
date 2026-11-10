@@ -4,7 +4,7 @@ import { Button, Notice } from './ui'
 import { Icon } from './Icon'
 import { formatBytes } from '../lib/files'
 import { downloadBlob, zipOutputs, type OutputFile } from '../lib/output'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 
 export function ProgressPanel({ job }: { job: Job }) {
   const { t, tm } = useI18n()

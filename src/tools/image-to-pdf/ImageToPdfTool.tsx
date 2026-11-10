@@ -10,7 +10,7 @@ import { pdfBlob, type OutputFile } from '../../lib/output'
 import type { Orientation, PageSize } from '../../lib/pdf/images'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 
 const ACCEPT: FileKind[] = ['jpeg', 'png', 'webp']
 type Margin = 0 | 18 | 36

@@ -11,7 +11,7 @@ import { deriveName } from '../../lib/files'
 import { pdfBlob, type OutputFile } from '../../lib/output'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
-import { useI18n } from '../../i18n/react'
+import { useI18n } from '../../i18n/context'
 import { toolKey } from '../registry'
 
 const ACCEPT: FileKind[] = ['pdf']

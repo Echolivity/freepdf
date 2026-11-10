@@ -7,3 +7,7 @@ coverage
 *.local
 .env
 .DS_Store
+qa/.inputs
+qa/results/raw.jsonl
+qa/test-results
+.wrangler

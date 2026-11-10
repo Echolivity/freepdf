@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import type { FileKind } from '../lib/validate'
 import { LIMITS, MB } from '../config'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 
 const ACCEPT: Record<FileKind, string> = {
   pdf: '.pdf,application/pdf',

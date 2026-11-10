@@ -12,6 +12,10 @@ import '@fontsource/ibm-plex-sans-arabic/arabic-700.css'
 import './index.css'
 import App from './App'
 import { LangProvider } from './i18n/react'
+import { detectLang, loadLang } from './i18n/core'
+
+// Load the visitor's language before the first render (no flash of English for Arabic visitors).
+await loadLang(detectLang()).catch(() => {})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

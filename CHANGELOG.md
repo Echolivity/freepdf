@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.0-rc.1 — 2026-11-10 (production release candidate)
+
+See [docs/RELEASE_NOTES_v1.0.0-rc.1.md](docs/RELEASE_NOTES_v1.0.0-rc.1.md),
+[docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md) and [docs/SECURITY.md](docs/SECURITY.md).
+
+- **Added:**
+  - Lossless compression level;
+  - certified-PDF (DocMDP) warning;
+  - identity operations return the original bytes;
+  - `npm run test:cloudflare` and `npm run qa:cloudflare` (Cloudflare Pages runtime);
+  - real-world QA harness (`npm run qa`) with independent validators;
+  - `docs/DEPLOYMENT.md` and `docs/SECURITY.md`.
+- **Fixed:**
+  - needless rewrites breaking signatures;
+  - imprecise signature/encryption detection;
+  - double/triple input copies in memory;
+  - 9 lint warnings (now 0);
+  - accidentally committed `.wrangler/` state.
+- **Security:**
+  - PDF.js QuickJS sandbox no longer shipped;
+  - obsolete `interest-cohort` removed;
+  - versioned, immutable PDF.js assets;
+  - bundle scanned for external hosts;
+  - CI runs the suite inside the Pages runtime.
+- **Performance:** Arabic dictionary loaded on demand (homepage JS about 108.9 → 99.7 KB gzipped; worker −37 KB).
+
 ## 0.3.0 — 2026-11-10 (engineering hardening)
 
 See [docs/RELEASE_NOTES_v0.3.0.md](docs/RELEASE_NOTES_v0.3.0.md) for the full notes and

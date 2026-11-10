@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Icon, Logo } from '../components/Icon'
 import { useTheme } from './prefs'
-import { useI18n } from '../i18n/react'
+import { useI18n } from '../i18n/context'
 
 export function Layout() {
   const [theme, toggleTheme] = useTheme()

@@ -58,7 +58,7 @@ test('options are real radio groups and progress is announced', async ({ page })
   await page.goto('/compress-pdf')
   await upload(page, 'scan.pdf')
   const group = page.getByRole('group', { name: 'Compression' })
-  await expect(group.getByRole('radio')).toHaveCount(3)
+  await expect(group.getByRole('radio')).toHaveCount(4) // Lossless, Light, Balanced, Strong
   await group.getByText('Strong').click() // users click the visible option; the radio itself is visually hidden
   await expect(group.getByRole('radio', { name: /Strong/ })).toBeChecked()
 })

@@ -6,6 +6,7 @@ import { UserFacingError } from '../lib/validate'
 import { canvasCodec, toPng } from './codec'
 import type { WorkerRequest, WorkerResponse } from './protocol'
 import type { Message } from '../i18n/core'
+import { transferablesOf } from '../lib/transfer'
 
 declare const self: DedicatedWorkerGlobalScope
 
@@ -13,16 +14,6 @@ function post(msg: WorkerResponse, transfer: Transferable[] = []) {
   self.postMessage(msg, transfer)
 }
 
-function transferablesOf(value: unknown): Transferable[] {
-  const out: Transferable[] = []
-  const visit = (v: unknown) => {
-    if (v instanceof Uint8Array) out.push(v.buffer as ArrayBuffer)
-    else if (Array.isArray(v)) v.forEach(visit)
-    else if (v && typeof v === 'object') Object.values(v).forEach(visit)
-  }
-  visit(value)
-  return [...new Set(out)]
-}
 
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const req = e.data

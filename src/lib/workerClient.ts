@@ -1,6 +1,7 @@
 import type { OpName, WorkerOps, WorkerResponse } from '../workers/protocol'
 import { UserFacingError } from './validate'
 import type { Message } from '../i18n/core'
+import { transferablesOf } from './transfer'
 
 export class CancelledError extends Error {
   constructor() {
@@ -48,7 +49,8 @@ export function runInWorker<K extends OpName>(
       cleanup()
       reject(new UserFacingError('err.worker'))
     }
-    // Copy (not transfer) inputs so the page can retry without re-reading files.
-    worker.postMessage({ id, op, args })
+    // Move (transfer) the input bytes instead of copying them: halves peak memory for large files.
+    // Callers always pass freshly read bytes and never reuse them; a retry re-reads the File.
+    worker.postMessage({ id, op, args }, transferablesOf(args))
   })
 }

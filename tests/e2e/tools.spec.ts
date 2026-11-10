@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from './fixtures'
 import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
-import { fixtureBytes, fixturePath, runAndDownload, runAndDownloadZip, upload } from './helpers'
+import { fixtureBytes, runAndDownload, runAndDownloadZip, upload } from './helpers'
 import { meanDiff, renderPage } from '../unit/render'
 
 const pageCount = async (b: Uint8Array) => (await PDFDocument.load(b)).getPageCount()
@@ -110,6 +110,16 @@ test.describe('Phase 1 tools (end-to-end in a real browser)', () => {
     expect(bytes.length).toBeLessThanOrEqual(fixtureBytes('text-8p.pdf').length)
     // Text-only: no images to re-encode; it may still shrink slightly from lossless repacking, never grow.
     await expect(page.getByTestId('file-note')).toContainText('no images to re-encode')
+  })
+
+  test('Compress PDF: Lossless level keeps images untouched and says so', async ({ page }) => {
+    await page.goto('/compress-pdf')
+    await upload(page, 'compress/photos.pdf')
+    await page.getByText('Lossless', { exact: true }).click()
+    await expect(page.getByText(/nothing visible changes/)).toBeVisible()
+    const { bytes } = await runAndDownload(page)
+    expect(bytes.length).toBeLessThanOrEqual(fixtureBytes('compress/photos.pdf').length)
+    await expect(page.getByTestId('file-note')).toContainText('3 left unchanged (kept as-is in Lossless mode ×3)')
   })
 
   test('Compress PDF: skipped content is reported (transparency, CMYK)', async ({ page }) => {
