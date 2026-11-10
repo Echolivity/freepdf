@@ -117,3 +117,19 @@ Libraries are code-split: the homepage ships React + the directory only. `pdf-li
 | Filenames with path/control chars | Sanitised before use in downloads and ZIP entries |
 | Data retention | Only in-memory Blobs; object URLs revoked on "Start over" / navigation; no IndexedDB, no service-worker cache of user files; `localStorage` holds only theme + recent tool slugs |
 | Exfiltration | CSP `connect-src 'self'`, no third-party scripts, fonts self-hosted |
+
+## 6. Roadmap
+
+### Phase 2 (next)
+1. **Arabic and right-to-left support (first item).**
+   - The interface: Arabic/English switcher (only the chosen language is saved), `dir="rtl"`,
+     logical CSS properties, mirrored direction icons, a self-hosted Arabic typeface, full
+     translation including error messages, and Arabic search keywords.
+   - In PDFs: Arabic fixtures in the test suite, and HarfBuzz (WASM) shaping plus an embedded Arabic
+     font for every tool that writes text onto pages.
+2. Watermarks.
+3. Page numbers.
+4. Headers and footers.
+5. Password protection and unlock (qpdf-wasm).
+6. Metadata removal.
+7. PDF editing and annotations: text, images, drawing, signatures, forms.
