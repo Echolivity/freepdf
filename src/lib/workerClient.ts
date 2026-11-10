@@ -1,0 +1,53 @@
+import type { OpName, WorkerOps, WorkerResponse } from '../workers/protocol'
+import { UserFacingError } from './validate'
+
+export class CancelledError extends Error {
+  constructor() {
+    super('Cancelled')
+    this.name = 'CancelledError'
+  }
+}
+
+/**
+ * Run one operation in a fresh Web Worker. A worker per job keeps the UI responsive, lets the user
+ * cancel instantly (the worker is terminated), and guarantees no document data lingers in a
+ * long-lived worker after the job finishes.
+ */
+export function runInWorker<K extends OpName>(
+  op: K,
+  args: WorkerOps[K][0],
+  opts: { onProgress?: (value: number, label?: string) => void; signal?: AbortSignal } = {},
+): Promise<WorkerOps[K][1]> {
+  return new Promise((resolve, reject) => {
+    if (opts.signal?.aborted) return reject(new CancelledError())
+    const worker = new Worker(new URL('../workers/pdf.worker.ts', import.meta.url), { type: 'module' })
+    const id = 1
+    const cleanup = () => {
+      worker.terminate()
+      opts.signal?.removeEventListener('abort', onAbort)
+    }
+    const onAbort = () => {
+      cleanup()
+      reject(new CancelledError())
+    }
+    opts.signal?.addEventListener('abort', onAbort)
+    worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+      const msg = e.data
+      if (msg.id !== id) return
+      if (msg.type === 'progress') opts.onProgress?.(msg.value, msg.label)
+      else if (msg.type === 'done') {
+        cleanup()
+        resolve(msg.result as WorkerOps[K][1])
+      } else {
+        cleanup()
+        reject(msg.userFacing ? new UserFacingError(msg.message) : new Error(msg.message))
+      }
+    }
+    worker.onerror = (e) => {
+      cleanup()
+      reject(new Error(e.message || 'The processing worker crashed — the file may be too large for this device.'))
+    }
+    // Copy (not transfer) inputs so the page can retry without re-reading files.
+    worker.postMessage({ id, op, args })
+  })
+}

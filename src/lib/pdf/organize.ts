@@ -1,0 +1,96 @@
+import { PDFDocument, degrees } from 'pdf-lib'
+import { UserFacingError } from '../validate'
+export { chunkGroups } from '../ranges'
+import { assemble, loadPdf, normalizeAngle, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
+
+/** Merge PDFs in the given order. */
+export async function mergePdfs(inputs: NamedBytes[], onProgress: ProgressFn = noProgress): Promise<Uint8Array> {
+  if (inputs.length < 2) throw new UserFacingError('Add at least two PDFs to merge.')
+  const out = await PDFDocument.create()
+  for (let i = 0; i < inputs.length; i++) {
+    onProgress(i / inputs.length, `Adding ${inputs[i].name}`)
+    const src = await loadPdf(inputs[i].bytes, inputs[i].name)
+    const pages = await out.copyPages(src, src.getPageIndices())
+    pages.forEach((p) => out.addPage(p))
+  }
+  out.setProducer('FreePDF')
+  out.setCreator('FreePDF')
+  onProgress(0.95, 'Saving')
+  const bytes = await saveDoc(out)
+  onProgress(1)
+  return bytes
+}
+
+/** Split into one document per page group. */
+export async function splitPdf(
+  input: NamedBytes,
+  groups: number[][],
+  onProgress: ProgressFn = noProgress,
+): Promise<Uint8Array[]> {
+  const src = await loadPdf(input.bytes, input.name)
+  const count = src.getPageCount()
+  assertIndices(groups.flat(), count)
+  const results: Uint8Array[] = []
+  for (let i = 0; i < groups.length; i++) {
+    onProgress(i / groups.length, `Creating part ${i + 1} of ${groups.length}`)
+    results.push(await assemble(src, groups[i].map((index) => ({ index }))))
+  }
+  onProgress(1)
+  return results
+}
+
+/** Keep only the given pages (in the given order). */
+export async function extractPages(input: NamedBytes, indices: number[]): Promise<Uint8Array> {
+  if (!indices.length) throw new UserFacingError('Select at least one page to extract.')
+  const src = await loadPdf(input.bytes, input.name)
+  assertIndices(indices, src.getPageCount())
+  return assemble(src, indices.map((index) => ({ index })))
+}
+
+/** Delete the given pages. */
+export async function removePages(input: NamedBytes, indices: number[]): Promise<Uint8Array> {
+  const src = await loadPdf(input.bytes, input.name)
+  const count = src.getPageCount()
+  assertIndices(indices, count)
+  const drop = new Set(indices)
+  if (!drop.size) throw new UserFacingError('Select at least one page to remove.')
+  if (drop.size >= count) throw new UserFacingError("You can't remove every page — at least one has to stay.")
+  // Remove from the end so indices stay valid; keeps forms, outlines and other document-level data intact.
+  ;[...drop].sort((a, b) => b - a).forEach((i) => src.removePage(i))
+  return saveDoc(src)
+}
+
+/** Rotate pages in place. `indices` null = all pages. Angle is added to existing rotation. */
+export async function rotatePdf(input: NamedBytes, angle: number, indices: number[] | null = null): Promise<Uint8Array> {
+  const src = await loadPdf(input.bytes, input.name)
+  const pages = src.getPages()
+  const targets = indices ?? pages.map((_, i) => i)
+  assertIndices(targets, pages.length)
+  for (const i of targets) pages[i].setRotation(degrees(normalizeAngle(pages[i].getRotation().angle + angle)))
+  return saveDoc(src)
+}
+
+export interface PageOp {
+  /** Original 0-based page index. */
+  index: number
+  /** Extra clockwise rotation in degrees (multiple of 90). */
+  rotate?: number
+}
+
+/** Re-build a PDF from an ordered list of pages, with per-page rotation. Pages not listed are dropped. */
+export async function organizePdf(input: NamedBytes, ops: PageOp[]): Promise<Uint8Array> {
+  if (!ops.length) throw new UserFacingError('The document needs at least one page.')
+  const src = await loadPdf(input.bytes, input.name)
+  assertIndices(ops.map((o) => o.index), src.getPageCount())
+  return assemble(src, ops)
+}
+
+export async function getPageCount(input: NamedBytes): Promise<number> {
+  return (await loadPdf(input.bytes, input.name)).getPageCount()
+}
+
+function assertIndices(indices: number[], count: number) {
+  for (const i of indices) {
+    if (!Number.isInteger(i) || i < 0 || i >= count) throw new UserFacingError(`Page ${i + 1} doesn't exist (the document has ${count} pages).`)
+  }
+}

@@ -1,0 +1,32 @@
+import type { NamedBytes } from '../lib/pdf/core'
+import type { PageOp } from '../lib/pdf/organize'
+import type { CompressionLevel, CompressResult } from '../lib/pdf/compress'
+import type { ImagesToPdfOptions } from '../lib/pdf/images'
+
+export interface RawImage {
+  name: string
+  bytes: Uint8Array
+  kind: 'jpeg' | 'png' | 'webp'
+}
+
+/** Every operation the PDF worker can run: [arguments, result]. */
+export interface WorkerOps {
+  merge: [{ files: NamedBytes[] }, Uint8Array]
+  split: [{ file: NamedBytes; groups: number[][] }, Uint8Array[]]
+  extract: [{ file: NamedBytes; indices: number[] }, Uint8Array]
+  remove: [{ file: NamedBytes; indices: number[] }, Uint8Array]
+  rotate: [{ file: NamedBytes; angle: number; indices: number[] | null }, Uint8Array]
+  organize: [{ file: NamedBytes; ops: PageOp[] }, Uint8Array]
+  compress: [{ file: NamedBytes; level: CompressionLevel }, CompressResult]
+  imagesToPdf: [{ images: RawImage[]; options: ImagesToPdfOptions }, Uint8Array]
+  pageCount: [{ file: NamedBytes }, number]
+}
+
+export type OpName = keyof WorkerOps
+
+export type WorkerRequest = { [K in OpName]: { id: number; op: K; args: WorkerOps[K][0] } }[OpName]
+
+export type WorkerResponse =
+  | { id: number; type: 'progress'; value: number; label?: string }
+  | { id: number; type: 'done'; result: unknown }
+  | { id: number; type: 'error'; message: string; userFacing: boolean }
