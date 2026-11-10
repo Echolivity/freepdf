@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.0 — 2026-11-10 (engineering hardening)
+
+See [docs/RELEASE_NOTES_v0.3.0.md](docs/RELEASE_NOTES_v0.3.0.md) for the full notes and
+[docs/AUDIT_v0.3.0.md](docs/AUDIT_v0.3.0.md) for the findings table.
+
+- **Fixed:**
+  - silent invalidation of signed PDFs (now flagged before processing);
+  - lossless images with chained filters weren't compressed;
+  - merge dropped document info;
+  - the language button's accessible name;
+  - misleading "No limits" copy;
+  - undocumented `freepdf:lang` key.
+- **Security:**
+  - a global privacy guard on every browser test, self-tested;
+  - a tighter CSP (no `blob:`/`data:` workers or connections) plus CORP;
+  - a header regression test;
+  - `npm audit` in CI;
+  - Dependabot;
+  - deploys gated by `DEPLOY_ENABLED`.
+- **Reliability:**
+  - a compression report with skip reasons;
+  - real-encoder compression matrix tests;
+  - structure matrix tests (annotations, external links, attachments, mixed sizes, metadata);
+  - lifecycle, cancel, crash-recovery and concurrency tests.
+- **Product:**
+  - new landing message;
+  - formats, limits, privacy and FAQ on each tool page;
+  - limits table and storage table with a clear button on the privacy page;
+  - per-route SEO metadata, canonical/sitemap when `SITE_URL` is set, and robots.txt.
+- **Testing:**
+  - 98 unit/integration tests;
+  - 171 browser tests across 5 emulated device profiles;
+  - axe-core WCAG AA checks in EN and AR, light and dark;
+  - Firefox and WebKit projects for CI.
+
 ## 0.2.0 — 2026-11-10 (Phase 2, part 1: Arabic)
 
 ### Added

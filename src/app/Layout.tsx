@@ -38,7 +38,9 @@ export function Layout() {
             type="button"
             onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
             className="h-10 rounded-lg px-2.5 text-[15px] font-semibold text-muted transition-colors hover:bg-surface hover:text-ink"
-            aria-label={t('lang.otherLabel')}
+            // The visible language name (in its own language) is the accessible name (WCAG 2.5.3);
+            // the longer description goes in the tooltip.
+            title={t('lang.otherLabel')}
             lang={lang === 'ar' ? 'en' : 'ar'}
             data-testid="lang-toggle"
           >
@@ -47,6 +49,7 @@ export function Layout() {
           <button
             type="button"
             onClick={toggleTheme}
+            data-testid="theme-toggle"
             className="grid h-10 w-10 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-ink"
             aria-label={theme === 'dark' ? t('theme.toLight') : t('theme.toDark')}
             title={theme === 'dark' ? t('theme.light') : t('theme.dark')}

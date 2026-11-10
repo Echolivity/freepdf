@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { CATEGORIES, TOOLS, searchTools, toolBySlug, toolKey, type Category, type ToolDef } from '../tools/registry'
 import { clearRecentTools, getRecentTools } from './prefs'
 import { useI18n } from '../i18n/react'
 import type { MessageKey } from '../i18n/core'
+import { useSeo } from './seo'
 
 export const CAT_VAR: Record<Category, string> = {
   organize: 'var(--cat-organize)',
@@ -55,9 +56,7 @@ export function Home() {
   const results = useMemo(() => searchTools(query), [query])
   const searching = query.trim().length > 0
 
-  useEffect(() => {
-    document.title = t('app.title')
-  }, [t])
+  useSeo(t('app.title'), t('app.description'))
 
   return (
     <>
@@ -67,8 +66,9 @@ export function Home() {
             <Icon name="shield" size={16} className="text-ok" />
             {t('home.badge')}
           </p>
-          <h1 className="max-w-3xl text-[2.6rem] font-bold leading-[1.02] sm:text-6xl lg:text-7xl">
-            {t('home.h1a')} <span className="ink-underline text-accent">{t('home.h1b')}</span>
+          <h1 className="max-w-4xl text-[2.5rem] font-bold leading-[1.05] sm:text-6xl lg:text-[4.25rem]">
+            {t('home.h1a')}{' '}
+            <span className="mt-1 block"><span className="ink-underline text-accent">{t('home.h1b')}</span></span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted">{t('home.sub')}</p>
 

@@ -116,6 +116,7 @@ export default function PdfToImageTool({ tool }: { tool: ToolDef }) {
             <div className="space-y-3">
               <FileList
                 files={sel.files}
+                modifiesPdf={false}
                 onRemove={sel.remove}
                 extra={(f) => {
                   const s = locks[f.id]?.status

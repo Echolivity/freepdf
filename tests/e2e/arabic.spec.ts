@@ -1,8 +1,8 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { readFileSync } from 'node:fs'
 import JSZip from 'jszip'
 import { PDFDocument } from 'pdf-lib'
-import { guardPage, upload } from './helpers'
+import { upload } from './helpers'
 
 test.use({ locale: 'ar-SA' })
 
@@ -16,22 +16,20 @@ async function assertNoEnglish(page: Page) {
 }
 
 test('Arabic browsers get the Arabic, right-to-left interface by default', async ({ page }) => {
-  const g = guardPage(page)
   await page.goto('/')
   const html = page.locator('html')
   await expect(html).toHaveAttribute('dir', 'rtl')
   await expect(html).toHaveAttribute('lang', 'ar')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('كل أدوات PDF التي تحتاجها')
-  await expect(page).toHaveTitle(/مجانًا بالكامل/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('أدوات PDF خاصة. ملفاتك تبقى على جهازك.')
+  await expect(page).toHaveTitle('FreePDF — أدوات PDF خاصة. ملفاتك تبقى على جهازك.')
   await assertNoEnglish(page)
-  g.assertClean()
 })
 
 test('language switch works both ways and is remembered', async ({ page }) => {
   await page.goto('/')
   await page.getByTestId('lang-toggle').click()
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Every PDF tool you need. Completely free.')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Private PDF tools. Your files stay on your device.')
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await page.getByTestId('lang-toggle').click()
@@ -46,7 +44,6 @@ test('Arabic search finds tools', async ({ page }) => {
 })
 
 test('merge in Arabic: translated validation, progress and result, no English left', async ({ page }) => {
-  const g = guardPage(page)
   await page.goto('/merge-pdf')
   await assertNoEnglish(page)
   await upload(page, 'arabic.pdf', 'text-8p.pdf', 'not-a-pdf.pdf')
@@ -58,7 +55,6 @@ test('merge in Arabic: translated validation, progress and result, no English le
   await assertNoEnglish(page)
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download').click()])
   expect((await PDFDocument.load(readFileSync((await dl.path())!))).getPageCount()).toBe(11)
-  g.assertClean()
 })
 
 test('engine errors arrive in Arabic (encrypted file)', async ({ page }) => {

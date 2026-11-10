@@ -101,7 +101,7 @@ export function Dropzone({
         {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}
       </p>
       <p className="mt-6 text-sm text-muted">
-        {t('drop.limits', { kinds, mb: LIMITS.maxFileBytes / MB })}
+        {t('drop.limits', { kinds, mb: LIMITS.maxFileBytes / MB, job: LIMITS.maxJobBytes / MB })}
       </p>
       <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
         <Icon name="shield" size={16} className="text-ok" />

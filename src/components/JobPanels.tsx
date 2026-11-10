@@ -70,7 +70,7 @@ export function ResultPanel({ job, onStartOver, zipName = 'freepdf-files.zip' }:
       </div>
 
       {files.length > 1 && <OutputList files={files} />}
-      {files.length === 1 && files[0].note && !job.summary && <p className="mt-4 text-sm text-muted">{tm(files[0].note)}</p>}
+      {files.length === 1 && files[0].note && <p className="mt-4 text-sm text-muted" data-testid="file-note">{tm(files[0].note)}</p>}
 
       <p className="mt-6 border-t border-line pt-4 text-sm text-muted">
         {t('job.ephemeral')}

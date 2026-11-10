@@ -5,7 +5,8 @@
 **The browser is the server.** Every tool that can run on the user's own device does so. Files are
 read into memory, processed by JavaScript/WebAssembly in a Web Worker, and handed back as a download.
 Nothing is uploaded, so there is nothing to retain, log, sell or leak — and nothing for us to pay for,
-which is what makes "free, no limits" sustainable.
+which is what makes "free, with no subscription and no daily quota" sustainable. (There *are* technical
+memory-safety limits; see §5.)
 
 ```
 ┌──────────────────────────── User's browser ─────────────────────────────┐
@@ -91,8 +92,11 @@ src/
   app/            routing, layout, theme, recent-tools store
   components/     Dropzone, FileList, PageGrid (lazy thumbnails), ProgressBar, ResultPanel …
   tools/          one folder per tool page (lazy-loaded route chunks)
+  i18n/           en.ts (source of truth), ar.ts, plural rules, bidi isolation, React provider
   lib/
-    pdf/          pure processing functions (pdf-lib) — unit-tested in Node
+    inspect.ts    streaming pre-check: signed / encrypted
+    pdf/          pure processing functions (pdf-lib), unit-tested in Node
+                  structure.ts: in-place page-tree rebuild and pruning of fields/bookmarks/links
     render/       PDF.js wrappers (browser only)
     validate.ts   size limits, magic bytes, image dimension sniffing
     ranges.ts     "1-3, 5, 8-" page-range parser
@@ -111,16 +115,27 @@ Libraries are code-split: the homepage ships React + the directory only. `pdf-li
 
 | Risk | Mitigation |
 |------|-----------|
-| Huge files exhausting memory | Per-file limit 250 MB, per-job total 600 MB (configurable in `src/config.ts`) |
+| Huge files exhausting memory | Device-aware limits (`src/config.ts`): 250 MB per file / 600 MB per job on computers, 100 / 200 MB on phones and low-memory devices; 200 files per job. They are shown on every upload screen, and a warning appears before large jobs. |
+| Signed or protected PDFs | Before processing, the raw bytes are streamed and scanned (`src/lib/inspect.ts`). Tools that rewrite a PDF warn that a digital signature will become invalid, and that a password-protected file can't be opened. |
 | Wrong/malicious file types | Magic-byte check (`%PDF-`, JPEG `FFD8FF`, PNG signature, `RIFF…WEBP`) — extension and MIME are not trusted |
 | Image decompression bombs | Image dimensions read from the header *before* decoding; > 100 MP rejected |
 | PDF bombs / pathological files | Parsing runs in a Worker; UI stays responsive; user can cancel (worker terminated); rendered canvases capped at 16 384 px per side / 60 MP |
 | Encrypted PDFs | Detected and reported clearly; PDF→image prompts for the password (PDF.js decrypts locally) |
 | Filenames with path/control chars | Sanitised before use in downloads and ZIP entries |
-| Data retention | Only in-memory Blobs; object URLs revoked on "Start over" / navigation; no IndexedDB, no service-worker cache of user files; `localStorage` holds only theme + recent tool slugs |
-| Exfiltration | CSP `connect-src 'self'` blocks third-party origins; no third-party scripts; fonts self-hosted; static host with no upload endpoint; E2E fails on any request with a body |
+| Data retention | Only in-memory Blobs. Preview object URLs are revoked on "Start over" or navigation; download URLs 30 s after the click. No IndexedDB, no service worker, no cookies. `localStorage` holds exactly `freepdf:theme`, `freepdf:lang` and `freepdf:recent` (tool slugs only), enforced by the test guard. |
+| Exfiltration | CSP: `connect-src 'self'`, `worker-src 'self'`, no remote hosts, no `unsafe-eval`. No third-party scripts; fonts are self-hosted. The static host has no upload endpoint. A global E2E guard fails on any external, non-GET, body-carrying or unexpected request. |
 
 ## 6. Roadmap
+
+### Phase 3 hardening (v0.3.0, done)
+These were done ahead of the Phase 2 feature tools:
+- a global privacy guard on every browser test;
+- documented storage;
+- honest limits messaging;
+- a compression report;
+- warnings for signed PDFs;
+- lifecycle, accessibility and device tests;
+- SEO metadata.
 
 ### Phase 2 (next)
 1. ✅ **Arabic and right-to-left support (first item).** Shipped in 0.2.0: the full interface is

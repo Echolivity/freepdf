@@ -12,12 +12,15 @@ export function FileList({
   onMove,
   reorderable = false,
   extra,
+  modifiesPdf = true,
 }: {
   files: ValidatedFile[]
   onRemove: (id: string) => void
   onMove?: (from: number, to: number) => void
   reorderable?: boolean
   extra?: (f: ValidatedFile) => ReactNode
+  /** Tools that rewrite the PDF warn about signatures and can't open protected files. */
+  modifiesPdf?: boolean
 }) {
   const { t } = useI18n()
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -53,7 +56,11 @@ export function FileList({
             <FileThumb file={f} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold" title={f.name} dir="auto">{f.name}</span>
+            <span className="flex items-center gap-2">
+              <span className="truncate font-semibold" title={f.name} dir="auto">{f.name}</span>
+              {f.signed && <span className="shrink-0 rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">{t('files.signedBadge')}</span>}
+              {f.encrypted && <span className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 text-xs font-semibold text-muted">{t('files.lockedBadge')}</span>}
+            </span>
             <span className="block text-sm text-muted"><bdi dir="ltr">{formatBytes(f.size)}</bdi>{extra?.(f)}</span>
           </span>
           {reorderable && onMove && (
@@ -72,6 +79,22 @@ export function FileList({
         </li>
       ))}
     </ol>
+    {modifiesPdf && files.some((f) => f.signed || f.encrypted) && (
+      <div className="mt-2 space-y-2" data-testid="file-warnings">
+        {files.filter((f) => f.signed && !f.encrypted).map((f) => (
+          <p key={`s${f.id}`} role="note" className="flex items-start gap-2 rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm">
+            <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-accent" />
+            <span>{t('files.signed', { name: f.name })}</span>
+          </p>
+        ))}
+        {files.filter((f) => f.encrypted).map((f) => (
+          <p key={`e${f.id}`} role="note" className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-sm">
+            <Icon name="lock" size={18} className="mt-0.5 shrink-0 text-danger" />
+            <span>{t('files.encrypted', { name: f.name })}</span>
+          </p>
+        ))}
+      </div>
+    )}
     </>
   )
 }

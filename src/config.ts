@@ -15,11 +15,17 @@ function detectLowMemory(): boolean {
 
 export const LOW_MEMORY = detectLowMemory()
 
+/** Both profiles, for transparent display. LIMITS below is the one in force on this device. */
+export const LIMIT_PROFILES = {
+  standard: { maxFileBytes: 250 * MB, maxJobBytes: 600 * MB },
+  constrained: { maxFileBytes: 100 * MB, maxJobBytes: 200 * MB },
+} as const
+
 export const LIMITS = {
   /** Largest single input file. */
-  maxFileBytes: (LOW_MEMORY ? 100 : 250) * MB,
+  maxFileBytes: LIMIT_PROFILES[LOW_MEMORY ? 'constrained' : 'standard'].maxFileBytes,
   /** Largest combined input for one job. */
-  maxJobBytes: (LOW_MEMORY ? 200 : 600) * MB,
+  maxJobBytes: LIMIT_PROFILES[LOW_MEMORY ? 'constrained' : 'standard'].maxJobBytes,
   /** Show a "this may be slow" warning above this combined size. */
   warnJobBytes: (LOW_MEMORY ? 40 : 150) * MB,
   /** Most files accepted in one job. */

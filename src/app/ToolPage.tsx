@@ -5,6 +5,8 @@ import { recordRecentTool } from './prefs'
 import { NotFound } from './NotFound'
 import { Icon } from '../components/Icon'
 import { useI18n } from '../i18n/react'
+import { ToolAbout } from './ToolAbout'
+import { useSeo } from './seo'
 
 export function ToolPage() {
   const { slug = '' } = useParams()
@@ -15,9 +17,10 @@ export function ToolPage() {
     if (tool) recordRecentTool(tool.slug)
   }, [tool])
 
-  useEffect(() => {
-    document.title = tool ? t('app.toolTitle', { title: t(toolKey(tool.slug, 'title')) }) : t('app.title')
-  }, [tool, t])
+  useSeo(
+    tool ? t('app.toolTitle', { title: t(toolKey(tool.slug, 'title')) }) : t('app.title'),
+    tool ? t(toolKey(tool.slug, 'description')) : t('app.description'),
+  )
 
   if (!tool) return <NotFound />
   const Component = tool.component
@@ -35,6 +38,7 @@ export function ToolPage() {
       <Suspense fallback={<p role="status" className="py-16 text-center text-muted">{t('tool.loading')}</p>}>
         <Component key={tool.slug} tool={tool} />
       </Suspense>
+      <ToolAbout tool={tool} />
     </div>
   )
 }

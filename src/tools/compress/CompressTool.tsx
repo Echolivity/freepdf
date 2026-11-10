@@ -7,7 +7,7 @@ import { readBytes, useFiles } from '../../components/useFiles'
 import { useJob } from '../../components/useJob'
 import { deriveName, formatBytes } from '../../lib/files'
 import { pdfBlob, type OutputFile } from '../../lib/output'
-import type { CompressionLevel } from '../../lib/pdf/compress'
+import type { CompressionLevel, SkipReason } from '../../lib/pdf/compress'
 import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
 import { useI18n } from '../../i18n/react'
@@ -16,7 +16,7 @@ import type { Message } from '../../i18n/core'
 const ACCEPT: FileKind[] = ['pdf']
 
 export default function CompressTool() {
-  const { t, tm } = useI18n()
+  const { t, tm, lang } = useI18n()
   const sel = useFiles(ACCEPT, { multiple: true })
   const job = useJob()
   const [level, setLevel] = useState<CompressionLevel>('balanced')
@@ -44,19 +44,35 @@ export default function CompressTool() {
         after += res.bytes.length
         if (res.unchanged) unchanged++
         const saved = 1 - res.bytes.length / res.originalSize
+        const { report } = res
+        const skipEntries = (Object.entries(report.skipped) as [SkipReason, number][]).filter(([, n]) => n > 0)
+        const skippedCount = skipEntries.reduce((a, [, n]) => a + n, 0)
+        // Honest per-file report: sizes, what was re-encoded, and what was left alone and why.
         out.push({
           name: deriveName(f.name, res.unchanged ? '' : '-compressed', 'pdf'),
           blob: pdfBlob(res.bytes),
-          note: res.unchanged
-            ? { key: 'cmp.unchangedNote' }
-            : { key: 'cmp.savedNote', params: { before: formatBytes(res.originalSize), after: formatBytes(res.bytes.length), pct: Math.round(saved * 100) } },
+          note: {
+            key: 'cmp.note',
+            params: {
+              size: res.unchanged
+                ? t('cmp.unchangedNote')
+                : t('cmp.savedNote', { before: formatBytes(res.originalSize), after: formatBytes(res.bytes.length), pct: Math.round(saved * 100) }),
+              images: report.images ? t('cmp.images', { count: report.images, done: res.unchanged ? 0 : report.recompressed }) : t('cmp.noImages'),
+              skipped: skippedCount
+                ? t('cmp.skipped', { count: skippedCount, reasons: skipEntries.map(([r, n]) => `${t(`cmp.skip.${r}`)}${n > 1 ? ` ×${n}` : ''}`).join(lang === 'ar' ? '، ' : ', ') })
+                : '',
+            },
+          },
         })
       }
       const pct = before ? Math.round((1 - after / before) * 100) : 0
-      const summary: Message =
+      // One file: its own note already reports sizes. Several files (or nothing gained): add a summary.
+      const summary: Message | undefined =
         unchanged === sel.files.length
           ? { key: 'cmp.allUnchanged' }
-          : { key: 'cmp.summary', params: { before: formatBytes(before), after: formatBytes(after), pct } }
+          : sel.files.length > 1
+            ? { key: 'cmp.summary', params: { before: formatBytes(before), after: formatBytes(after), pct } }
+            : undefined
       return { files: out, summary }
     })
 

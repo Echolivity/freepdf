@@ -50,7 +50,7 @@ export async function assemble(
     if (extra) page.setRotation(degrees(normalizeAngle(page.getRotation().angle + extra)))
     out.addPage(page)
   })
-  copyBasicMetadata(src, out)
+  copyDocumentInfo(src, out)
   return saveDoc(out)
 }
 
@@ -58,10 +58,17 @@ export function normalizeAngle(a: number): number {
   return ((Math.round(a / 90) * 90) % 360 + 360) % 360
 }
 
-function copyBasicMetadata(src: PDFDocument, out: PDFDocument) {
+/** Carry title/author/subject/keywords (any script, e.g. Arabic) into a newly built document. */
+export function copyDocumentInfo(src: PDFDocument, out: PDFDocument) {
   try {
     const title = src.getTitle()
     if (title) out.setTitle(title)
+    const author = src.getAuthor()
+    if (author) out.setAuthor(author)
+    const subject = src.getSubject()
+    if (subject) out.setSubject(subject)
+    const keywords = src.getKeywords()
+    if (keywords) out.setKeywords([keywords])
   } catch {
     /* metadata is optional */
   }

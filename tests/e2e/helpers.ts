@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test'
+import { expect } from './fixtures'
+import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -6,29 +7,6 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 export const fixturePath = (name: string) => join(here, '..', 'fixtures', name)
 export const fixtureBytes = (name: string) => readFileSync(fixturePath(name))
-
-/** Fail the test on any uncaught error or CSP violation; record any request that leaves the origin. */
-export function guardPage(page: Page) {
-  const problems: string[] = []
-  const external: string[] = []
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
-  page.on('console', (m) => {
-    if (m.type() === 'error' && /Content Security Policy|Refused to/i.test(m.text())) problems.push(`csp: ${m.text()}`)
-  })
-  page.on('request', (r) => {
-    const u = new URL(r.url())
-    if (['blob:', 'data:'].includes(u.protocol)) return
-    if (!['localhost', '127.0.0.1'].includes(u.hostname)) external.push(r.url())
-    // Same-origin requests are allowed by CSP, so check them here: only bodiless GETs for app assets.
-    if (r.method() !== 'GET' || r.postDataBuffer()) external.push(`${r.method()} ${r.url()} (request with body/non-GET)`)
-  })
-  return {
-    assertClean() {
-      expect(problems, problems.join('\n')).toEqual([])
-      expect(external, `Requests left the origin: ${external.join(', ')}`).toEqual([])
-    },
-  }
-}
 
 export async function upload(page: Page, ...names: string[]) {
   await page.getByTestId('file-input').first().setInputFiles(names.map(fixturePath))

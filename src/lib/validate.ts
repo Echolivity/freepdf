@@ -1,5 +1,6 @@
 import { LIMITS, MB } from '../config'
 import { msg, translate, type Message, type MessageKey, type Params } from '../i18n/core'
+import { scanPdfMarkers } from './inspect'
 
 export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp'
 
@@ -107,6 +108,10 @@ export interface ValidatedFile {
   name: string
   kind: FileKind
   size: number
+  /** PDF only: contains a digital signature (editing invalidates it). */
+  signed?: boolean
+  /** PDF only: password/permission protected. */
+  encrypted?: boolean
 }
 
 const KIND_LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP' }
@@ -160,7 +165,8 @@ export async function validateFiles(
       }
     }
     total += file.size
-    accepted.push({ id: newId(), file, name: file.name, kind, size: file.size })
+    const markers = kind === 'pdf' ? await scanPdfMarkers(file) : {}
+    accepted.push({ id: newId(), file, name: file.name, kind, size: file.size, ...markers })
   }
   return { accepted, rejected }
 }

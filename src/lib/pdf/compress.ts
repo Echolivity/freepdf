@@ -6,7 +6,9 @@ import {
   PDFRawStream,
   PDFRef,
   PDFStream,
+  PDFNull,
   decodePDFRawStream,
+  type PDFObject,
   type PDFContext,
 } from 'pdf-lib'
 import pako from 'pako'
@@ -40,13 +42,37 @@ export const LEVELS: Record<CompressionLevel, { quality: number; maxDim: number;
   strong: { quality: 0.55, maxDim: 1500, convertLossless: true },
 }
 
+/** Why an image was left exactly as it was. */
+export type SkipReason =
+  | 'transparency' // has a soft mask / colour-key mask: re-encoding could misalign or flatten it
+  | 'colourSpace' // CMYK, Indexed, Lab, Separation… can't round-trip through an RGB canvas faithfully
+  | 'keptLossless' // lossless image at the Light level, which only touches photos
+  | 'small' // too small to be worth it
+  | 'encoding' // unusual bit depth, decode array or filter chain
+  | 'noGain' // re-encoding didn't save at least 10%
+  | 'decodeFailed' // the browser couldn't decode it
+
+export interface CompressReport {
+  /** Images found (soft-mask channels are counted as part of their image, not separately). */
+  images: number
+  recompressed: number
+  skipped: Record<SkipReason, number>
+  /** Uncompressed non-image streams that were losslessly deflated. */
+  streamsDeflated: number
+  /** Unreachable objects (leftovers of earlier edits) removed. */
+  objectsRemoved: number
+}
+
 export interface CompressResult {
   bytes: Uint8Array
   originalSize: number
   /** True when no smaller version could be produced and the original bytes were returned. */
   unchanged: boolean
   imagesRecompressed: number
+  report: CompressReport
 }
+
+const emptySkips = (): Record<SkipReason, number> => ({ transparency: 0, colourSpace: 0, keptLossless: 0, small: 0, encoding: 0, noGain: 0, decodeFailed: 0 })
 
 const N = (s: string) => PDFName.of(s)
 /** Only bother with images whose stream is at least this large. */
@@ -65,7 +91,7 @@ export async function compressPdf(
   const ctx = doc.context
   onProgress(0.05, msg('prog.analysing'))
 
-  removeUnreachable(ctx)
+  const report: CompressReport = { images: 0, recompressed: 0, skipped: emptySkips(), streamsDeflated: 0, objectsRemoved: removeUnreachable(ctx) }
 
   const entries = ctx.enumerateIndirectObjects()
   // Soft masks are images too, but must stay single-channel; never re-encode them.
@@ -76,16 +102,19 @@ export async function compressPdf(
       if (sm instanceof PDFRef) softMasks.add(sm.toString())
     }
   }
-  let imagesRecompressed = 0
   for (let i = 0; i < entries.length; i++) {
     const [ref, obj] = entries[i]
     if (i % 25 === 0) onProgress(0.05 + 0.85 * (i / entries.length), msg('prog.optimising'))
     if (!(obj instanceof PDFRawStream)) continue
     const dict = obj.dict
     if (dict.get(N('Subtype')) === N('Image')) {
-      if (codec && !softMasks.has(ref.toString()) && (await recompressImage(ctx, ref, obj, codec, cfg))) imagesRecompressed++
-    } else {
-      deflateIfUncompressed(ctx, ref, obj)
+      if (softMasks.has(ref.toString())) continue // part of another image
+      report.images++
+      const outcome = codec ? await recompressImage(ctx, ref, obj, codec, cfg) : 'encoding'
+      if (outcome === 'ok') report.recompressed++
+      else report.skipped[outcome]++
+    } else if (deflateIfUncompressed(ctx, ref, obj)) {
+      report.streamsDeflated++
     }
   }
 
@@ -93,9 +122,9 @@ export async function compressPdf(
   const bytes = await saveDoc(doc)
   onProgress(1)
   if (bytes.length >= input.bytes.length) {
-    return { bytes: input.bytes, originalSize: input.bytes.length, unchanged: true, imagesRecompressed: 0 }
+    return { bytes: input.bytes, originalSize: input.bytes.length, unchanged: true, imagesRecompressed: 0, report }
   }
-  return { bytes, originalSize: input.bytes.length, unchanged: false, imagesRecompressed }
+  return { bytes, originalSize: input.bytes.length, unchanged: false, imagesRecompressed: report.recompressed, report }
 }
 
 function filterNames(dict: PDFDict): string[] | null {
@@ -113,16 +142,17 @@ function filterNames(dict: PDFDict): string[] | null {
   return null
 }
 
-function deflateIfUncompressed(ctx: PDFContext, ref: PDFRef, stream: PDFRawStream) {
+function deflateIfUncompressed(ctx: PDFContext, ref: PDFRef, stream: PDFRawStream): boolean {
   const dict = stream.dict
   const filters = filterNames(dict)
-  if (!filters || filters.length) return
+  if (!filters || filters.length) return false
   // XMP metadata is conventionally left readable; tiny streams don't benefit.
-  if (dict.get(N('Type')) === N('Metadata') || stream.contents.length < 256) return
+  if (dict.get(N('Type')) === N('Metadata') || stream.contents.length < 256) return false
   const deflated = pako.deflate(stream.contents)
-  if (deflated.length >= stream.contents.length * MIN_GAIN) return
+  if (deflated.length >= stream.contents.length * MIN_GAIN) return false
   dict.set(N('Filter'), N('FlateDecode'))
   ctx.assign(ref, PDFRawStream.of(dict, deflated))
+  return true
 }
 
 function num(dict: PDFDict, key: string): number | undefined {
@@ -150,38 +180,42 @@ async function recompressImage(
   stream: PDFRawStream,
   codec: ImageCodec,
   cfg: (typeof LEVELS)[CompressionLevel],
-): Promise<boolean> {
+): Promise<'ok' | SkipReason> {
   const dict = stream.dict
-  if (stream.contents.length < MIN_IMAGE_BYTES) return false
-  // Masks, colour-key masks and decode arrays don't survive lossy re-encoding faithfully. Images with a
-  // soft mask (transparency) are left alone so the mask and the image can never get out of step.
-  if (dict.lookup(N('ImageMask')) || dict.lookup(N('Mask')) || dict.lookup(N('SMask')) || dict.lookup(N('SMaskInData')) || dict.lookup(N('Decode'))) return false
-  if (num(dict, 'BitsPerComponent') !== 8) return false
+  // Images with transparency are left alone so the mask and the image can never get out of step.
+  if (dict.lookup(N('SMask')) || dict.lookup(N('Mask')) || dict.lookup(N('SMaskInData'))) return 'transparency'
+  if (dict.lookup(N('ImageMask'))) return 'encoding'
+  if (stream.contents.length < MIN_IMAGE_BYTES) return 'small'
+  const comp = components(ctx, dict)
+  if (!comp) return 'colourSpace'
+  // Decode arrays and non-8-bit samples don't survive lossy re-encoding faithfully.
+  if (dict.lookup(N('Decode')) || num(dict, 'BitsPerComponent') !== 8) return 'encoding'
   const width = num(dict, 'Width')
   const height = num(dict, 'Height')
-  if (!width || !height || width * height > 100_000_000) return false
-  const comp = components(ctx, dict)
-  if (!comp) return false
+  if (!width || !height || width * height > 100_000_000) return 'encoding'
   const filters = filterNames(dict)
-  if (!filters) return false
+  if (!filters || !filters.length) return 'encoding'
+  const isJpeg = filters[filters.length - 1] === 'DCTDecode' && filters.slice(0, -1).every((f) => TRANSPORT_FILTERS.has(f))
+  const isLossless = !isJpeg && filters.every((f) => TRANSPORT_FILTERS.has(f))
+  if (!isJpeg && !isLossless) return 'encoding' // JPX, JBIG2, CCITT…
+  if (isLossless && !cfg.convertLossless) return 'keptLossless'
 
   let encoded: EncodedImage | null = null
   try {
-    if (filters.length && filters[filters.length - 1] === 'DCTDecode' && filters.slice(0, -1).every((f) => TRANSPORT_FILTERS.has(f))) {
+    if (isJpeg) {
       const jpeg = filters.length === 1 ? stream.contents : stripTransportFilters(stream, filters.slice(0, -1))
       const needsResize = Math.max(width, height) > cfg.maxDim
       encoded = await codec.recompressJpeg(jpeg, needsResize ? cfg.maxDim : Math.max(width, height), cfg.quality)
-    } else if (cfg.convertLossless && filters.length === 1 && filters[0] === 'FlateDecode') {
-      const raw = decodeFlateImage(stream, width, height, comp.n)
-      if (!raw) return false
-      encoded = await codec.encodeRaw(raw, width, height, comp.n, cfg.maxDim, cfg.quality)
+      if (!encoded) return 'colourSpace' // e.g. a CMYK/YCCK JPEG declared as RGB
     } else {
-      return false
+      const raw = decodeLosslessImage(stream, filters, width, height, comp.n)
+      if (!raw) return 'encoding'
+      encoded = await codec.encodeRaw(raw, width, height, comp.n, cfg.maxDim, cfg.quality)
     }
   } catch {
-    return false // undecodable image: leave it exactly as it was
+    return 'decodeFailed' // undecodable image: leave it exactly as it was
   }
-  if (!encoded || encoded.bytes.length >= stream.contents.length * MIN_GAIN) return false
+  if (!encoded || encoded.bytes.length >= stream.contents.length * MIN_GAIN) return 'noGain'
 
   dict.set(N('Filter'), N('DCTDecode'))
   dict.delete(N('DecodeParms'))
@@ -190,7 +224,7 @@ async function recompressImage(
   dict.set(N('BitsPerComponent'), PDFNumber.of(8))
   if (!comp.keepColorSpace) dict.set(N('ColorSpace'), N('DeviceRGB'))
   ctx.assign(ref, PDFRawStream.of(dict, encoded.bytes))
-  return true
+  return 'ok'
 }
 
 /** Encodings that wrap a JPEG without changing it (e.g. ReportLab's [/ASCII85Decode /DCTDecode]). */
@@ -202,9 +236,19 @@ function stripTransportFilters(stream: PDFRawStream, filters: string[]): Uint8Ar
   return decodePDFRawStream(PDFRawStream.of(dict, stream.contents)).decode()
 }
 
-/** Inflate an 8-bit image stream, undoing PNG predictors (10–15). Returns null for unsupported encodings. */
-export function decodeFlateImage(stream: PDFRawStream, width: number, height: number, comps: number): Uint8Array | null {
-  const parms = stream.dict.lookup(N('DecodeParms'))
+/**
+ * Decode a losslessly-compressed 8-bit image (any chain of Flate/LZW/ASCII85/ASCIIHex/RunLength),
+ * undoing PNG predictors (10–15). Returns null for unsupported encodings.
+ */
+export function decodeLosslessImage(stream: PDFRawStream, filters: string[], width: number, height: number, comps: number): Uint8Array | null {
+  const rawParms = stream.dict.lookup(N('DecodeParms'))
+  // With a filter chain, DecodeParms is an array aligned with Filter; predictors live on Flate/LZW.
+  let parms: PDFObject | undefined = rawParms
+  if (rawParms instanceof PDFArray) {
+    const idx = filters.findIndex((f) => f === 'FlateDecode' || f === 'LZWDecode')
+    parms = idx >= 0 ? rawParms.lookup(idx) : undefined
+    if (parms === PDFNull) parms = undefined
+  }
   let predictor = 1
   if (parms instanceof PDFDict) {
     predictor = num(parms, 'Predictor') ?? 1

@@ -17,7 +17,11 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      ALL_BROWSERS: '1' # Firefox + WebKit projects in addition to Chromium devices
+      SITE_URL: ${{ vars.SITE_URL }} # optional: enables canonical links + sitemap
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,17 +29,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Dependency audit (fail on high/critical)
+        run: npm audit --audit-level=high
       - name: Install qpdf (structural validation of generated PDFs)
         run: sudo apt-get update && sudo apt-get install -y qpdf
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run build
       - run: npm run test:e2e
-        env:
-          CI: 'true'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -51,8 +55,8 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    # Forks don't get secrets; skip deploy there instead of failing.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    # Forks don't get secrets; skip deploy there instead of failing. Deploys only when secrets exist.
+    if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars.DEPLOY_ENABLED == 'true'
     steps:
       - uses: actions/download-artifact@v4
         with:

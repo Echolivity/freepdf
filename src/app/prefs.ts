@@ -45,6 +45,15 @@ export function recordRecentTool(slug: string) {
   write(RECENT_KEY, JSON.stringify(next))
 }
 
+/** Every key FreePDF writes. Keep in sync with the privacy page and tests/e2e/fixtures.ts. */
+export const STORAGE_KEYS = ['freepdf:theme', 'freepdf:lang', 'freepdf:recent'] as const
+
+export function clearAllSettings() {
+  for (const k of STORAGE_KEYS) {
+    try { localStorage.removeItem(k) } catch { /* ignore */ }
+  }
+}
+
 export function clearRecentTools() {
   try { localStorage.removeItem(RECENT_KEY) } catch { /* ignore */ }
 }

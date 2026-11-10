@@ -2,7 +2,7 @@ import { PDFDocument, degrees } from 'pdf-lib'
 import { UserFacingError } from '../validate'
 import { msg } from '../../i18n/core'
 export { chunkGroups } from '../ranges'
-import { assemble, loadPdf, normalizeAngle, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
+import { assemble, copyDocumentInfo, loadPdf, normalizeAngle, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
 import { rebuildPageTree } from './structure'
 
 /** Splits with at most this many parts re-parse the source per part, so each part keeps forms/bookmarks. */
@@ -27,11 +27,10 @@ export async function mergePdfs(inputs: NamedBytes[], onProgress: ProgressFn = n
   for (let i = 0; i < inputs.length; i++) {
     onProgress(i / inputs.length, msg('prog.adding', { name: inputs[i].name }))
     const src = await loadPdf(inputs[i].bytes, inputs[i].name)
+    if (i === 0) copyDocumentInfo(src, out) // document info comes from the first file
     const pages = await out.copyPages(src, src.getPageIndices())
     pages.forEach((p) => out.addPage(p))
   }
-  out.setProducer('FreePDF')
-  out.setCreator('FreePDF')
   onProgress(0.95, msg('prog.saving'))
   const bytes = await saveDoc(out)
   onProgress(1)
