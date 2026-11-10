@@ -114,8 +114,14 @@ If the domain's DNS is on Cloudflare, the record is created automatically. Other
 `freepdf.example → freepdf.pages.dev` that the dashboard shows. HTTPS certificates are issued
 automatically and are free.
 
-SPA routing: deep links such as `/merge-pdf` work because Pages serves `index.html` for unknown
-paths when the project has no `404.html`. Do not add one.
+Deep links: the build emits a copy of the app shell for each route (`merge-pdf.html`, `privacy.html`, …)
+and a `404.html`. Links such as `/merge-pdf` therefore work on Cloudflare Pages, on Workers static
+assets (including Cloudflare Drop) and on any other static host, with no host-specific fallback setting.
+
+### Quickest option: Cloudflare Drop
+
+Go to <https://cloudflare.com/drop> and drop `freepdf-dist.zip` (or the `dist/` folder) onto the
+page. You get a live preview for one hour. Press **Claim** and sign in to keep it in your account.
 
 ## Licence
 
