@@ -26,8 +26,8 @@ export interface ToolDef {
   category: Category
   icon: IconName
   /** What the tool accepts and produces (shown on the tool page). */
-  input: 'pdf' | 'images'
-  output: 'pdf' | 'pdfs' | 'images' | 'report'
+  input: 'pdf' | 'images' | 'text'
+  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html'
   /** Search keywords in every language (titles and descriptions are searched too). */
   keywords: { en: string[]; ar: string[] }
   component: LazyExoticComponent<ComponentType<{ tool: ToolDef }>>
@@ -47,6 +47,8 @@ const Compare = lazy(() => import('./compare/CompareTool'))
 const Crop = lazy(() => import('./crop/CropTool'))
 const PageNumbers = lazy(() => import('./page-numbers/PageNumbersTool'))
 const Watermark = lazy(() => import('./watermark/WatermarkTool'))
+const TextToPdf = lazy(() => import('./txt-to-pdf/TextToPdfTool'))
+const PdfToText = lazy(() => import('./pdf-to-txt/PdfToTextTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -76,10 +78,20 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['jpeg', 'image', 'photo', 'picture', 'scan', 'png', 'webp'], ar: ['صور', 'صورة', 'جي بي جي', 'تحويل صور', 'مسح ضوئي', 'سكان'] } },
   { slug: 'png-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert', component: ImageToPdf,
     keywords: { en: ['image', 'screenshot', 'picture', 'jpg', 'webp'], ar: ['صور', 'صورة', 'لقطة شاشة', 'بي إن جي', 'تحويل صور'] } },
+  { slug: 'tiff-to-pdf', input: 'images', output: 'pdfs', icon: 'tiffIn', category: 'convert', component: ImageToPdf,
+    keywords: { en: ['tif', 'tiff', 'scan', 'fax', 'multipage', 'multi-page', 'image'], ar: ['تيف', 'صور', 'مسح ضوئي', 'فاكس', 'متعدد الصفحات'] } },
+  { slug: 'txt-to-pdf', input: 'text', output: 'pdfs', icon: 'textIn', category: 'convert', component: TextToPdf,
+    keywords: { en: ['text', 'txt', 'notepad', 'plain text', 'log', 'convert'], ar: ['نص', 'ملف نصي', 'نص عادي', 'مفكرة', 'تحويل'] } },
   { slug: 'pdf-to-jpg', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['jpeg', 'image', 'picture', 'export', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'جي بي جي', 'تصدير'] } },
   { slug: 'pdf-to-png', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['image', 'picture', 'export', 'lossless', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'بي إن جي', 'تصدير'] } },
+  { slug: 'pdf-to-webp', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
+    keywords: { en: ['webp', 'image', 'picture', 'export', 'web', 'convert'], ar: ['صور', 'صورة', 'ويب بي', 'تحويل إلى صور', 'تصدير'] } },
+  { slug: 'pdf-to-txt', input: 'pdf', output: 'text', icon: 'textOut', category: 'convert', component: PdfToText,
+    keywords: { en: ['text', 'txt', 'extract text', 'copy text', 'plain text'], ar: ['نص', 'استخراج النص', 'نسخ النص', 'ملف نصي'] } },
+  { slug: 'pdf-to-html', input: 'pdf', output: 'html', icon: 'htmlOut', category: 'convert', component: PdfToText,
+    keywords: { en: ['html', 'web page', 'website', 'export', 'convert'], ar: ['صفحة ويب', 'إتش تي إم إل', 'موقع', 'تصدير', 'تحويل'] } },
   { slug: 'compare-pdf', input: 'pdf', output: 'report', icon: 'compare', category: 'advanced', component: Compare,
     keywords: { en: ['diff', 'difference', 'changes', 'versions', 'redline', 'track changes'], ar: ['مقارنة', 'فرق', 'الفروق', 'تغييرات', 'نسخ', 'مطابقة'] } },
 ]

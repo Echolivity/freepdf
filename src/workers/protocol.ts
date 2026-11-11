@@ -7,11 +7,12 @@ import type { ImagesToPdfOptions } from '../lib/pdf/images'
 import type { Message } from '../i18n/core'
 import type { ResizeOptions } from '../lib/pdf/resizePlan'
 import type { DiffRun } from '../lib/compare/diff'
+import type { TextToPdfOptions, TextToPdfResult } from '../lib/convert/textToPdf'
 
 export interface RawImage {
   name: string
   bytes: Uint8Array
-  kind: 'jpeg' | 'png' | 'webp'
+  kind: 'jpeg' | 'png' | 'webp' | 'tiff'
 }
 
 /** Every operation the PDF worker can run: [arguments, result]. */
@@ -31,6 +32,7 @@ export interface WorkerOps {
   crop: [{ file: NamedBytes; pages: CropPage[] }, Uint8Array]
   resize: [{ file: NamedBytes; options: ResizeOptions }, Uint8Array]
   diffTokens: [{ a: Int32Array; b: Int32Array }, DiffRun[]]
+  textToPdf: [{ file: NamedBytes; options: TextToPdfOptions }, TextToPdfResult]
 }
 
 export type OpName = keyof WorkerOps

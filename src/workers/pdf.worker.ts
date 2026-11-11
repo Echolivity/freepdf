@@ -7,7 +7,8 @@ import { cropPdf } from '../lib/pdf/crop'
 import { diffTokens } from '../lib/compare/diff'
 import { imagesToPdf, type ImageInput } from '../lib/pdf/images'
 import { UserFacingError } from '../lib/validate'
-import { canvasCodec, toPng } from './codec'
+import { canvasCodec, encodeRgba, toPng } from './codec'
+import { msg } from '../i18n/core'
 import type { WorkerRequest, WorkerResponse } from './protocol'
 import type { Message } from '../i18n/core'
 import { transferablesOf } from '../lib/transfer'
@@ -39,10 +40,21 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       case 'crop': result = await cropPdf(req.args.file, req.args.pages, progress); break
       case 'resize': result = await resizePdf(req.args.file, req.args.options, progress); break
       case 'diffTokens': result = diffTokens(req.args.a, req.args.b); break
+      case 'textToPdf': result = await (await import('../lib/convert/textToPdf')).textToPdf(req.args.file, req.args.options, progress); break
       case 'imagesToPdf': {
         const images: ImageInput[] = []
         for (const img of req.args.images) {
-          if (img.kind === 'webp') {
+          if (img.kind === 'tiff') {
+            const { decodeTiff } = await import('../lib/convert/tiff')
+            const lossless = req.args.options.tiffEncoding !== 'jpeg'
+            await decodeTiff(img.bytes, img.name, async (pg, i, total) => {
+              progress(0, msg('prog.tiffPage', { name: img.name, page: i + 1, total }))
+              // Bilevel and greyscale scans stay lossless (PNG is small for them and JPEG would blur text).
+              const jpeg = !lossless && !pg.alpha && pg.photometric >= 2
+              const bytes = await encodeRgba(pg.rgba, pg.width, pg.height, jpeg ? 'jpeg' : 'png')
+              images.push({ name: total > 1 ? `${img.name} (${i + 1}/${total})` : img.name, kind: jpeg ? 'jpeg' : 'png', bytes, dpi: pg.dpi })
+            })
+          } else if (img.kind === 'webp') {
             try {
               images.push({ name: img.name, kind: 'png', bytes: await toPng(img.bytes, 'image/webp') })
             } catch {

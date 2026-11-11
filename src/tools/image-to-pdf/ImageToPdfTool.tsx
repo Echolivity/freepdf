@@ -12,9 +12,10 @@ import type { FileKind } from '../../lib/validate'
 import { runInWorker } from '../../lib/workerClient'
 import { useI18n } from '../../i18n/context'
 
-const ACCEPT: FileKind[] = ['jpeg', 'png', 'webp']
+const ACCEPT: FileKind[] = ['jpeg', 'png', 'webp', 'tiff']
 type Margin = 0 | 18 | 36
 type Output = 'single' | 'each'
+type TiffEncoding = 'lossless' | 'jpeg'
 
 export default function ImageToPdfTool() {
   const { t } = useI18n()
@@ -24,25 +25,31 @@ export default function ImageToPdfTool() {
   const [orientation, setOrientation] = useState<Orientation>('auto')
   const [margin, setMargin] = useState<Margin>(18)
   const [output, setOutput] = useState<Output>('single')
+  const [tiffEncoding, setTiffEncoding] = useState<TiffEncoding>('lossless')
+  const hasTiff = sel.files.some((f) => f.kind === 'tiff')
   const startOver = () => { job.reset(); sel.clear() }
 
   const convert = () =>
     job.run(async ({ signal, progress }) => {
       progress(0, { key: 'prog.readingImages' })
       const images = await Promise.all(
-        sel.files.map(async (f) => ({ name: f.name, kind: f.kind as 'jpeg' | 'png' | 'webp', bytes: await readBytes(f) })),
+        sel.files.map(async (f) => ({ name: f.name, kind: f.kind as 'jpeg' | 'png' | 'webp' | 'tiff', bytes: await readBytes(f) })),
       )
-      const options = { pageSize, orientation, margin }
+      const options = { pageSize, orientation, margin, tiffEncoding }
+      // A TIFF can hold many pages: count them (headers only) so the result says how many pages were made.
+      const pageCounts = await Promise.all(
+        images.map(async (img) => (img.kind === 'tiff' ? (await (await import('../../lib/convert/tiff')).tiffInfo(img.bytes)).length : 1)),
+      )
       if (output === 'single' || images.length === 1) {
         const pdf = await runInWorker('imagesToPdf', { images, options }, { signal, onProgress: progress })
         const name = images.length === 1 ? deriveName(images[0].name, '', 'pdf') : deriveName(images[0].name, '-and-more', 'pdf')
-        return [{ name, blob: pdfBlob(pdf), note: { key: 'note.pages', params: { count: images.length } } }]
+        return [{ name, blob: pdfBlob(pdf), note: { key: 'note.pages', params: { count: pageCounts.reduce((a, b) => a + b, 0) } } }]
       }
       const out: OutputFile[] = []
       for (let i = 0; i < images.length; i++) {
         progress(i / images.length, { key: 'i2p.converting', params: { name: images[i].name } })
         const pdf = await runInWorker('imagesToPdf', { images: [images[i]], options }, { signal })
-        out.push({ name: deriveName(images[i].name, '', 'pdf'), blob: pdfBlob(pdf) })
+        out.push({ name: deriveName(images[i].name, '', 'pdf'), blob: pdfBlob(pdf), note: { key: 'note.pages', params: { count: pageCounts[i] } } })
       }
       return out
     })
@@ -102,6 +109,17 @@ export default function ImageToPdfTool() {
                   { value: 36, label: t('i2p.large') },
                 ]}
               />
+              {hasTiff && (
+                <Segmented<TiffEncoding>
+                  label={t('i2p.tiffQuality')}
+                  value={tiffEncoding}
+                  onChange={setTiffEncoding}
+                  options={[
+                    { value: 'lossless', label: t('i2p.tiffLossless'), hint: t('i2p.tiffLosslessHint') },
+                    { value: 'jpeg', label: t('i2p.tiffJpeg'), hint: t('i2p.tiffJpegHint') },
+                  ]}
+                />
+              )}
               {sel.files.length > 1 && (
                 <Segmented<Output>
                   label={t('i2p.output')}
@@ -116,7 +134,7 @@ export default function ImageToPdfTool() {
               <Button variant="primary" size="lg" icon="imageIn" className="w-full" onClick={convert} data-testid="run">
                 {t('i2p.run')}
               </Button>
-              <p className="text-sm text-muted">{t('i2p.note')}</p>
+              <p className="text-sm text-muted">{t('i2p.note')}{hasTiff ? ` ${t('i2p.tiffNote')}` : ''}</p>
               <LocalBadge />
             </>
           }

@@ -85,6 +85,17 @@ export function PageThumb({ doc, pageNumber, width = 160, rotation = 0 }: { doc:
 
 /* ---------- first-page preview for a file list row ---------- */
 export function FileThumb({ file }: { file: ValidatedFile }) {
+  // Browsers can't show TIFF (except Safari) or text in an <img>: show what the file is instead.
+  if (file.kind === 'tiff' || file.kind === 'text') {
+    return (
+      <span className="grid h-full w-full place-items-center text-muted" aria-hidden="true">
+        <span className="flex flex-col items-center gap-0.5">
+          <Icon name={file.kind === 'tiff' ? 'tiffIn' : 'textIn'} size={20} />
+          <span className="text-[10px] font-bold tracking-wide">{file.kind === 'tiff' ? 'TIFF' : 'TXT'}</span>
+        </span>
+      </span>
+    )
+  }
   if (file.kind !== 'pdf') return <ImageThumb file={file} />
   return <PdfFirstPage file={file} />
 }

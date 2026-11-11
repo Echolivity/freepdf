@@ -39,7 +39,7 @@ site is plain static files, and all the work happens on your device.
 
 ## Features
 
-**14 tools on 16 pages**, all available today.
+**17 tools on 21 pages**, all available today.
 
 ### Organize PDFs
 
@@ -67,35 +67,53 @@ site is plain static files, and all the work happens on your device.
 | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **Compress PDF** | **Lossless** repacking, or **Light / Balanced / Strong** re-encoding of photos and scans, with a per-file report. |
 
-### Compare and convert
+### Convert to PDF
 
-| Tool                 | What it does                                                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Compare PDF**      | Two versions side by side: word-level text changes, a pixel-difference overlay, a visual check of every page, and a PDF report. |
-| **JPG / PNG to PDF** | JPG, PNG or WebP images to one PDF, or one PDF per image.                                                                       |
-| **PDF to JPG / PNG** | One image per page at 72, 150 or 300 DPI.                                                                                       |
+| Tool                        | What it does                                                                                                                             |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **JPG / PNG / TIFF to PDF** | JPG, PNG, WebP and TIFF images (including multi-page TIFF scans and faxes) to one PDF, or one PDF per image.                             |
+| **TXT to PDF**              | Plain-text files to PDF with word wrapping; sans, serif or monospace font; size, page size, orientation and margins; encoding detection. |
+
+### Convert from PDF
+
+| Tool                        | What it does                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **PDF to JPG / PNG / WebP** | One image per page at 72, 150 or 300 DPI, with a quality setting and an optional page range.                                  |
+| **PDF to TXT**              | The PDF's text as a `.txt` file: line by line or as paragraphs, optional page markers, LF or CRLF line endings.               |
+| **PDF to HTML**             | A self-contained web page: **flowing text** (headings and paragraphs) or **exact layout** (page images with selectable text). |
+
+Word, Excel, PowerPoint and HTML input, and Word, Excel and PowerPoint output, are **not available
+yet**: see the [roadmap](#roadmap).
+
+### Compare
+
+| Tool            | What it does                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Compare PDF** | Two versions side by side: word-level text changes, a pixel-difference overlay, a visual check of every page, and a PDF report. |
 
 <details>
 <summary><b>What each tool keeps, and what it doesn't</b></summary>
 
 <br>
 
-| Tool                               | Good to know                                                                                                                                                                                                                                                                            |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Merge PDF                          | Keeps page content, links and annotations, plus the first file's title and author. Bookmarks, fillable form fields and attachments are **not** merged yet.                                                                                                                              |
-| Split PDF                          | Splits into 40 parts or fewer keep each part's bookmarks, fields and links. Larger splits keep page content only.                                                                                                                                                                       |
-| Extract PDF pages (`/extract-pdf`) | Bookmarks and links pointing at pages you leave out are removed.                                                                                                                                                                                                                        |
-| Delete PDF pages (`/delete-pages`) | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up.                                                                                                                                                                |
-| Organize PDF                       | The main document is edited in place, so its structure is preserved. Duplicates share the page content; form-field widgets aren't duplicated. Inserted pages keep content and links, not their file's bookmarks or fields. You can also act on a selection and download selected pages. |
-| Rotate PDF                         | Adds to the existing rotation.                                                                                                                                                                                                                                                          |
-| Crop PDF                           | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them.                                                                                                                                                             |
-| Add page numbers                   | Real text on a separate layer; pages aren't re-rendered. Font, size, colour, selected pages and skipping the cover are configurable. Arabic text uses an embedded Arabic+Latin font (about 100 KB).                                                                                     |
-| Watermark PDF                      | A separate layer, so quality is unchanged and the image is stored once. Font, size and selected pages are configurable. A watermark is a visible mark, not protection.                                                                                                                  |
-| Resize PDF                         | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. Works on all or selected pages.                                     |
-| Compress PDF                       | The report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved.                                                            |
-| Compare PDF                        | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only.                                                                                                                                                                             |
-| JPG / PNG to PDF                   | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured.                                                                                                                                                                                     |
-| PDF to JPG / PNG                   | Password-protected PDFs can be opened here with their password.                                                                                                                                                                                                                         |
+| Tool                               | Good to know                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Merge PDF                          | Keeps page content, links and annotations, plus the first file's title and author. Bookmarks, fillable form fields and attachments are **not** merged yet.                                                                                                                                                                                                                                                                                                  |
+| Split PDF                          | Splits into 40 parts or fewer keep each part's bookmarks, fields and links. Larger splits keep page content only.                                                                                                                                                                                                                                                                                                                                           |
+| Extract PDF pages (`/extract-pdf`) | Bookmarks and links pointing at pages you leave out are removed.                                                                                                                                                                                                                                                                                                                                                                                            |
+| Delete PDF pages (`/delete-pages`) | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up.                                                                                                                                                                                                                                                                                                                                    |
+| Organize PDF                       | The main document is edited in place, so its structure is preserved. Duplicates share the page content; form-field widgets aren't duplicated. Inserted pages keep content and links, not their file's bookmarks or fields. You can also act on a selection and download selected pages.                                                                                                                                                                     |
+| Rotate PDF                         | Adds to the existing rotation.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Crop PDF                           | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them.                                                                                                                                                                                                                                                                                                                                 |
+| Add page numbers                   | Real text on a separate layer; pages aren't re-rendered. Font, size, colour, selected pages and skipping the cover are configurable. Arabic text uses an embedded Arabic+Latin font (about 100 KB).                                                                                                                                                                                                                                                         |
+| Watermark PDF                      | A separate layer, so quality is unchanged and the image is stored once. Font, size and selected pages are configurable. A watermark is a visible mark, not protection.                                                                                                                                                                                                                                                                                      |
+| Resize PDF                         | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. Works on all or selected pages.                                                                                                                                                                                                         |
+| Compress PDF                       | The report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved.                                                                                                                                                                                                                                |
+| Compare PDF                        | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only.                                                                                                                                                                                                                                                                                                                                                 |
+| JPG / PNG / TIFF to PDF            | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured. TIFF: black-and-white, greyscale, colour and palette images compressed with CCITT fax (Group 3/4), LZW, PackBits, Deflate or JPEG; each page is placed at the size its resolution states. Pages are re-encoded losslessly (PNG), or colour pages as JPG if you pick "Smaller". BigTIFF isn't supported.                                                 |
+| TXT to PDF                         | UTF-8, UTF-16 (with a byte-order mark), Windows-1252 and Windows-1256. Tabs and form feeds (page breaks) are honoured. Text the chosen font can't show (such as Arabic) uses an embedded Arabic + Latin font, and Arabic lines are right-aligned. Scripts that font doesn't cover (such as Chinese) show as boxes, and the result names the characters.                                                                                                     |
+| PDF to JPG / PNG / WebP            | Password-protected PDFs can be opened here with their password. WebP needs the browser's own encoder (Chrome, Edge, Firefox); where it is missing (Safari) the option is hidden and the tool says why.                                                                                                                                                                                                                                                      |
+| PDF to TXT / HTML                  | They read the PDF's text layer, so scans give no text (OCR is planned). Reading order is rebuilt from positions: multi-column pages may interleave and tables become lines of text. Arabic stored as presentation forms or in visual order is put back into reading order. HTML files have no scripts, carry a strict CSP and embed page images as `data:` URLs; flowing text leaves images out. Password-protected PDFs can be opened with their password. |
 
 Tools that rewrite a PDF **warn before processing** when a file is digitally signed or certified,
 because any change makes the signature invalid. They also warn when a file is password-protected and
@@ -211,6 +229,17 @@ project only; the WebKit (Safari) projects are skipped for now and can be run lo
 > **Known issue:** in CI, Firefox's page process crashes during 4 accessibility checks on the Split PDF
 > page. It is still under investigation and has not been reproduced outside CI.
 
+### Conversion batch 1 (unreleased)
+
+| Suite                                                                        | Tests | Result |
+| ---------------------------------------------------------------------------- | ----: | :----: |
+| Unit and integration, including 29 new conversion tests                      |   187 |   ✅   |
+| Browser tests on 5 Chromium device profiles, including 14 conversion tests\* |   223 |   ✅   |
+| Browser tests inside the Cloudflare runtime                                  |   107 |   ✅   |
+
+\* Plus the same 1 Cloudflare-only test, skipped there. The five new pages also pass the WCAG AA
+audit in both languages and themes. Firefox, Safari and physical devices were not run for this batch.
+
 Full results: [Test and QA report](docs/TEST_AND_QA_REPORT.md) · What CI runs, job by job: [Testing guide](docs/TESTING.md)
 
 ### How quality is checked
@@ -284,18 +313,21 @@ Before releasing, follow the [release checklist](docs/RELEASE_CHECKLIST.md). Ful
 Everything under [Features](#features) is available now. The items below are **planned, not
 available**, and are not shown in the app.
 
-| Planned                        | Notes                                                                                            |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Headers and footers            |                                                                                                  |
-| Password protection and unlock | Via qpdf-wasm. Unlock requires the password; passwords are never cracked.                        |
-| Metadata removal               |                                                                                                  |
-| Redaction                      | True removal needs content-stream rewriting; some structures may get "can't guarantee" warnings. |
-| PDF editing and annotations    | Text, images, drawing, signatures, forms.                                                        |
-| OCR                            | English first. Arabic OCR will be tested separately and isn't promised until measured.           |
+| Planned                        | Notes                                                                                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Word, Excel and HTML to PDF    | In the browser, with basic fidelity: headings, paragraphs, lists, tables, images and selectable text; complex layouts may differ. Next conversion batch.                |
+| PDF to Word, Excel, PowerPoint | Editable with limits: Word gets paragraphs and images, Excel gets tables detected from text positions, PowerPoint gets one slide image per page. Next conversion batch. |
+| Headers and footers            |                                                                                                                                                                         |
+| Password protection and unlock | Via qpdf-wasm. Unlock requires the password; passwords are never cracked.                                                                                               |
+| Metadata removal               |                                                                                                                                                                         |
+| Redaction                      | True removal needs content-stream rewriting; some structures may get "can't guarantee" warnings.                                                                        |
+| PDF editing and annotations    | Text, images, drawing, signatures, forms.                                                                                                                               |
+| OCR                            | English first. Arabic OCR will be tested separately and isn't promised until measured.                                                                                  |
 
-**Not planned:** PDF/A conversion (proper validation needs veraPDF, which doesn't run in the browser)
-and AI tools. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
-[docs/PLAN_v1.2.0.md](docs/PLAN_v1.2.0.md) for details.
+**Not planned:** PowerPoint to PDF (there is no open-source slide renderer that runs in the browser,
+and files are never sent to a server), PDF/A conversion (proper validation needs veraPDF, which
+doesn't run in the browser) and AI tools. See [docs/PLAN_conversion.md](docs/PLAN_conversion.md),
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PLAN_v1.2.0.md](docs/PLAN_v1.2.0.md) for details.
 
 ## License
 
@@ -312,6 +344,7 @@ FreePDF is built on these open-source projects:
 | [JSZip](https://github.com/Stuk/jszip)                       | MIT/GPLv3, used under MIT |
 | [pako](https://github.com/nodeca/pako)                       | MIT and Zlib              |
 | [fontkit (pdf-lib fork)](https://github.com/Hopding/fontkit) | MIT                       |
+| [UTIF.js (utif2)](https://github.com/photopea/UTIF.js)       | MIT                       |
 | [React](https://github.com/react/react)                      | MIT                       |
 
 **Fonts** (all SIL Open Font License): Bricolage Grotesque, Atkinson Hyperlegible Next, Readex Pro,

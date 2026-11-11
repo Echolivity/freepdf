@@ -2,7 +2,7 @@ import { LIMITS, MB } from '../config'
 import { msg, translate, type Message, type MessageKey, type Params } from '../i18n/core'
 import { scanPdfMarkers } from './inspect'
 
-export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp'
+export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp' | 'tiff' | 'text'
 
 /** An error meant for the person using the app. Carries a message key so it can be shown in any language. */
 export class UserFacingError extends Error {
@@ -35,12 +35,30 @@ export function sniffKind(head: Uint8Array): FileKind | null {
     b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
   )
     return 'webp'
+  // Classic TIFF, little-endian "II*\0" or big-endian "MM\0*". (BigTIFF, 43, isn't supported.)
+  if (b.length >= 4 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a && b[3] === 0) || (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0 && b[3] === 0x2a)))
+    return 'tiff'
   // The PDF spec allows junk before the header; readers accept it within the first 1 KB.
   const limit = Math.min(b.length - 5, 1024)
   for (let i = 0; i <= limit; i++) {
     if (b[i] === 0x25 && b[i + 1] === 0x50 && b[i + 2] === 0x44 && b[i + 3] === 0x46 && b[i + 4] === 0x2d) return 'pdf'
   }
   return null
+}
+
+/**
+ * Plain text has no signature, so it is recognised by name (.txt) and content: a UTF-16 byte-order
+ * mark, or no NUL bytes and almost no control characters in the first 64 KB.
+ */
+export function looksLikeText(head: Uint8Array, name: string): boolean {
+  if (!/\.(txt|text)$/i.test(name)) return false
+  if (head.length >= 2 && ((head[0] === 0xff && head[1] === 0xfe) || (head[0] === 0xfe && head[1] === 0xff))) return true
+  let control = 0
+  for (const c of head) {
+    if (c === 0) return false
+    if (c < 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 0x0c && c !== 0x1b) control++
+  }
+  return control <= head.length * 0.01
 }
 
 /** Read image dimensions from the header without decoding pixels. */
@@ -116,7 +134,7 @@ export interface ValidatedFile {
   encrypted?: boolean
 }
 
-const KIND_LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP' }
+const KIND_LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP', tiff: 'TIFF', text: 'TXT' }
 
 let counter = 0
 const newId = () => `f${Date.now().toString(36)}${(counter++).toString(36)}`
@@ -150,12 +168,13 @@ export async function validateFiles(
       continue
     }
     const head = new Uint8Array(await file.slice(0, 64 * 1024).arrayBuffer())
-    const kind = sniffKind(head)
+    const kind = sniffKind(head) ?? (accept.includes('text') && looksLikeText(head, file.name) ? 'text' : null)
     if (!kind || !accept.includes(kind)) {
       rejected.push(kind ? msg('val.wrongTypeLooks', { name: file.name, expected, actual: KIND_LABEL[kind] }) : msg('val.wrongType', { name: file.name, expected }))
       continue
     }
-    if (kind !== 'pdf') {
+    // TIFF pages are measured one by one when decoded (a file can hold many); text has no pixels.
+    if (kind === 'jpeg' || kind === 'png' || kind === 'webp') {
       const dims = imageDimensions(head, kind) ?? (kind === 'jpeg' ? await jpegDimensionsFromFile(file) : null)
       if (!dims || !dims.width || !dims.height) {
         rejected.push(msg('val.noDims', { name: file.name }))

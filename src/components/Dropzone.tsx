@@ -10,8 +10,10 @@ const ACCEPT: Record<FileKind, string> = {
   jpeg: '.jpg,.jpeg,image/jpeg',
   png: '.png,image/png',
   webp: '.webp,image/webp',
+  tiff: '.tif,.tiff,image/tiff',
+  text: '.txt,.text,text/plain',
 }
-const LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP' }
+const LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP', tiff: 'TIFF', text: 'TXT' }
 
 function hasFiles(e: DragEvent) {
   return Array.from(e.dataTransfer?.types ?? []).includes('Files')
@@ -34,6 +36,7 @@ export function Dropzone({
   const depth = useRef(0)
   const kinds = accept.map((k) => LABEL[k]).join(', ')
   const isPdf = accept.length === 1 && accept[0] === 'pdf'
+  const isText = accept.length === 1 && accept[0] === 'text'
   const choose = () => input.current?.click()
 
   const picker = (
@@ -73,7 +76,7 @@ export function Dropzone({
       <div {...dragHandlers} className={`rounded-xl border-2 border-dashed transition-colors ${over ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-accent/60'}`}>
         {picker}
         <button type="button" onClick={choose} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-semibold text-muted hover:text-ink">
-          <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : 'drop.addMoreImages')}
+          <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : isText ? 'drop.addMoreTexts' : 'drop.addMoreImages')}
         </button>
       </div>
     )
@@ -106,7 +109,7 @@ export function Dropzone({
           onClick={choose}
           className="relative min-h-14 rounded-2xl bg-accent px-7 py-3.5 text-lg font-semibold text-on-accent shadow-glow transition-[background-color,transform] hover:bg-accent-hover motion-safe:active:translate-y-px"
         >
-          {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : multiple ? 'drop.selectImages' : 'drop.selectImage')}
+          {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : isText ? 'drop.selectTexts' : multiple ? 'drop.selectImages' : 'drop.selectImage')}
         </button>
         <p className="relative mt-4 text-muted">
           {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}

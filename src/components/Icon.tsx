@@ -11,6 +11,14 @@ const paths = {
   rotateLeft: <><path d="M4 11a8 8 0 1 1 2.3 5.7" /><path d="M4 4v7h7" /></>,
   compress: <><path d="M5 3h9l5 5v13H5z" /><path d="M14 3v5h5" /><path d="M12 9.5v3M9.5 10l2.5 2.5L14.5 10M12 18.5v-3M9.5 18l2.5-2.5 2.5 2.5" /></>,
   imageOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h6" /><rect x="12.5" y="13" width="8.5" height="8" rx="1.2" /><path d="M13 20l2.6-2.8 1.8 1.8 1.2-1.2 2 2" /></>,
+  // A stack of pages (multi-page TIFF) going into a document.
+  tiffIn: <><rect x="3" y="5" width="8" height="7" rx="1.2" /><path d="M5 3h8v2" /><path d="M3.5 11l2.4-2.6 1.8 1.8 1-1 2.3 2.3" /><path d="M14 6h3l4 4v11H9v-6" /><path d="M17 6v4h4" /></>,
+  // Lines of text going into a document.
+  textIn: <><path d="M3 4h8M3 7.5h8M3 11h5" /><path d="M14 6h3l4 4v11H9v-6" /><path d="M17 6v4h4" /><path d="M12 14h6M12 17h5" /></>,
+  // A document coming out as lines of text.
+  textOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h6" /><path d="M13 13h8M13 16.5h8M13 20h5" /></>,
+  // A document coming out as markup.
+  htmlOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h6" /><path d="M15.5 13.5L12.5 17l3 3.5M18.5 13.5l3 3.5-3 3.5" /></>,
   imageIn: <><rect x="3" y="3" width="9" height="8" rx="1.2" /><path d="M3.5 10l2.8-3 2 2 1.2-1.2 2.2 2.2" /><path d="M14 6h3l4 4v11H9v-6" /><path d="M17 6v4h4" /></>,
   resize: <><rect x="3.5" y="3.5" width="17" height="17" rx="1.5" strokeDasharray="2.5 2.5" /><rect x="7" y="9" width="8" height="8" rx="1" /><path d="M13 4.5h6.5V11M19.5 4.5l-6 6" /></>,
   compare: <><path d="M4 3h6v18H4z" /><path d="M14 3h6v18h-6z" /><path d="M6 8h2M6 11h2M16 8h2M16 11h2" /><path d="M6 15h2M16 15h2" strokeDasharray="1 1.4" /></>,

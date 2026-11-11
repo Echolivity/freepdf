@@ -94,10 +94,26 @@ export async function renderPage(
   }
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/jpeg' | 'image/png', quality?: number): Promise<Blob> {
+export function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/jpeg' | 'image/png' | 'image/webp', quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('The page image could not be encoded.'))), type, quality),
+    canvas.toBlob((b) => {
+      // Browsers that can't encode a type silently return PNG instead: never label that as WebP.
+      if (!b) reject(new Error('The page image could not be encoded.'))
+      else if (b.type !== type) reject(new Error(`This browser cannot encode ${type}.`))
+      else resolve(b)
+    }, type, quality),
   )
+}
+
+/** Whether this browser's canvas can encode WebP (Chrome, Edge and Firefox can; Safari can't). */
+export function canEncodeWebp(): boolean {
+  try {
+    const c = document.createElement('canvas')
+    c.width = c.height = 1
+    return c.toDataURL('image/webp').startsWith('data:image/webp')
+  } catch {
+    return false
+  }
 }
 
 /** Free canvas memory immediately (important on mobile Safari). */

@@ -83,6 +83,15 @@ export const canvasCodec: ImageCodec = {
   },
 }
 
+/** Encode decoded RGBA pixels (a TIFF page) as PNG, or as JPEG when asked and the page is opaque. */
+export async function encodeRgba(rgba: Uint8Array, w: number, h: number, as: 'png' | 'jpeg', quality = 0.9): Promise<Uint8Array> {
+  assertSafeDimensions(w, h)
+  const canvas = new OffscreenCanvas(w, h)
+  ctx2d(canvas).putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer as ArrayBuffer, rgba.byteOffset, w * h * 4), w, h), 0, 0)
+  const blob = await canvas.convertToBlob(as === 'jpeg' ? { type: 'image/jpeg', quality } : { type: 'image/png' })
+  return new Uint8Array(await blob.arrayBuffer())
+}
+
 /** Convert any browser-decodable image (WebP) to PNG so pdf-lib can embed it losslessly. */
 export async function toPng(bytes: Uint8Array, mime: string): Promise<Uint8Array> {
   const bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: mime }))

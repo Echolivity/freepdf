@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased — PDF conversion, batch 1
+
+See [docs/PLAN_conversion.md](docs/PLAN_conversion.md).
+
+- **Added:**
+  - TIFF to PDF (`/tiff-to-pdf`): single and multi-page TIFF, CCITT Group 3/4, LZW, PackBits,
+    Deflate and JPEG compression, placed at the file's own resolution; lossless or smaller (JPG)
+    colour pages. TIFF is also accepted by JPG to PDF and PNG to PDF.
+  - TXT to PDF (`/txt-to-pdf`): word wrapping, sans/serif/monospace, size, page size, orientation,
+    margins; UTF-8, UTF-16, Windows-1252 and Windows-1256; Arabic lines right-aligned with the
+    embedded Arabic + Latin font; characters no font covers are reported.
+  - PDF to WebP (`/pdf-to-webp`): feature-detected; browsers without a WebP encoder (Safari) get an
+    explanation instead of a mislabelled PNG.
+  - PDF to TXT (`/pdf-to-txt`): lines or paragraphs, page markers, LF/CRLF.
+  - PDF to HTML (`/pdf-to-html`): flowing text or exact layout; one self-contained file with no
+    scripts and a strict CSP.
+- **Upgraded:** PDF to JPG/PNG: page ranges (one range for every file in a batch).
+- **Text extraction:** lines rebuilt from positions; Arabic presentation forms and visually stored
+  runs put back into reading order; numbers inside right-to-left lines kept left-to-right.
+- **Shared code:** `usePdfPasswords` (password prompts for read-only PDF tools), `PageRangeField`,
+  `batchPages`.
+- **Dependency:** `utif2` 4.1.0 (MIT), loaded only when a TIFF is converted.
+- **Not offered:** PowerPoint to PDF (no in-browser slide renderer). Word/Excel/HTML to PDF and PDF to
+  Word/Excel/PowerPoint are batch 2.
+
 ## 1.2.0 — 2026-11-11 (Phase 1: core document utilities)
 
 See [docs/RELEASE_NOTES_v1.2.0.md](docs/RELEASE_NOTES_v1.2.0.md).

@@ -63,3 +63,25 @@ export function chunkGroups(pageCount: number, size: number): number[][] {
   return groups
 }
 
+
+/**
+ * Pages to export from one file of a batch. Empty input means every page. The same range applies to
+ * files of different lengths, so pages past a file's end are skipped instead of being an error
+ * ("last" means that file's last page). Returns 0-based indices; throws on malformed input.
+ */
+export function batchPages(input: string, pageCount: number): number[] {
+  if (!normalizeRangeInput(input).trim()) return Array.from({ length: pageCount }, (_, i) => i)
+  const text = normalizeRangeInput(input).replace(/last/gi, String(pageCount))
+  const big = Math.max(pageCount, ...(text.match(/\d+/g) ?? ['0']).map(Number))
+  return parsePageSet(text, big).filter((i) => i < pageCount)
+}
+
+/** Syntax check for a batch range (no page count yet). Returns the problem, or null when valid or empty. */
+export function batchRangeError(input: string): UserFacingError | null {
+  try {
+    if (normalizeRangeInput(input).trim()) batchPages(input, 1_000_000)
+    return null
+  } catch (e) {
+    return e instanceof UserFacingError ? e : new UserFacingError('rng.empty')
+  }
+}

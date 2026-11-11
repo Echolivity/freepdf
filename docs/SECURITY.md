@@ -31,6 +31,17 @@ There is no server-side attack surface: the deployment is static files only.
 | Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
 
+## Unreleased: conversion batch 1
+
+| Area | Control |
+|------|---------|
+| Network | No new requests. The TIFF decoder and TXT layout code are same-origin script chunks loaded on demand. The CSP is unchanged. |
+| TIFF input | Decoded in the worker with utif2, one page at a time. Each page's size is checked against the 100-megapixel limit from its header **before** its pixels are decoded. Malformed files and decoder exceptions become a clear error. TIFF and text files are never put into an `<img>` (the file list shows a type tile instead). |
+| Text input | Recognised by name *and* content (no NUL bytes, almost no control characters, or a UTF-16 byte-order mark); binary data named `.txt` is rejected before processing. Control characters are dropped, and output is capped at 20,000 pages. |
+| HTML export | Every piece of PDF text is HTML-escaped. The file contains no script and carries its own `Content-Security-Policy` (`default-src 'none'; img-src data:; style-src 'unsafe-inline'`), so it can't load anything from the network when opened. Page images are embedded as `data:` URLs. |
+| WebP export | The encoded blob's type is checked: a browser that silently falls back to PNG raises an error instead of producing a mislabelled `.webp`. |
+| Dependency | `utif2` 4.1.0 (MIT; its dependency pako is already used). `npm audit`: 0 vulnerabilities. |
+
 ## 1.2.0 additions
 
 | Area | Control |

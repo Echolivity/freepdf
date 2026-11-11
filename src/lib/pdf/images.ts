@@ -6,8 +6,10 @@ import { saveDoc, noProgress, type ProgressFn } from './core'
 export interface ImageInput {
   name: string
   bytes: Uint8Array
-  /** jpeg or png. WebP must be converted to PNG by the caller (browser) before reaching here. */
+  /** jpeg or png. WebP and TIFF must be converted by the caller (browser) before reaching here. */
   kind: 'jpeg' | 'png'
+  /** Pixels per inch stated by the source (TIFF scans); 96 is assumed when absent. */
+  dpi?: number | null
 }
 
 export type PageSize = 'fit' | 'a4' | 'letter'
@@ -18,6 +20,8 @@ export interface ImagesToPdfOptions {
   orientation: Orientation
   /** Margin in PDF points (1/72 inch). */
   margin: number
+  /** TIFF pages: re-encode losslessly (PNG) or as JPEG for smaller files (colour pages only). */
+  tiffEncoding?: 'lossless' | 'jpeg'
 }
 
 const SIZES: Record<Exclude<PageSize, 'fit'>, [number, number]> = {
@@ -99,8 +103,10 @@ export async function imagesToPdf(
     }
     const orientation = img.kind === 'jpeg' ? jpegOrientation(img.bytes) : 1
     const swap = orientation >= 5
-    const natW = (swap ? embedded.height : embedded.width) * PX_TO_PT
-    const natH = (swap ? embedded.width : embedded.height) * PX_TO_PT
+    // A 300 dpi scan is laid out at its physical size, not as if it were a 96 dpi screen image.
+    const k = img.dpi ? 72 / img.dpi : PX_TO_PT
+    const natW = (swap ? embedded.height : embedded.width) * k
+    const natH = (swap ? embedded.width : embedded.height) * k
 
     let pageW: number, pageH: number
     if (opts.pageSize === 'fit') {
