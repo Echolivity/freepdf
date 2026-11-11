@@ -94,8 +94,9 @@ jobs:
           path: dist
       - name: Install qpdf (structural validation in e2e tests)
         run: sudo apt-get update && sudo apt-get install -y qpdf
-      - run: npx playwright install --with-deps firefox webkit
-      - run: npx playwright test --project=firefox --project=webkit --project=ipad-webkit --project=iphone-se-webkit
+      - run: npx playwright install --with-deps firefox
+      # WebKit (Safari) projects are skipped in CI for now, at the owner's request; run them locally with ALL_BROWSERS=1.
+      - run: npx playwright test --project=firefox
       # Diagnostics only (does not change the job result): browser-process output for the Firefox a11y run.
       - name: Firefox a11y browser log (diagnostics)
         if: failure()
