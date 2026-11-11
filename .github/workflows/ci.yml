@@ -106,8 +106,11 @@ jobs:
         if: always()
         run: |
           FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|passed|failed" || true
-          echo "--- real a11y spec, en light, alone ---"
-          DEBUG=pw:browser npx playwright test tests/e2e/a11y.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "pw:browser.*(Crash|crash|signal|SIG|Assert|MOZ|error)|✓|✘|passed|failed" | head -40 || true
+          # Round 4: is it "first test in a fresh browser"? Each invocation below starts a new Firefox.
+          for g in "H0 real" "E1 split" "E3 axe, then split \+ rich" "G4 without axe" "G0 full" "E1 split|H0 real" "E3 axe, then split \+ rich|H0 real"; do
+            echo "--- cold run: $g ---"
+            FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts -g "$g" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG [A-Z0-9]+(:| \+[0-9]+ms (upload|expect|done|PAGE|ERROR|pageerror))|passed|failed" || true
+          done
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
