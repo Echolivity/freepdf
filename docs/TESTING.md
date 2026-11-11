@@ -103,7 +103,7 @@ directly from `@playwright/test`. No exceptions are configured.
 
 ## Not covered or not executed
 
-- **Firefox:** not executed anywhere yet for 1.0.0 (configured in CI).
+- **Firefox:** not executed anywhere yet for 1.2.0 (configured in CI).
 - **Safari (macOS/iOS):** not executed. WebKitGTK and Playwright's WebKit share the engine but not
   Safari's media, memory or file-picker behaviour.
 - **Physical devices:** none. Tab-killing under memory pressure is only approximated by the simulated

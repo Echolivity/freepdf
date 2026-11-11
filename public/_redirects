@@ -1,3 +1,8 @@
 # Tools whose address changed in 1.2.0 (keep in sync with RENAMED in src/tools/registry.ts).
+# The trailing-slash and .html forms used to be served too (as 308s to the bare path), so keep them.
 /extract-pages /extract-pdf 301
+/extract-pages/ /extract-pdf 301
+/extract-pages.html /extract-pdf 301
 /remove-pages /delete-pages 301
+/remove-pages/ /delete-pages 301
+/remove-pages.html /delete-pages 301

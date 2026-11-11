@@ -76,11 +76,11 @@ There is no server-side attack surface: the deployment is static files only.
 | Low | The Arabic dictionary was in every visitor's bundle and in the worker. | **Fixed:** loaded on demand. Homepage JS went from about 108.9 to 99.7 KB gzipped; the worker is 37 KB smaller. |
 | Low | 9 lint warnings (state set inside effects; mixed component/hook modules; an unused import). | **Fixed:** 0 warnings, by refactoring rather than suppression. |
 
-## Open items for 1.0.0
+## Open items (1.2.0)
 
 | Severity | Item | Status |
 |----------|------|--------|
-| High (coverage) | Firefox has not been executed for 1.0.0, and Playwright's WebKit build was not runnable in the release sandbox. The WebKit **engine** passed 10/10 via WebKitGTK (on Cloudflare's runtime, full CSP). | **Gate:** CI's `cross-engine` job must be green before tagging. |
+| High (coverage) | Firefox has not been executed for 1.2.0, and Playwright's WebKit build was not runnable in the release sandbox. The WebKit **engine** passed 14/14 via WebKitGTK (on Cloudflare's runtime, full CSP). | **Gate:** CI's `cross-engine` job must be green before tagging. |
 | Medium (coverage) | No physical-device or real Safari testing. | Manual checklist in `RELEASE_CHECKLIST.md`. |
 | Low | pdf-lib 1.17.1 is unmaintained (no known vulnerabilities). | Accepted risk; monitor. |
 | Low | Signature dictionaries inside compressed object streams wouldn't be detected (signing tools practically never do this). | Documented. |

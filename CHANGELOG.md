@@ -13,8 +13,8 @@ See [docs/RELEASE_NOTES_v1.2.0.md](docs/RELEASE_NOTES_v1.2.0.md).
   - Delete (`/delete-pages`): undo/redo, result preview.
   - Organize: touch-friendly pointer drag, duplicate, insert from other PDFs, bulk actions, download
     selected, undo/redo, preview.
-- **Addresses:** `/extract-pages` and `/remove-pages` 301-redirect, plus an in-app redirect and
-  recent-tools migration.
+- **Addresses:** `/extract-pages` and `/remove-pages` (including their trailing-slash and `.html`
+  forms) 301-redirect, plus an in-app redirect and recent-tools migration.
 - **Home:** Organize / Edit / Convert / Optimize / Advanced categories with filter chips.
 - **Shared code:**
   - visual-space page geometry;

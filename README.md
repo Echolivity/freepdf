@@ -40,8 +40,9 @@ any change makes the signature invalid. They also warn when a file is password-p
 open it. Operations that change nothing return your original file untouched, so its signature stays
 valid.
 
-Planned tools (watermarks, page numbers, password protection and more) are listed in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). They are **not** available yet and aren't shown in the app.
+Tools that are still planned (password protection and unlock, editing, signing, forms, metadata and
+more) are listed in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). They are **not** available yet and
+aren't shown in the app. Everything in the table above is available now.
 
 ## Free, with technical safety limits
 

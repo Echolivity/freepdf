@@ -49,8 +49,8 @@ Legend: **B** = fully in-browser · **B-wasm** = in-browser using a WebAssembly 
 |---|------|-------|-----------|-----------------------|
 | 1 | Merge | B | pdf-lib `copyPages` | ✅ Phase 1 |
 | 2 | Split | B | pdf-lib | ✅ Phase 1 — ranges, every page, fixed chunks |
-| 3 | Extract pages | B | pdf-lib | ✅ Phase 1 |
-| 4 | Remove pages | B | pdf-lib | ✅ Phase 1 |
+| 3 | Extract pages | B | pdf-lib | ✅ Phase 1; `/extract-pdf` with odd/even and separate files since 1.2.0 |
+| 4 | Delete pages | B | pdf-lib | ✅ Phase 1; `/delete-pages` with undo/redo and preview since 1.2.0 |
 | 5 | Reorder pages | B | pdf-lib + PDF.js thumbnails | ✅ Phase 1 (Organize) |
 | 6 | Rotate | B | pdf-lib `setRotation` | ✅ Phase 1 |
 | 7 | Organize visually | B | PDF.js thumbnails | ✅ Phase 1 (reorder / rotate / delete in one view) |
@@ -66,7 +66,7 @@ Legend: **B** = fully in-browser · **B-wasm** = in-browser using a WebAssembly 
 | 21 | PDF → Excel | B | PDF.js text positions → column detection → SheetJS CE / ExcelJS | Works for real (non-scanned) tables. |
 | 22 | PDF → PowerPoint | B | PDF.js render + `pptxgenjs` | One slide per page; image background + editable text boxes. |
 | 23 | PDF → text | B | PDF.js `getTextContent` | Scanned PDFs need OCR (Phase 3: tesseract.js, self-hosted language data). |
-| 24–31 | Add text / images / page numbers / watermark / header-footer / draw / sign / fill forms | B | pdf-lib (+ PDF.js for the editing canvas) | |
+| 24–31 | Add text / images / page numbers / watermark / header-footer / draw / sign / fill forms | B | pdf-lib (+ PDF.js for the editing canvas) | ✅ Page numbers and watermark shipped in 1.2.0 (pdf-lib + fontkit, embedded IBM Plex Sans Arabic). The rest are planned. |
 | 32 | Protect with password | B-wasm | qpdf-wasm (AES-256) | pdf-lib cannot encrypt. |
 | 33 | Unlock | B-wasm / B | qpdf-wasm `--decrypt`; PDF.js for preview | Requires the password. We will not crack passwords. |
 | 34 | Redact permanently | B | PDF.js raster of affected pages + pdf-lib rebuild | Guaranteed removal: redacted pages become images (text on those pages is no longer selectable). True object-level redaction needs MuPDF (AGPL) — possible later. |
@@ -137,17 +137,22 @@ These were done ahead of the Phase 2 feature tools:
 - lifecycle, accessibility and device tests;
 - SEO metadata.
 
-### Phase 2 (next)
+### Shipped after 1.0.0
+- 1.1.0: Resize PDF, Compare PDF.
+- 1.2.0: Crop PDF, Add page numbers, Watermark PDF; Extract, Delete and Organize upgrades; home-page
+  categories.
+
+### Phase 2 (original plan; items 2–3 shipped in 1.2.0)
 1. ✅ **Arabic and right-to-left support (first item).** Shipped in 0.2.0: the full interface is
    translated and right-to-left. Arabic shaping for tools that *write* text onto pages comes with
    those tools (items 2–4).
    - The interface: Arabic/English switcher (only the chosen language is saved), `dir="rtl"`,
      logical CSS properties, mirrored direction icons, a self-hosted Arabic typeface, full
      translation including error messages, and Arabic search keywords.
-   - In PDFs: Arabic fixtures in the test suite, and HarfBuzz (WASM) shaping plus an embedded Arabic
-     font for every tool that writes text onto pages.
-2. Watermarks.
-3. Page numbers.
+   - In PDFs: Arabic fixtures in the test suite, and (since 1.2.0) fontkit shaping plus an embedded
+     Arabic font (IBM Plex Sans Arabic) for every tool that writes text onto pages.
+2. ✅ Watermarks (1.2.0).
+3. ✅ Page numbers (1.2.0).
 4. Headers and footers.
 5. Password protection and unlock (qpdf-wasm).
 6. Metadata removal.

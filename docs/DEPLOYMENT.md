@@ -22,7 +22,7 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 | `pdfjs/<version>/` | PDF.js CMaps, standard fonts, WASM decoders and ICC profiles. The path is versioned, so they're immutable. The QuickJS document-script sandbox is deliberately excluded. |
 | `pdfjs/fonts/<version>/` | IBM Plex Sans Arabic (SIL OFL 1.1, licence included), embedded into PDFs only when page numbers or watermarks contain Arabic or other non-Latin text. Versioned, so immutable. |
 | `_headers` | Security and cache headers (see below). |
-| `_redirects` | Permanent (301) redirects for renamed tools: `/extract-pages` → `/extract-pdf`, `/remove-pages` → `/delete-pages`. |
+| `_redirects` | Permanent (301) redirects for renamed tools: `/extract-pages` → `/extract-pdf`, `/remove-pages` → `/delete-pages` (also their trailing-slash and `.html` forms). |
 | `robots.txt`, `sitemap.xml` (sitemap only when `SITE_URL` is set) | Crawling. |
 | `theme-init.js`, `favicon.svg` | Applies theme and language before the first paint, and the site icon. |
 
