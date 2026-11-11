@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import JSZip from 'jszip'
 import { cellRef, formatGeneral, formatNumber, serialToDate } from '../../src/lib/convert/xlsx'
 import { evalContent, formatCounter } from '../../src/lib/convert/pseudo'
-import { sanitizeCss } from '../../src/lib/convert/htmlInput'
+import { sanitizeCss, stripActive } from '../../src/lib/convert/htmlInput'
 import { paginate } from '../../src/lib/convert/domToPdf'
 import { gridFromSpans, parseNumber } from '../../src/lib/convert/pdfTables'
 import { buildDocx, buildPptx, buildXlsx, sheetName, xmlText } from '../../src/lib/convert/ooxml'
@@ -65,6 +65,12 @@ describe('HTML input safety', () => {
     expect(r.css).not.toMatch(/x\.test|@import|fixed|htc/)
     expect(r.css).toContain('data:image/png;base64,AAAA')
     expect(r.removed).toBe(4)
+  })
+  it('strips scripts and event handlers from the text before parsing', () => {
+    const r = stripActive('<p onclick="alert(1)" class=x>a</p><img src=x OnError=alert(2)><script>bad()</script><b onmouseover=\'y()\'>b</b>')
+    expect(r.html).toBe('<p class=x>a</p><img src=x><b>b</b>')
+    expect(r.removed).toBe(4)
+    expect(stripActive('<p>no <b>handlers</b> here, online=yes</p>').html).toBe('<p>no <b>handlers</b> here, online=yes</p>')
   })
   it('recognises Office and HTML files by name and content', () => {
     const zip = new Uint8Array([0x50, 0x4b, 3, 4, 0, 0])

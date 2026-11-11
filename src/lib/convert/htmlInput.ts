@@ -44,10 +44,24 @@ function scopeSelectors(css: string): string {
   return css.replace(/(^|[\s,>+~}{(])(:root|html)(?=[\s,.:#[>+~{)]|$)/gi, '$1.fp-html').replace(/(^|[\s,>+~}{(])body(?=[\s,.:#[>+~{)]|$)/gi, '$1.fp-body')
 }
 
+/**
+ * Remove script blocks and inline event handlers from the raw text, before any parser sees it. The
+ * DOMParser document is inert, but a browser may still check an `on…=` attribute against the page's CSP
+ * while parsing; this way no handler ever reaches a document. The allowlist below is the second layer.
+ */
+export function stripActive(source: string): { html: string; removed: number } {
+  let removed = 0
+  const html = source
+    .replace(/<script\b[\s\S]*?(<\/script\s*>|$)/gi, () => { removed++; return '' })
+    .replace(/(<[^>]*?)\s(on[a-z]+)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, (_m, before: string) => { removed++; return before })
+  return { html, removed }
+}
+
 export function sanitizeHtml(source: string): SanitizedHtml {
-  const doc = new DOMParser().parseFromString(source, 'text/html')
+  const stripped = stripActive(source)
+  const doc = new DOMParser().parseFromString(stripped.html, 'text/html')
   let removedExternal = 0
-  let removedActive = 0
+  let removedActive = stripped.removed
   const styles: string[] = []
   for (const s of doc.querySelectorAll('style')) {
     const r = sanitizeCss(s.textContent ?? '')
@@ -55,7 +69,7 @@ export function sanitizeHtml(source: string): SanitizedHtml {
     styles.push(r.css)
   }
   removedExternal += doc.querySelectorAll('link[href], iframe, frame, object, embed, video, audio, source[src]').length
-  removedActive += doc.querySelectorAll('script, [onclick], [onload], [onerror], [onmouseover]').length
+  removedActive += doc.querySelectorAll('script').length
 
   const clean = (node: Node, into: Node) => {
     for (const child of [...node.childNodes]) {
