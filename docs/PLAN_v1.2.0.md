@@ -97,5 +97,11 @@ Status: **plan only, nothing implemented yet.** Based on an inspection of the 1.
 
 - **PDF to PDF/A (v1.4): dropped.** Proper validation needs veraPDF, which doesn't run in the browser.
 - **AI tools (v2.0): dropped.** That covers Chat, Summarize, Translate, Table extraction and Document intelligence.
-- **OCR (v1.4):** English first. Arabic OCR is tested separately later, and isn't advertised until it has been measured.
+- **OCR (v1.4), kept in its original place (decided 2026-11-11):** English first. Arabic OCR is tested
+  separately later, and isn't advertised until it has been measured. Intended approach:
+  - Tesseract.js 7 (Apache-2.0) in a worker, self-hosted to satisfy the CSP, and loaded only on the
+    OCR route: about 2.9 MB for the engine and 3 MB for English, gzipped; Arabic data about 1.7 MB.
+  - An invisible text layer is added over the unchanged page images; a text-only extraction option is
+    offered too.
+  - The Arabic text layer depends on the font embedding built in Phase 1.
 - **Redact (v1.3):** true removal needs content-stream rewriting. Expect "can't guarantee" warnings on some structures.
