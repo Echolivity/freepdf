@@ -86,3 +86,42 @@ test('G3 without the privacy step', async ({ page }) => { await run(page, 'G3', 
 test('G4 without axe', async ({ page }) => { await run(page, 'G4', () => sequence(page, { axe: false })) })
 test('G5 without the animation wait', async ({ page }) => { await run(page, 'G5', () => sequence(page, { wait: false })) })
 test('G6 privacy page then split, no axe, no init', async ({ page }) => { await run(page, 'G6', () => sequence(page, { init: false, home: false, axe: false, wait: false })) })
+
+// Round 3: the real a11y test body, verbatim (helpers, assertions, parameterised init script), with a log
+// line before every step so the crash can be placed exactly.
+async function realAudit(page: Page, label: string) {
+  await animationsDone(page)
+  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+  const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+  expect(serious.map((v) => `${label}: ${v.id}`)).toEqual([])
+}
+for (const [id, lang, theme] of [['H0', 'en', 'light'], ['H1', 'en', 'dark'], ['H2', 'ar', 'light']] as const) {
+  test(`${id} real a11y body (${lang}, ${theme})`, async ({ page }) => {
+    const t0 = Date.now()
+    const log = (s: string) => console.log(`DIAG ${id} +${Date.now() - t0}ms ${s}`)
+    page.on('crash', () => log('PAGE CRASHED'))
+    page.on('console', (m) => { if (m.type() === 'error') log(`console.error ${m.text().slice(0, 160)}`) })
+    page.on('pageerror', (e) => log(`pageerror ${e.message.slice(0, 160)}`))
+    try {
+      log('init'); await page.addInitScript(([l, t]) => { localStorage.setItem('freepdf:lang', l); localStorage.setItem('freepdf:theme', t) }, [lang, theme])
+      log('goto /'); await page.goto('/')
+      log('audit home'); await realAudit(page, 'home')
+      log('goto /privacy'); await page.goto('/privacy')
+      log('audit privacy'); await realAudit(page, 'privacy')
+      log('goto /split-pdf'); await page.goto('/split-pdf')
+      log('audit tool empty'); await realAudit(page, 'tool empty')
+      log('upload rich.pdf'); await page.getByTestId('file-input').first().setInputFiles(fx('rich.pdf'))
+      for (let i = 0; i < 20; i++) {
+        const n = await page.evaluate(() => ({ lists: document.querySelectorAll('ul,ol,[role=list]').length, canv: document.querySelectorAll('canvas').length, imgs: document.querySelectorAll('img').length }))
+        log(`poll ${i}: ${JSON.stringify(n)}`)
+        await page.waitForTimeout(250)
+      }
+      log('expect list(1) visible'); await expect(page.getByRole('list').nth(1)).toBeVisible()
+      log('audit tool with file'); await realAudit(page, 'tool with file')
+      log('done ok')
+    } catch (e) {
+      log(`ERROR ${(e as Error).message.split('\n')[0]}`)
+      throw e
+    }
+  })
+}

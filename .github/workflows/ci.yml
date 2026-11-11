@@ -104,7 +104,10 @@ jobs:
       # Temporary: controlled experiments for the Firefox crash (does not change the job result).
       - name: Firefox crash experiments (diagnostics)
         if: always()
-        run: FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|passed|failed" || true
+        run: |
+          FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|passed|failed" || true
+          echo "--- real a11y spec, en light, alone ---"
+          DEBUG=pw:browser npx playwright test tests/e2e/a11y.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "pw:browser.*(Crash|crash|signal|SIG|Assert|MOZ|error)|✓|✘|passed|failed" | head -40 || true
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
