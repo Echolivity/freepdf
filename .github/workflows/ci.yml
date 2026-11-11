@@ -101,6 +101,10 @@ jobs:
       - name: Firefox a11y browser log (diagnostics)
         if: failure()
         run: DEBUG=pw:browser npx playwright test tests/e2e/a11y.spec.ts --project=firefox --retries=0 --grep "en, light" 2>&1 | tail -n 300 || true
+      # Temporary: controlled experiments for the Firefox crash (does not change the job result).
+      - name: Firefox crash experiments (diagnostics)
+        if: always()
+        run: FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|passed|failed" || true
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
