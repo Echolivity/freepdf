@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+type Page = import('@playwright/test').Page
 import AxeBuilder from '@axe-core/playwright'
 import { join } from 'node:path'
 
