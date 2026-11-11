@@ -2,9 +2,9 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import type { IconName } from '../components/Icon'
 import { LANGS, translate, type MessageKey } from '../i18n/core'
 
-export type Category = 'organize' | 'optimize' | 'convert-to' | 'convert-from'
+export type Category = 'organize' | 'optimize' | 'convert-to' | 'convert-from' | 'advanced'
 
-export const CATEGORIES: Category[] = ['organize', 'optimize', 'convert-to', 'convert-from']
+export const CATEGORIES: Category[] = ['organize', 'optimize', 'convert-to', 'convert-from', 'advanced']
 
 export interface ToolDef {
   slug: string
@@ -12,7 +12,7 @@ export interface ToolDef {
   icon: IconName
   /** What the tool accepts and produces (shown on the tool page). */
   input: 'pdf' | 'images'
-  output: 'pdf' | 'pdfs' | 'images'
+  output: 'pdf' | 'pdfs' | 'images' | 'report'
   /** Search keywords in every language (titles and descriptions are searched too). */
   keywords: { en: string[]; ar: string[] }
   component: LazyExoticComponent<ComponentType<{ tool: ToolDef }>>
@@ -27,6 +27,8 @@ const Rotate = lazy(() => import('./rotate/RotateTool'))
 const Compress = lazy(() => import('./compress/CompressTool'))
 const PdfToImage = lazy(() => import('./pdf-to-image/PdfToImageTool'))
 const ImageToPdf = lazy(() => import('./image-to-pdf/ImageToPdfTool'))
+const Resize = lazy(() => import('./resize/ResizeTool'))
+const Compare = lazy(() => import('./compare/CompareTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -42,6 +44,8 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['reorder', 'rearrange', 'sort', 'move pages', 'thumbnails'], ar: ['تنظيم', 'ترتيب', 'إعادة ترتيب', 'نقل الصفحات', 'صور مصغرة'] } },
   { slug: 'rotate-pdf', input: 'pdf', output: 'pdfs', icon: 'rotate', category: 'organize', component: Rotate,
     keywords: { en: ['turn', 'orientation', 'landscape', 'portrait', 'flip'], ar: ['تدوير', 'اتجاه', 'أفقي', 'عمودي', 'قلب'] } },
+  { slug: 'resize-pdf', input: 'pdf', output: 'pdfs', icon: 'resize', category: 'organize', component: Resize,
+    keywords: { en: ['page size', 'a4', 'letter', 'a3', 'scale', 'paper size', 'fit'], ar: ['تغيير الحجم', 'مقاس الصفحة', 'حجم الورق', 'A4', 'تكبير', 'تصغير الصفحة'] } },
   { slug: 'compress-pdf', input: 'pdf', output: 'pdfs', icon: 'compress', category: 'optimize', component: Compress,
     keywords: { en: ['reduce', 'shrink', 'smaller', 'optimize', 'size'], ar: ['ضغط', 'تصغير', 'تقليل الحجم', 'حجم', 'تحسين'] } },
   { slug: 'jpg-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert-to', component: ImageToPdf,
@@ -52,6 +56,8 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['jpeg', 'image', 'picture', 'export', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'جي بي جي', 'تصدير'] } },
   { slug: 'pdf-to-png', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert-from', component: PdfToImage,
     keywords: { en: ['image', 'picture', 'export', 'lossless', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'بي إن جي', 'تصدير'] } },
+  { slug: 'compare-pdf', input: 'pdf', output: 'report', icon: 'compare', category: 'advanced', component: Compare,
+    keywords: { en: ['diff', 'difference', 'changes', 'versions', 'redline', 'track changes'], ar: ['مقارنة', 'فرق', 'الفروق', 'تغييرات', 'نسخ', 'مطابقة'] } },
 ]
 
 export const toolBySlug = (slug: string) => TOOLS.find((t) => t.slug === slug)

@@ -3,6 +3,8 @@ import type { PageOp } from '../lib/pdf/organize'
 import type { CompressionLevel, CompressResult } from '../lib/pdf/compress'
 import type { ImagesToPdfOptions } from '../lib/pdf/images'
 import type { Message } from '../i18n/core'
+import type { ResizeOptions } from '../lib/pdf/resizePlan'
+import type { DiffRun } from '../lib/compare/diff'
 
 export interface RawImage {
   name: string
@@ -21,6 +23,8 @@ export interface WorkerOps {
   compress: [{ file: NamedBytes; level: CompressionLevel }, CompressResult]
   imagesToPdf: [{ images: RawImage[]; options: ImagesToPdfOptions }, Uint8Array]
   pageCount: [{ file: NamedBytes }, number]
+  resize: [{ file: NamedBytes; options: ResizeOptions }, Uint8Array]
+  diffTokens: [{ a: Int32Array; b: Int32Array }, DiffRun[]]
 }
 
 export type OpName = keyof WorkerOps

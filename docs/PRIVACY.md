@@ -1,6 +1,6 @@
 # FreePDF privacy policy
 
-_Applies to version 1.0.0. The in-app "How it works" page (`/privacy`) says the same thing in English
+_Applies to version 1.1.0. The in-app "How it works" page (`/privacy`) says the same thing in English
 and Arabic._
 
 ## Your documents
@@ -18,6 +18,11 @@ and Arabic._
   - Download links are released 30 seconds after the download starts.
   - Closing the tab releases everything.
 - **No retention elsewhere:** document contents are never written to browser storage.
+
+## Compare PDF
+
+Both files are opened and read in your tab. Their text, the highlighted pages and the optional report
+are produced on your device. Neither file is changed, and nothing about them is stored or sent.
 
 ## What is stored in your browser
 

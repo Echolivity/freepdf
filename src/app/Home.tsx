@@ -12,6 +12,7 @@ const CAT_VAR: Record<Category, string> = {
   optimize: 'var(--cat-optimize)',
   'convert-to': 'var(--cat-to)',
   'convert-from': 'var(--cat-from)',
+  advanced: 'var(--cat-advanced)',
 }
 
 export function ToolCard({ tool }: { tool: ToolDef }) {

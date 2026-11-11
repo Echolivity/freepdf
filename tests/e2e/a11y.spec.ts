@@ -26,6 +26,15 @@ for (const lang of ['en', 'ar'] as const) {
       await upload(page, 'text-8p.pdf', 'signed.pdf')
       await runAndDownload(page)
       await audit(page, 'result')
+      await page.goto('/resize-pdf')
+      await upload(page, 'rich.pdf')
+      await expect(page.getByTestId('resize-preview')).toBeVisible()
+      await audit(page, 'resize with file')
+      await page.goto('/compare-pdf')
+      await upload(page, 'text-8p.pdf', 'structured.pdf')
+      await page.getByTestId('run').click()
+      await expect(page.getByTestId('cmp-stats')).toBeVisible({ timeout: 30_000 })
+      await audit(page, 'compare result')
     })
   }
 }

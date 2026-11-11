@@ -7,9 +7,9 @@ back to you on your own device, and they are never uploaded. There's no account,
 daily quota, no watermark and no advertising. The site is plain static files, so it costs almost nothing
 to host, which is how it can stay free.
 
-Version **1.0.0**. Further reading:
+Version **1.1.0**. Further reading:
 
-- [Release notes](docs/RELEASE_NOTES_v1.0.0.md)
+- [Release notes](docs/RELEASE_NOTES_v1.1.0.md)
 - [Test and QA report](docs/TEST_AND_QA_REPORT.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Security](docs/SECURITY.md)
@@ -26,7 +26,9 @@ Version **1.0.0**. Further reading:
 | Remove pages | Delete pages | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up. |
 | Organize PDF | Reorder, rotate and delete individual pages | The document is edited in place, so its structure is preserved. |
 | Rotate PDF | Rotate every page of one or more PDFs | Adds to the existing rotation. Lossless. |
+| Resize PDF | A4, Letter, A3, A5, Legal or a custom size; fit page, fit width, or change the paper without scaling; all or selected pages | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. |
 | Compress PDF | **Lossless**: repacks without touching images. **Light / Balanced / Strong** (lossy): re-encode photos and scans. | A per-file report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved. |
+| Compare PDF | Two versions side by side: word-level text changes highlighted, a pixel-difference overlay, a visual check of every page, and a PDF report of changed pages | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only. |
 | JPG / PNG to PDF | JPG, PNG or WebP to one PDF, or one PDF per image | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured. |
 | PDF to JPG / PNG | One image per page at 72, 150 or 300 DPI | Password-protected PDFs can be opened here with their password. |
 
@@ -122,11 +124,11 @@ ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright
 What CI runs, job by job, is listed in [docs/TESTING.md](docs/TESTING.md).
 
 Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
-- 110 unit tests;
-- 180 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
-- 72 inside the Cloudflare runtime;
-- 30 real-world QA scenarios;
-- 10 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
+- 135 unit tests;
+- 192 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
+- 80 inside the Cloudflare runtime;
+- 35 real-world QA scenarios;
+- 12 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
 
 All passed. Playwright's Firefox and WebKit projects, Safari and physical devices were **not** executed
 in the build environment; CI runs the Firefox and WebKit projects.

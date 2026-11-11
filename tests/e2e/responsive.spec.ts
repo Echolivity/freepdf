@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { upload } from './helpers'
 
-const ROUTES = ['/', '/merge-pdf', '/organize-pdf', '/compress-pdf', '/pdf-to-jpg', '/jpg-to-pdf', '/privacy']
+const ROUTES = ['/', '/merge-pdf', '/organize-pdf', '/compress-pdf', '/pdf-to-jpg', '/jpg-to-pdf', '/resize-pdf', '/compare-pdf', '/privacy']
 
 for (const lang of ['en', 'ar'] as const) {
   test(`no horizontal overflow on any page (${lang})`, async ({ page }) => {

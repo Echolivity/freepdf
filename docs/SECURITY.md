@@ -1,4 +1,4 @@
-# Security and privacy controls (1.0.0)
+# Security and privacy controls (1.1.0)
 
 ## Threat model in one paragraph
 
@@ -30,6 +30,14 @@ There is no server-side attack surface: the deployment is static files only.
 | Clickjacking / embedding | `frame-ancestors 'none'`, `X-Frame-Options: DENY`, COOP and CORP `same-origin`. | Header test. |
 | Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
+
+## 1.1.0 additions
+
+| Area | Control |
+|------|---------|
+| Resize PDF | Pure geometry on the existing content: a `cm` matrix and a clip are wrapped around the original content streams, and annotation rectangles and page boxes are transformed. No content is decoded, rasterised or re-encoded, so untrusted content isn't interpreted beyond what pdf-lib already parses. Page sizes are bounded (1 inch to 200 inches); margins that leave no room are rejected. Runs in the per-job worker. |
+| Compare PDF | Read-only. PDF.js extracts text and renders pages (no scripting, as everywhere). Word ids, not text, are sent to a per-job worker for the diff. Its memory is bounded: exact LCS only up to 4 M cells per gap, and Myers up to 2,000 edits, otherwise the gap is reported as replaced. Canvases are released after use. The report is built from JPEG page images through the existing image-to-PDF path. |
+| Tests | Both tools run under the global privacy guard (no request may leave the origin or carry document data) in every browser test and in the QA run. |
 
 ## Findings of the 1.0.0 release audit
 

@@ -40,7 +40,7 @@ async function check(name, fn) {
     const note = await fn()
     results.push({ name, ok: true, note: note ?? '', ms: Date.now() - t0 })
   } catch (e) {
-    results.push({ name, ok: false, note: String(e?.message ?? e).split('\n')[0].slice(0, 200), ms: Date.now() - t0 })
+    results.push({ name, ok: false, note: (String(e?.message || '') || e?.name || String(e)).split('\n')[0].slice(0, 200), ms: Date.now() - t0 })
   }
   console.log(`${results.at(-1).ok ? 'PASS' : 'FAIL'}  ${name}  ${results.at(-1).note}`)
 }
@@ -174,6 +174,37 @@ await check('JPG → PDF (EXIF-rotated photo)', async () => {
   const doc = await PDFDocument.load(bytes)
   const { width, height } = doc.getPage(0).getSize()
   return `${doc.getPageCount()} pages, page 1 ${Math.round(width)}×${Math.round(height)}; ${qpdf(bytes)}`
+})
+
+await check('Resize to Letter (v1.1.0)', async () => {
+  const { bytes } = await runTool('/resize-pdf', [fx('rich.pdf')], {
+    before: async () => { await (await d.wait(until.elementLocated(By.css('[data-testid="rs-size"] option[value="letter"]')), 20_000)).click() },
+  })
+  const doc = await PDFDocument.load(bytes)
+  const sizes = doc.getPages().map((p) => { const { width, height } = p.getSize(); return [Math.round(width), Math.round(height)].sort((a, b) => a - b).join('×') })
+  if (!sizes.every((s) => s === '612×792')) throw new Error(`sizes ${sizes}`)
+  return `${sizes.length} pages at Letter; ${qpdf(bytes)}`
+})
+
+await check('Compare two versions (v1.1.0)', async () => {
+  const mk = async (word) => {
+    const doc = await PDFDocument.create()
+    const font = await doc.embedFont('Helvetica')
+    doc.addPage([595, 842]).drawText(`Payment is due within ${word} days.`, { x: 50, y: 780, size: 13, font })
+    const f = join(tmp, `v-${word}.pdf`)
+    writeFileSync(f, await doc.save())
+    return f
+  }
+  await d.get(BASE + '/compare-pdf')
+  await (await d.wait(until.elementLocated(By.css('[data-testid="file-input"]')), 20_000)).sendKeys([await mk('30'), await mk('45')].join('\n'))
+  const run = await d.wait(until.elementLocated(By.css('[data-testid="run"]')), 20_000)
+  await d.wait(until.elementIsEnabled(run), 20_000)
+  await run.click()
+  const stats = await d.wait(until.elementLocated(By.css('[data-testid="cmp-stats"]')), 60_000)
+  const text = await stats.getText()
+  if (!/removed: 1 · words added: 1/.test(text)) throw new Error(text)
+  await d.wait(until.elementLocated(By.css('[role="img"] canvas')), 30_000)
+  return text.split(' · pages')[0]
 })
 
 await check('Organize: thumbnails render; embedded PDF JavaScript does not run', async () => {

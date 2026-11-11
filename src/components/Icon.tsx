@@ -12,6 +12,8 @@ const paths = {
   compress: <><path d="M5 3h9l5 5v13H5z" /><path d="M14 3v5h5" /><path d="M12 9.5v3M9.5 10l2.5 2.5L14.5 10M12 18.5v-3M9.5 18l2.5-2.5 2.5 2.5" /></>,
   imageOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h6" /><rect x="12.5" y="13" width="8.5" height="8" rx="1.2" /><path d="M13 20l2.6-2.8 1.8 1.8 1.2-1.2 2 2" /></>,
   imageIn: <><rect x="3" y="3" width="9" height="8" rx="1.2" /><path d="M3.5 10l2.8-3 2 2 1.2-1.2 2.2 2.2" /><path d="M14 6h3l4 4v11H9v-6" /><path d="M17 6v4h4" /></>,
+  resize: <><rect x="3.5" y="3.5" width="17" height="17" rx="1.5" strokeDasharray="2.5 2.5" /><rect x="7" y="9" width="8" height="8" rx="1" /><path d="M13 4.5h6.5V11M19.5 4.5l-6 6" /></>,
+  compare: <><path d="M4 3h6v18H4z" /><path d="M14 3h6v18h-6z" /><path d="M6 8h2M6 11h2M16 8h2M16 11h2" /><path d="M6 15h2M16 15h2" strokeDasharray="1 1.4" /></>,
   upload: <><path d="M12 16V4" /><path d="M7 9l5-5 5 5" /><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></>,
   download: <><path d="M12 4v12" /><path d="M7 11l5 5 5-5" /><path d="M4 20h16" /></>,
   x: <><path d="M6 6l12 12M18 6L6 18" /></>,

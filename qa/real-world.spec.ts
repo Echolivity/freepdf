@@ -302,6 +302,8 @@ test('corrupted and malformed inputs', async ({ page }) => {
     await scenario({ id: `C-${file}`, category: 'Corrupted / malformed', input: `${file} (${what})`, operation: 'Rotate', expected }, async () => {
       const t0 = Date.now()
       const rejected = page.getByRole('alert')
+      // Validation is asynchronous: wait until the file is either rejected or accepted before branching.
+      await expect(rejected.or(page.getByTestId('run'))).toBeVisible({ timeout: 30_000 })
       if (await rejected.isVisible().catch(() => false)) {
         const text = (await rejected.innerText()).trim()
         if (!pattern.test(text)) throw new Error(`unexpected message: ${text}`)
@@ -382,5 +384,78 @@ test('low-memory, interruption and repeated processing', async ({ page, context 
     const [a, b] = samples
     if (b > a + 10 * 1048576) throw new Error(`heap grew ${mb(a)} → ${mb(b)}`)
     return { actual: `JS heap after GC: run 3 ${mb(a)}, run 20 ${mb(b)}`, ms: Date.now() - t0 }
+  })
+})
+
+/** v1.1.0 tools: Resize PDF and Compare PDF on the same hostile and realistic inputs. */
+test('resize and compare (v1.1.0)', async ({ page }) => {
+  test.setTimeout(15 * 60_000)
+  const large = IN('large.pdf')
+  const p800 = IN('pages-800.pdf')
+  const pageSize = (bytes: Uint8Array, i = 0) => PDFDocument.load(bytes).then((d) => d.getPage(i).getSize())
+
+  await page.goto('/resize-pdf')
+  await select(page, large)
+  await page.getByTestId('rs-size').selectOption('letter')
+  await scenario({ id: 'R1', category: 'Resize', input: describeFile(large, '20 photo pages'), operation: 'Resize to Letter (fit)', expected: 'Valid, all pages Letter, images untouched (size ≈ same)' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    const s = await pageSize(bytes)
+    if (Math.abs(s.width - 612) > 1 && Math.abs(s.width - 792) > 1) throw new Error(`page 1 is ${s.width}×${s.height}`)
+    const ratio = bytes.length / statSync(large).size
+    if (ratio < 0.98 || ratio > 1.02) throw new Error(`size changed by ${(100 * (ratio - 1)).toFixed(1)}% (images re-encoded?)`)
+    return { actual: `${validPdf(bytes, 20)}; ${mb(statSync(large).size)} → ${mb(bytes.length)}`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/resize-pdf')
+  await select(page, p800)
+  await page.getByTestId('rs-size').selectOption('a5')
+  await scenario({ id: 'R2', category: 'Resize', input: describeFile(p800, '800 text pages'), operation: 'Resize to A5 (fit)', expected: '800 A5 pages; text still extractable' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    const s = await pageSize(bytes, 799)
+    if (Math.abs(s.width - 419.53) > 1) throw new Error(`last page is ${s.width}×${s.height}`)
+    const text = textOf(bytes, 399)
+    if (!/400/.test(text)) throw new Error(`page 400 text not found: ${text.slice(0, 60)}`)
+    return { actual: `${validPdf(bytes, 800)}; page 400 text verified`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/resize-pdf')
+  await select(page, FX('signed.pdf'))
+  await scenario({ id: 'R3', category: 'Resize', input: describeFile(FX('signed.pdf'), 'PAdES signature'), operation: 'Resize (warning)', expected: 'Signature warning before processing' }, async () => {
+    await expect(page.getByTestId('file-warnings')).toContainText('is digitally signed')
+    return { actual: 'Warning shown on file add' }
+  })
+
+  // Compare: the 800-page document against a copy with one page's text changed.
+  const changed = await (async () => {
+    const doc = await PDFDocument.load(readFileSync(p800))
+    const { StandardFonts } = await import('pdf-lib')
+    const font = await doc.embedFont(StandardFonts.Helvetica)
+    doc.getPage(499).drawText('INSERTED CLAUSE', { x: 72, y: 60, size: 12, font })
+    return Buffer.from(await doc.save())
+  })()
+  await page.goto('/compare-pdf')
+  await page.getByTestId('file-input').setInputFiles([
+    { name: 'pages-800.pdf', mimeType: 'application/pdf', buffer: readFileSync(p800) },
+    { name: 'pages-800-edited.pdf', mimeType: 'application/pdf', buffer: changed },
+  ])
+  await scenario({ id: 'C1', category: 'Compare', input: 'pages-800.pdf vs a copy with 2 words added on page 500', operation: 'Compare', expected: 'Exactly page 500 reported; 2 words added' }, async () => {
+    const t0 = Date.now()
+    await page.getByTestId('run').click()
+    await expect(page.getByTestId('cmp-stats')).toBeVisible({ timeout: 5 * 60_000 })
+    const ms = Date.now() - t0
+    await expect(page.getByTestId('cmp-stats')).toContainText('Words removed: 0 · words added: 2')
+    await expect(page.getByTestId('cmp-pages').getByRole('button')).toHaveText(['500'])
+    return { actual: 'page 500 only; 0 removed, 2 added', ms }
+  })
+
+  await page.goto('/compare-pdf')
+  await select(page, large, large)
+  await scenario({ id: 'C2', category: 'Compare', input: describeFile(large, 'compared with itself'), operation: 'Compare + visual check of all pages', expected: 'No text changes; no visual differences' }, async () => {
+    const t0 = Date.now()
+    await page.getByTestId('run').click()
+    await expect(page.getByRole('heading', { name: 'No text differences found' })).toBeVisible({ timeout: 5 * 60_000 })
+    await page.getByTestId('cmp-scan').click()
+    await expect(page.getByTestId('cmp-scan-result')).toHaveText('No visual differences found.', { timeout: 5 * 60_000 })
+    return { actual: 'no text changes; 0 of 20 pages visually different', ms: Date.now() - t0 }
   })
 })

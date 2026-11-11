@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 import { mergePdfs, splitPdf, extractPages, removePages, rotatePdf, organizePdf, getPageCount } from '../lib/pdf/organize'
 import { compressPdf } from '../lib/pdf/compress'
+import { resizePdf } from '../lib/pdf/resize'
+import { diffTokens } from '../lib/compare/diff'
 import { imagesToPdf, type ImageInput } from '../lib/pdf/images'
 import { UserFacingError } from '../lib/validate'
 import { canvasCodec, toPng } from './codec'
@@ -29,6 +31,8 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       case 'organize': result = await organizePdf(req.args.file, req.args.ops); break
       case 'compress': result = await compressPdf(req.args.file, req.args.level, canvasCodec, progress); break
       case 'pageCount': result = await getPageCount(req.args.file); break
+      case 'resize': result = await resizePdf(req.args.file, req.args.options, progress); break
+      case 'diffTokens': result = diffTokens(req.args.a, req.args.b); break
       case 'imagesToPdf': {
         const images: ImageInput[] = []
         for (const img of req.args.images) {

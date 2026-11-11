@@ -42,3 +42,45 @@ export function meanDiff(a: Raster, b: Raster): number {
   }
   return sum / ((a.data.length / 4) * 3)
 }
+
+/** Open a PDF with PDF.js in Node (caller must call `close()`). For text extraction and page geometry. */
+export async function openNode(bytes: Uint8Array) {
+  const task = pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    standardFontDataUrl: join(root, 'standard_fonts') + '/',
+    cMapUrl: join(root, 'cmaps') + '/',
+    cMapPacked: true,
+  } as Parameters<typeof pdfjs.getDocument>[0])
+  const doc = await task.promise
+  return { doc, close: () => task.destroy() }
+}
+
+/** Visible size of every page (rotation applied), in points. */
+export async function visualSizes(bytes: Uint8Array): Promise<[number, number][]> {
+  const { doc, close } = await openNode(bytes)
+  try {
+    const out: [number, number][] = []
+    for (let i = 1; i <= doc.numPages; i++) {
+      const vp = (await doc.getPage(i)).getViewport({ scale: 1 })
+      out.push([Math.round(vp.width * 100) / 100, Math.round(vp.height * 100) / 100])
+    }
+    return out
+  } finally {
+    await close()
+  }
+}
+
+/** Text of every page (items joined by spaces, whitespace collapsed). */
+export async function pageTexts(bytes: Uint8Array): Promise<string[]> {
+  const { doc, close } = await openNode(bytes)
+  try {
+    const out: string[] = []
+    for (let i = 1; i <= doc.numPages; i++) {
+      const c = await (await doc.getPage(i)).getTextContent()
+      out.push(c.items.map((it) => ('str' in it ? it.str : '')).join(' ').replace(/\s+/g, ' ').trim())
+    }
+    return out
+  } finally {
+    await close()
+  }
+}

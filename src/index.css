@@ -22,6 +22,7 @@
   --cat-optimize: #0e7c5a;
   --cat-to: #b45309;
   --cat-from: #7c3aed;
+  --cat-advanced: #be185d;
   --grid-dot: rgba(21, 22, 26, 0.09);
   color-scheme: light;
 }
@@ -46,6 +47,7 @@
   --cat-optimize: #4fd1a1;
   --cat-to: #f2a65a;
   --cat-from: #b69cff;
+  --cat-advanced: #f9a8d4;
   --grid-dot: rgba(236, 235, 229, 0.07);
   color-scheme: dark;
 }

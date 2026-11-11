@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.0 — 2026-11-11 (Resize PDF, Compare PDF)
+
+See [docs/RELEASE_NOTES_v1.1.0.md](docs/RELEASE_NOTES_v1.1.0.md).
+
+- **Added: Resize PDF** (`/resize-pdf`).
+  - Sizes: A4, Letter, A3, A5, Legal or a custom size.
+  - Modes: fit page, fit width, or change the paper only.
+  - Orientation: per page, or forced.
+  - Scope: all pages or selected pages, with a live preview.
+  - Implemented in place: a transformation matrix is applied, and annotations and page boxes are moved with it. Nothing is rasterised.
+- **Added: Compare PDF** (`/compare-pdf`).
+  - Word-level text diff: patience diff with an exact-LCS / Myers fallback, run in a worker, with Arabic-aware normalisation.
+  - Highlighted side-by-side view.
+  - Pixel-difference overlay with an adjustable tolerance.
+  - Visual check of every page.
+  - PDF report of changed pages.
+- **Home page:** a new "Review" category.
+- **Tests:**
+  - Unit: 24 new tests for resize and compare, including a property test of the diff.
+  - Browser: 8 new tests (EN/AR, mobile, accessibility).
+  - Real-world QA: 5 new scenarios (153 MB and 800-page resize, signed warning, 800-page compare, visual check).
+  - `qa/screenshots.mjs`.
+- **Fixed (QA harness):** the corrupted-input scenarios could branch before asynchronous file validation finished, and then wait until the test timed out.
+
 ## 1.0.0 — 2026-11-11 (stable; release hardening)
 
 See [docs/RELEASE_NOTES_v1.0.0.md](docs/RELEASE_NOTES_v1.0.0.md) and

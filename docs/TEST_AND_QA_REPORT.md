@@ -1,83 +1,85 @@
-# FreePDF 1.0.0: test and QA report
+# FreePDF 1.1.0: test and QA report
 
-All results below were executed on 2026-11-11 in the release build environment: 2 vCPU Intel Xeon
-@ 2.1 GHz, 8 GB RAM, Linux, Node 22.23.4, Chromium 153 (headless), WebKitGTK 2.52 (MiniBrowser under
-Xvfb). Nothing here is simulated or hand-edited. What wasn't executed is listed as such.
+Executed on 2026-11-11 in the release build environment: 2 vCPU Intel Xeon @ 2.1 GHz, 8 GB RAM, Linux,
+Node 22.23.4, Chromium 153 (headless), WebKitGTK 2.52 (MiniBrowser under Xvfb). Nothing here is
+simulated or hand-edited. What wasn't executed is listed as such. The 1.0.0 report is in Git history.
 
 ## 1. Summary
 
 | Suite | Command | Result |
 |-------|---------|--------|
-| Clean install | `npm ci` in a fresh `git clone` | ✅ lockfile in sync; install succeeds unchanged |
-| TypeScript | `npm run typecheck` | ✅ pass |
-| Lint | `oxlint src tests qa scripts` | ✅ 0 errors, 0 warnings |
-| Unit / integration (Vitest, `CI=1`: qpdf mandatory) | `npm test` | ✅ **110 / 110** (12 files) |
-| Production build | `npm run build` | ✅ pass; homepage JS 97.5 KB gzipped; `dist/` 6.8 MB, 264 files |
-| Browser, Chromium, 5 profiles (`CI=1`: flaky = fail) | `npm run test:e2e` | ✅ **180 passed, 1 skipped**: desktop 72 (1 skip: the real-404 test, Cloudflare-only) · tablet-android 31 · android-midrange 31 · mobile 31 · narrow-320 16 |
-| Browser, inside Cloudflare's Pages runtime | `npm run test:cloudflare` | ✅ **72 / 72** |
-| Real-world QA, inside the Cloudflare runtime (strict validators) | `npm run qa:cloudflare` | ✅ **30 / 30** ([QA_REPORT.md](QA_REPORT.md)) |
-| WebKit engine (WebKitGTK 2.52 via WebDriver) | `node qa/webkitgtk-smoke.mjs` | ✅ **10 / 10** on `vite preview`; ✅ **10 / 10** on the Cloudflare runtime over HTTPS with the full production CSP |
-| Dependency audit | `npm audit` | ✅ 0 vulnerabilities |
-| Playwright Firefox / WebKit / iPad / iPhone SE projects | `ALL_BROWSERS=1 npm run test:e2e` | ⛔ **BLOCKED**: downloads refused by the sandbox network policy. Runs in CI (`cross-engine`). |
-| Firefox in any form | — | ⛔ **BLOCKED**: no package source reachable |
-| Safari (macOS / iOS), physical devices | manual | ⚪ **NOT TESTED**: no hardware |
-| Live production URL | manual | ⛔ **BLOCKED**: Cloudflare is not reachable from the build environment; nothing was deployed |
+| TypeScript, lint | `npm run typecheck`, `oxlint src tests qa scripts` | ✅ 0 errors, 0 warnings |
+| Unit / integration (`CI=1`, qpdf mandatory) | `npm test` | ✅ **135 / 135** (14 files) |
+| Production build | `npm run build` | ✅ homepage JS 99.6 KB gzipped; Resize UI 2.8 KB, Compare UI 5.7 KB; `dist/` 7.3 MB, 269 files |
+| Browser, Chromium, 5 profiles (`CI=1`, flaky = fail) | `npm run test:e2e` | ✅ **192 passed, 1 skipped**: desktop 80 (1 Cloudflare-only skip) · tablet-android 32 · android-midrange 32 · mobile 32 · narrow-320 17 |
+| Browser inside Cloudflare's Pages runtime | `npm run test:cloudflare` | ✅ **80 / 80** |
+| Real-world QA inside the Cloudflare runtime (strict) | `npm run qa:cloudflare` | ✅ **35 / 35** ([QA_REPORT.md](QA_REPORT.md)) |
+| WebKit engine, Cloudflare runtime over HTTPS | `node qa/webkitgtk-smoke.mjs` | ✅ **12 / 12**, Resize and Compare included |
+| Dependency audit | `npm audit` | ✅ 0 vulnerabilities; no new dependencies |
+| Playwright Firefox / WebKit / iPad / iPhone SE | `ALL_BROWSERS=1 npm run test:e2e` | ⛔ **BLOCKED** here (downloads refused); runs in CI `cross-engine` |
+| Safari, physical devices | manual | ⚪ **NOT TESTED** |
 
-Device profiles are Chromium **emulations** (Galaxy Tab S4, Galaxy A55, Pixel 7, Galaxy S9+ at 320 px).
-WebKitGTK is the WebKit engine on Linux, not Safari.
+## 2. New tools: what was verified
 
-## 2. WebKit engine results (`qa/webkitgtk-smoke.mjs`, Cloudflare runtime, HTTPS)
+**Resize PDF**
+- **Geometry:** fit, fit width and canvas modes, including rotated pages and offset boxes.
+- **Content kept:** a document with mixed sizes and orientations keeps its text (compared page by
+  page), form fields, bookmarks and annotation counts.
+- **Annotations:** rectangles move by exactly the applied transformation.
+- **Not rasterised:** a page rendered after resizing matches the original rendered at the matching
+  zoom (mean difference < 3/255).
+- **Scope and edge cases:** selected pages only; Arabic text unchanged; encrypted and broken files
+  rejected clearly; 800 pages; output byte-identical when nothing needs to change.
+- **QA (Cloudflare runtime):**
+  - R1: 153 MB photo PDF to Letter in 0.94 s, size unchanged (images untouched).
+  - R2: 800 pages to A5 in 1.4 s, with the text of page 400 verified.
+  - R3: signature warning before processing.
 
-| Check | Result |
-|-------|--------|
-| All 13 routes render (English) | ✅ |
-| Arabic: `dir=rtl`, `lang=ar`, translated heading ("دمج PDF") | ✅ |
-| Merge 2 PDFs | ✅ 12 pages, qpdf ok |
-| Rotate 180° | ✅ 8 pages all at 180°, qpdf ok |
-| Split (default ranges, ZIP) | ✅ 2 PDFs, all qpdf-valid |
-| Compress (Balanced; JPEG re-encode in WebKit's canvas) | ✅ 2,126,343 → 352,235 bytes, qpdf ok |
-| PDF → PNG (PDF.js rendering) | ✅ 8 PNGs |
-| JPG → PDF incl. an EXIF-rotated photo | ✅ 2 pages, qpdf ok |
-| Organize: thumbnails render; a PDF with an OpenAction script runs nothing (no dialog, no navigation) | ✅ |
-| CSP blocks an outbound `fetch`; only documented storage keys | ✅ |
+**Compare PDF**
+- **Diff correctness:** a 300-case property test through both diff paths proves the changes always
+  rebuild the second document exactly.
+- **Long input:** 200,000 words with three edits are diffed in well under 5 s, with no more than 6
+  words reported.
+- **Arabic:** presentation forms, tatweel and direction marks are ignored.
+- **In the browser:** changed words get highlight boxes on the right lines; page-count and page-size
+  differences are flagged; image-only PDFs fall back to the visual comparison. The overlay, the visual
+  check of every page and the PDF report were all exercised; the report passes `qpdf --check` and has
+  one page per changed page.
+- **QA:**
+  - C1: an 800-page document against a copy with 2 added words reports only page 500, in 4.5 s.
+  - C2: a 153 MB file compared with itself, plus a visual check of all 20 pages, reports no
+    differences in 9.8 s.
 
-The same suite over **plain http** against the Cloudflare runtime fails to render in WebKit: the
-production CSP's `upgrade-insecure-requests` makes WebKit upgrade `http://127.0.0.1` sub-resources to
-https, while Chromium exempts loopback. This affects only local http testing; production is HTTPS-only.
+**Both tools**
+- EN and AR (RTL), including Arabic file names.
+- axe WCAG 2.1 AA on the Resize workspace and the Compare results, in both languages and themes.
+- No horizontal overflow at 320 px; full flows on every device profile.
+- The global privacy guard on every test: no external request, no document data in requests or in
+  the console.
 
-## 3. What the automated suites check
+## 3. Generated PDFs inspected
 
-See [TESTING.md](TESTING.md) for the full list. New in 1.0.0:
+- **Resize:** `rich.pdf` (A4, rotated, Letter and A5 pages, with a form field, link and note) was
+  resized to Letter with a 12.7 mm margin, rendered with Poppler, and viewed.
+  - All pages are Letter.
+  - The rotated page keeps `/Rotate 90`.
+  - The form field and note icon sit on the scaled content.
+  - qpdf reports no errors.
+- **Canvas mode:** the Arabic contract at A5 renders centred, clipped at the edges as expected for
+  "No scaling".
 
-- **Embedded PDF JavaScript** (`security.spec.ts`): scripts in OpenAction, `/Names/JavaScript`, page
-  `/AA` and a link action never run on Organize, Rotate or PDF→PNG: no dialog, no navigation, no
-  request for a scripting engine, no external request. The QuickJS engine is absent from `dist`.
-- **Console leaks**: the privacy guard fails any test whose page or worker console mentions a file name
-  or carries PDF/base64 content (two new self-tests prove it catches both).
-- **Route crawl** of all 13 pages in English and Arabic: no console errors, no 4xx/5xx.
-- **Real 404** with `noindex` for unknown paths on the Cloudflare runtime.
+## 4. Screenshots
 
-## 4. Real-world QA
+`qa/screenshots.mjs` captures Resize, Compare (side by side) and Compare (overlay) on desktop
+(1360 px) and mobile (Pixel 7) in English and Arabic. They're delivered with the release package.
 
-The 30 scenarios (153 MB file, 800 pages, password-protected, signed and certified, Arabic, corrupted
-inputs, low memory, interruption, repeated runs) are in the generated [QA_REPORT.md](QA_REPORT.md).
-Highlights, measured inside the Cloudflare runtime:
-
-| Operation | Time |
-|---|---|
-| Compress (Balanced) 153 MB, 20 photo pages → 27.7 MB (−82%) | 5.9 s |
-| Split 800 pages into 800 files | about 2 s |
-| Open 800 page thumbnails | about 0.5 s |
-| Render 800 pages to PNG | about 14 s |
-| 20 repeated compressions, JS heap after GC | 4.3 → 4.8 MB (no leak) |
-
-## 5. Defects found during 1.0.0 hardening
+## 5. Defects found during this release
 
 | Severity | Defect | Found by | Fix |
 |----------|--------|----------|-----|
-| Medium | `npm run qa` / `qa:cloudflare` exited 0 when scenarios failed | Audit (reading the script) | `qa/run.mjs` propagates failures; verified with an injected FAIL row → exit 1 |
-| Medium | Validators silently skipped when qpdf/pyHanko were missing | Audit | Strict under `CI`; verified with qpdf removed from `PATH` → error |
-| Medium | CI did not run the real-world QA (docs said it did) | Audit | CI `cloudflare` job runs it |
-| Low | Flaky tests passed on retry in CI | Audit | `failOnFlakyTests` |
-| Low | Lockfile version 0.3.0; obsolete `freepdf-phase1.zip` in the source | Audit | Synced; removed and `*.zip` ignored |
-| Test-only | WebKit harness: `fetch(blob:)` is blocked by the app's own `connect-src` CSP | First WebKit run | Harness reads the Blob via `FileReader` instead (the CSP is correct) |
+| Medium | The Resize UI chunk pulled in all of pdf-lib (173 KB gzipped) on the main thread | Bundle measurement | Planner split into a pdf-lib-free module (now 2.8 KB) |
+| Low | Change-list colours failed WCAG contrast | axe | Neutral text on soft red/green backgrounds |
+| Low | A visual-change threshold of 0.05% missed a two-digit text change at scan resolution | Browser test | Threshold set to about 7 pixels (identical pages render identically) |
+| Low | English had no "zero" form ("0 pages look different.") | QA C2 | An explicit `zero` form is used for 0 in every language |
+| Low | "Already A4" files stored as 595 × 842 pt were rewritten | Unit test | Pages within 1 pt of the target are left untouched |
+| Test-only | The QA corrupted-input scenarios could branch before asynchronous validation finished, and hang | QA run | Wait for a rejection or an accepted file first |

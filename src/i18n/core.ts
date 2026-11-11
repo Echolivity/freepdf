@@ -36,7 +36,8 @@ export function translate(lang: Lang, key: MessageKey, params: Params = {}): str
   if (typeof entry === 'string') text = entry
   else {
     const n = Number(params.count ?? 0)
-    const cat = pluralRules[lang].select(n) as keyof typeof entry
+    // An explicit `zero` form wins for 0 in every language (like ICU's "=0"); otherwise CLDR plural rules.
+    const cat = (n === 0 && 'zero' in entry ? 'zero' : pluralRules[lang].select(n)) as keyof typeof entry
     text = entry[cat] ?? entry.other
   }
   return text.replace(/\{(\w+)\}/g, (m, name: string) => {
