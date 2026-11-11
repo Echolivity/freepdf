@@ -1,4 +1,4 @@
-# Testing (1.1.0)
+# Testing (1.2.0)
 
 ```bash
 npm run test:all                 # typecheck + lint + unit/integration + build + Chromium browser tests
@@ -24,25 +24,25 @@ repository variable `DEPLOY_ENABLED` is `true`.
 | Job | Runs | Server |
 |-----|------|--------|
 | `checks` | `npm ci`, `npm audit --audit-level=high`, typecheck, lint, unit/integration (with qpdf), production build | — |
-| `chromium` | Playwright device projects: `tablet-android`, `android-midrange`, `mobile`, `narrow-320` (113 tests) | `vite preview` |
+| `chromium` | Playwright device projects: `tablet-android`, `android-midrange`, `mobile`, `narrow-320` (117 tests) | `vite preview` |
 | `cross-engine` | Playwright `firefox`, `webkit`, `ipad-webkit`, `iphone-se-webkit` (175 tests) | `vite preview` |
-| `cloudflare` | Playwright `desktop` project (80 tests) **and** the real-world QA (35 scenarios) with qpdf, pypdf strict and pyHanko validators | `wrangler pages dev` (workerd) |
+| `cloudflare` | Playwright `desktop` project (93 tests) **and** the real-world QA (41 scenarios) with qpdf, pypdf strict and pyHanko validators | `wrangler pages dev` (workerd) |
 | `deploy` | `wrangler pages deploy dist` | needs all of the above |
 
 `vite preview` serves the production headers from `public/_headers`, except `upgrade-insecure-requests`
 (it would break plain-http loopback testing). Cloudflare's runtime serves them unmodified.
 
-## Results for 1.1.0 (sandbox run, 2026-11-11)
+## Results for 1.2.0 (sandbox run, 2026-11-11)
 
 | Suite | Result |
 |-------|--------|
 | TypeScript, oxlint (`src tests qa scripts`) | ✅ 0 errors, 0 warnings |
-| Unit and integration (Vitest, `CI=1`) | ✅ **135 / 135** in 14 files |
-| Playwright Chromium, all projects (`CI=1`, preview) | ✅ **192 passed, 1 skipped**: desktop 80 · tablet-android 32 · android-midrange 32 · mobile 32 · narrow-320 17. The skip is the real-404 test, which only applies to the Cloudflare runtime. |
-| `test:cloudflare` (`CI=1`) | ✅ **80 / 80** |
-| `qa:cloudflare` (`CI=1`, strict validators) | ✅ **35 / 35** ([QA_REPORT.md](QA_REPORT.md)) |
-| WebKitGTK 2.52 via WebDriver, Cloudflare runtime over HTTPS | ✅ **12 / 12** |
-| Playwright Firefox / WebKit projects | ⛔ **BLOCKED here** (downloads refused by the sandbox). They run in CI's `cross-engine` job. |
+| Unit and integration (Vitest, `CI=1`) | ✅ **158 / 158** in 15 files |
+| Playwright Chromium, all projects (`CI=1`, preview) | ✅ **209 passed, 1 skipped**: desktop 92 (+1 Cloudflare-only skip) · tablet-android 33 · android-midrange 33 · mobile 33 · narrow-320 18 |
+| `test:cloudflare` (`CI=1`) | ✅ **93 / 93**, including the 301 redirects for renamed tools |
+| `qa:cloudflare` (`CI=1`, strict validators) | ✅ **41 / 41** ([QA_REPORT.md](QA_REPORT.md)) |
+| WebKitGTK 2.52 via WebDriver, Cloudflare runtime over HTTPS | ✅ **14 / 14** |
+| Playwright Firefox / WebKit projects | ⛔ **BLOCKED here** (the browser downloads are refused). They run in CI's `cross-engine` job. |
 | `npm audit` | ✅ 0 vulnerabilities |
 
 Device projects are **emulations** (viewport, touch, pixel ratio, user agent) on the Chromium engine.
@@ -81,6 +81,7 @@ directly from `@playwright/test`. No exceptions are configured.
 | `arabic.test.ts` | Dictionary parity, plurals, bidi isolation, Arabic digits, Arabic PDF fidelity |
 | `transfer.test.ts` | Worker transfer lists |
 | `resize.test.ts` | Geometry (fit, fit width, canvas, rotated and offset pages); mixed sizes and orientations; text, fields, bookmarks and annotations kept; annotation rectangles moved exactly; render-compare at matching zoom (vector, not raster); selected pages; Arabic text; encrypted and broken input; 800 pages; byte-identical output when nothing changes |
+| `phase1.test.ts` | Bidi run ordering, Roman numerals, font coverage and version, rotated-page geometry. Page numbers: labels, placement (centre/corner, upright on `/Rotate 90`), Arabic prefix and digits (shaped, rendered, extractable), 800 pages, validation. Watermark: vector text, angle, opacity, tiling, selected pages, under/over an opaque scan (render-compared), PNG embedded once, Arabic text, errors. Crop: sizes, content hidden not removed, visual side on a rotated page, per-page, validation. Organize: identity, duplicate (shared content, links copied, widget not), insert from another PDF (bookmarks/fields kept), validation. |
 | `compare.test.ts` | Word diff (replace, empty, a 300-case property test through both the LCS and Myers paths, 200,000-word performance), Arabic normalisation, end-to-end text comparison with word boxes, page-count and size differences, image-only PDFs, pixel diff |
 | `guard-coverage.test.ts` | Every browser spec uses the guarded fixture |
 
@@ -94,9 +95,10 @@ directly from `@playwright/test`. No exceptions are configured.
 | `arabic.spec.ts` | RTL, language toggle, untranslated-text scan, Arabic errors/digits/file names |
 | `a11y.spec.ts` | axe-core WCAG 2.1 AA in both languages and themes; keyboard-only flow; focus |
 | `responsive.spec.ts` | No horizontal overflow; header controls; thumbnails; low-memory limits |
-| `mobile-flow.spec.ts` | A full job with mixed Arabic/English names on every device profile |
+| `mobile-flow.spec.ts` | A full job with mixed Arabic/English names; touch-pointer page reordering and crop-edge dragging; Resize and Compare — on every device profile |
 | `smoke.spec.ts` | Search, theme, every tool page, recent tools, 404 page, storage docs, clear settings, limits, per-route metadata, security headers |
 | `resize-compare.spec.ts` | Resize: Letter on mixed pages, custom sizes and validation, selected pages, ZIP output, protected files, Arabic UI and file name. Compare: highlights, per-page changes, overlay, visual check, PDF report, the two-file rule, identical files, protected files, Arabic UI. |
+| `phase1.spec.ts` | Home category filter; old addresses redirect (301 on Cloudflare); Extract odd/even/separate/every page; Delete with undo/redo (buttons and keyboard), typing not rewritten, preview + download from preview; Organize grip drag, duplicate, undo/redo, insert another PDF after the selection, bulk delete, preview, save, download selected; Crop drag + typed margins + undo + preview, per-page crop, too-small refusal; Page numbers Roman + skip cover + live preview, Arabic UI with Arabic prefix and digits; Watermark tiled/behind/selected pages, PNG image |
 | `privacy-guard.spec.ts` | The guard's own self-tests |
 
 ## Not covered or not executed

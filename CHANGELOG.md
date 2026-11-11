@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.2.0 — 2026-11-11 (Phase 1: core document utilities)
+
+See [docs/RELEASE_NOTES_v1.2.0.md](docs/RELEASE_NOTES_v1.2.0.md).
+
+- **Added:**
+  - Crop PDF.
+  - Add page numbers.
+  - Watermark PDF (text or image, tiled, over or under the content).
+- **Upgraded:**
+  - Extract (`/extract-pdf`): odd/even/invert, separate PDFs, every page.
+  - Delete (`/delete-pages`): undo/redo, result preview.
+  - Organize: touch-friendly pointer drag, duplicate, insert from other PDFs, bulk actions, download
+    selected, undo/redo, preview.
+- **Addresses:** `/extract-pages` and `/remove-pages` 301-redirect, plus an in-app redirect and
+  recent-tools migration.
+- **Home:** Organize / Edit / Convert / Optimize / Advanced categories with filter chips.
+- **Shared code:**
+  - visual-space page geometry;
+  - `useHistory` (undo/redo with keyboard shortcuts);
+  - result `PreviewDialog`;
+  - WYSIWYG `LivePreview`;
+  - text drawing with bidi runs;
+  - embedded IBM Plex Sans Arabic (OFL), shaped with `@pdf-lib/fontkit`.
+- **Organize engine:** `arrangePages` handles multiple sources and duplicates in place. Duplicates share
+  content; widgets aren't duplicated.
+- **Privacy guard:** now allows exactly the self-hosted font path (GET only).
+- **Tests:**
+  - unit: 22 new;
+  - browser: 13 new, including touch drag on every device profile and axe checks on the new screens;
+  - real-world QA: 6 new;
+  - WebKitGTK: 2 new.
+- **Fixed during development:**
+  - inserted pages could be appended at the end instead of after the selection (state-updater race);
+  - the range field could be rewritten while typing during undo/redo syncing.
+
 ## 1.1.0 — 2026-11-11 (Resize PDF, Compare PDF)
 
 See [docs/RELEASE_NOTES_v1.1.0.md](docs/RELEASE_NOTES_v1.1.0.md).

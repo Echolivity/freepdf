@@ -24,6 +24,8 @@ const STATIC_PATHS = [
   /^\/$/,
   /^\/assets\/[\w.-]+$/,
   /^\/pdfjs\/\d+\.\d+\.\d+[\w.-]*\/(cmaps|standard_fonts|wasm|iccs)\/[\w.+-]+$/,
+  // Font embedded into PDFs for Arabic text (page numbers, watermarks): fetched by the worker, GET only.
+  /^\/pdfjs\/fonts\/\d+\.\d+\.\d+\/IBMPlexSansArabic-(Regular|Bold)\.ttf$/,
   /^\/(favicon\.svg|theme-init\.js|robots\.txt|sitemap\.xml)$/,
   /^\/[a-z0-9-]+(\.html)?$/, // tool / page routes (prerendered app shell)
   /^\/@vite\/|^\/node_modules\/|^\/src\//, // dev server only (not used by the preview build)

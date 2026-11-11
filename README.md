@@ -7,9 +7,9 @@ back to you on your own device, and they are never uploaded. There's no account,
 daily quota, no watermark and no advertising. The site is plain static files, so it costs almost nothing
 to host, which is how it can stay free.
 
-Version **1.1.0**. Further reading:
+Version **1.2.0**. Further reading:
 
-- [Release notes](docs/RELEASE_NOTES_v1.1.0.md)
+- [Release notes](docs/RELEASE_NOTES_v1.2.0.md)
 - [Test and QA report](docs/TEST_AND_QA_REPORT.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Security](docs/SECURITY.md)
@@ -22,10 +22,13 @@ Version **1.1.0**. Further reading:
 |------|--------------|--------------|
 | Merge PDF | Combine PDFs in the order you choose | Keeps page content, links and annotations, plus the first file's title and author. Bookmarks, fillable form fields and attachments are **not** merged yet. |
 | Split PDF | Custom ranges (`1-3, 5, 8-`, Arabic digits accepted), every page, or every N pages | Splits into 40 parts or fewer keep each part's bookmarks, fields and links. Larger splits keep page content only. |
-| Extract pages | Pick pages from thumbnails or by range | Bookmarks and links pointing at pages you leave out are removed. |
-| Remove pages | Delete pages | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up. |
-| Organize PDF | Reorder, rotate and delete individual pages | The document is edited in place, so its structure is preserved. |
+| Extract PDF pages (`/extract-pdf`) | Pick pages from thumbnails, by range, or odd/even; one PDF, one PDF per page, or every page as its own PDF | Bookmarks and links pointing at pages you leave out are removed. |
+| Delete PDF pages (`/delete-pages`) | Thumbnails, ranges, odd/even/invert; undo/redo; preview the result | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up. |
+| Organize PDF | Drag to reorder (mouse, touch or keyboard), rotate, duplicate, delete, insert pages from other PDFs, act on a selection, download selected pages, undo/redo, preview | The main document is edited in place, so its structure is preserved. Duplicates share the page content; form-field widgets aren't duplicated. Inserted pages keep content and links, not their file's bookmarks or fields. |
 | Rotate PDF | Rotate every page of one or more PDFs | Adds to the existing rotation. Lossless. |
+| Crop PDF | Drag a crop box or type margins; all pages, selected pages, or a different crop per page; preview | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them. |
+| Add page numbers | Header/footer, left/centre/right, start number, prefix/suffix, 1-2-3, Roman, Arabic-Indic numerals, font, size, colour, selected pages, skip cover; live preview | Real text on a separate layer; pages aren't re-rendered. Arabic text uses an embedded Arabic+Latin font (about 100 KB). |
+| Watermark PDF | Text or JPG/PNG image; 9 positions or tiled; rotation, opacity, font and size; over or behind the content; selected pages; live preview | A separate layer, so quality is unchanged and the image is stored once. A watermark is a visible mark, not protection. |
 | Resize PDF | A4, Letter, A3, A5, Legal or a custom size; fit page, fit width, or change the paper without scaling; all or selected pages | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. |
 | Compress PDF | **Lossless**: repacks without touching images. **Light / Balanced / Strong** (lossy): re-encode photos and scans. | A per-file report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved. |
 | Compare PDF | Two versions side by side: word-level text changes highlighted, a pixel-difference overlay, a visual check of every page, and a PDF report of changed pages | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only. |
@@ -124,11 +127,11 @@ ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright
 What CI runs, job by job, is listed in [docs/TESTING.md](docs/TESTING.md).
 
 Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
-- 135 unit tests;
-- 192 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
-- 80 inside the Cloudflare runtime;
-- 35 real-world QA scenarios;
-- 12 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
+- 158 unit tests;
+- 209 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
+- 93 inside the Cloudflare runtime;
+- 41 real-world QA scenarios;
+- 14 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
 
 All passed. Playwright's Firefox and WebKit projects, Safari and physical devices were **not** executed
 in the build environment; CI runs the Firefox and WebKit projects.

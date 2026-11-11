@@ -256,6 +256,19 @@ export function removeUnreachable(ctx: PDFContext): number {
 
 const INHERITABLE = ['Resources', 'MediaBox', 'CropBox', 'Rotate']
 
+/** Copy attributes each page inherits from its page-tree ancestors onto the page itself. */
+export function pushDownInherited(doc: PDFDocument) {
+  for (const page of doc.getPages()) {
+    const leaf = page.node
+    for (const attr of INHERITABLE) {
+      if (!leaf.get(N(attr))) {
+        const v = leaf.getInheritableAttribute(N(attr))
+        if (v !== undefined) leaf.set(N(attr), v)
+      }
+    }
+  }
+}
+
 /**
  * Replace the document's page tree with a flat one containing `order` (indices into the current
  * pages, no duplicates), with optional extra rotation. Inherited attributes are pushed down to each
@@ -270,14 +283,7 @@ export function rebuildPageTree(doc: PDFDocument, order: { index: number; rotate
   const keep = new Set(order.map((o) => o.index))
   const removed = new Set(pages.filter((_, i) => !keep.has(i)).map((p) => key(p.ref)))
 
-  for (const leaf of leaves) {
-    for (const attr of INHERITABLE) {
-      if (!leaf.get(N(attr))) {
-        const v = leaf.getInheritableAttribute(N(attr))
-        if (v !== undefined) leaf.set(N(attr), v)
-      }
-    }
-  }
+  pushDownInherited(doc)
   const kids = order.map((o) => pages[o.index].ref)
   const root = ctx.obj({ Type: 'Pages', Kids: kids, Count: kids.length })
   const rootRef = ctx.register(root)

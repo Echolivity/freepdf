@@ -43,3 +43,36 @@ test('resize and compare on a touch screen', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 })
+
+/** Pointer events as a finger produces them (pointerType "touch"). */
+async function touchDrag(from: import('@playwright/test').Locator, dx: number, dy: number, to?: import('@playwright/test').Locator) {
+  const a = (await from.boundingBox())!
+  const sx = a.x + a.width / 2
+  const sy = a.y + a.height / 2
+  let ex = sx + dx
+  let ey = sy + dy
+  if (to) { const b = (await to.boundingBox())!; ex = b.x + b.width / 2; ey = b.y + b.height / 2 }
+  const base = { pointerId: 3, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1, bubbles: true }
+  await from.dispatchEvent('pointerdown', { ...base, clientX: sx, clientY: sy })
+  for (let i = 1; i <= 5; i++) await from.dispatchEvent('pointermove', { ...base, clientX: sx + ((ex - sx) * i) / 5, clientY: sy + ((ey - sy) * i) / 5 })
+  await from.dispatchEvent('pointerup', { ...base, buttons: 0, clientX: ex, clientY: ey })
+}
+
+test('touch: reorder pages by dragging the grip, and drag a crop edge', async ({ page }) => {
+  await page.goto('/organize-pdf')
+  await upload(page, 'text-8p.pdf')
+  const tiles = page.getByRole('list', { name: 'Pages' }).getByRole('listitem')
+  await tiles.nth(1).scrollIntoViewIfNeeded()
+  await touchDrag(page.getByTestId('grip-0'), 0, 0, tiles.nth(1))
+  await expect(tiles.nth(0)).toContainText('2')
+  await expect(tiles.nth(1)).toContainText('1')
+
+  await page.goto('/crop-pdf')
+  await upload(page, 'text-8p.pdf')
+  const handle = page.getByTestId('crop-handle-top')
+  await handle.scrollIntoViewIfNeeded()
+  await touchDrag(handle, 0, 40)
+  await expect.poll(async () => Number(await page.getByTestId('crop-top').inputValue())).toBeGreaterThan(5)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})

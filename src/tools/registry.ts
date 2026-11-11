@@ -2,9 +2,13 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import type { IconName } from '../components/Icon'
 import { LANGS, translate, type MessageKey } from '../i18n/core'
 
-export type Category = 'organize' | 'optimize' | 'convert-to' | 'convert-from' | 'advanced'
+export type Category = 'organize' | 'edit' | 'convert' | 'security' | 'optimize' | 'advanced' | 'ai'
 
-export const CATEGORIES: Category[] = ['organize', 'optimize', 'convert-to', 'convert-from', 'advanced']
+/** Home-page order. Categories without working tools (security, ai for now) are not shown. */
+export const CATEGORIES: Category[] = ['organize', 'edit', 'convert', 'security', 'optimize', 'advanced', 'ai']
+
+/** Tools whose address changed. Old links keep working (Cloudflare 301 in public/_redirects, plus an in-app redirect). */
+export const RENAMED: Record<string, string> = { 'extract-pages': 'extract-pdf', 'remove-pages': 'delete-pages' }
 
 export interface ToolDef {
   slug: string
@@ -29,6 +33,9 @@ const PdfToImage = lazy(() => import('./pdf-to-image/PdfToImageTool'))
 const ImageToPdf = lazy(() => import('./image-to-pdf/ImageToPdfTool'))
 const Resize = lazy(() => import('./resize/ResizeTool'))
 const Compare = lazy(() => import('./compare/CompareTool'))
+const Crop = lazy(() => import('./crop/CropTool'))
+const PageNumbers = lazy(() => import('./page-numbers/PageNumbersTool'))
+const Watermark = lazy(() => import('./watermark/WatermarkTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -36,25 +43,31 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['combine', 'join', 'append', 'concatenate'], ar: ['دمج', 'جمع', 'ضم', 'توحيد', 'ملف واحد'] } },
   { slug: 'split-pdf', input: 'pdf', output: 'pdfs', icon: 'split', category: 'organize', component: Split,
     keywords: { en: ['separate', 'divide', 'cut', 'ranges'], ar: ['تقسيم', 'فصل', 'تجزئة', 'نطاقات', 'قص'] } },
-  { slug: 'extract-pages', input: 'pdf', output: 'pdf', icon: 'extract', category: 'organize', component: Extract,
+  { slug: 'extract-pdf', input: 'pdf', output: 'pdf', icon: 'extract', category: 'organize', component: Extract,
     keywords: { en: ['select', 'pick', 'save pages', 'subset'], ar: ['استخراج', 'اختيار', 'حفظ صفحات', 'صفحات محددة'] } },
-  { slug: 'remove-pages', input: 'pdf', output: 'pdf', icon: 'remove', category: 'organize', component: Remove,
+  { slug: 'delete-pages', input: 'pdf', output: 'pdf', icon: 'remove', category: 'organize', component: Remove,
     keywords: { en: ['delete', 'drop', 'erase'], ar: ['حذف', 'إزالة', 'مسح', 'حذف صفحات'] } },
   { slug: 'organize-pdf', input: 'pdf', output: 'pdf', icon: 'organize', category: 'organize', component: Organize,
     keywords: { en: ['reorder', 'rearrange', 'sort', 'move pages', 'thumbnails'], ar: ['تنظيم', 'ترتيب', 'إعادة ترتيب', 'نقل الصفحات', 'صور مصغرة'] } },
-  { slug: 'rotate-pdf', input: 'pdf', output: 'pdfs', icon: 'rotate', category: 'organize', component: Rotate,
+  { slug: 'rotate-pdf', input: 'pdf', output: 'pdfs', icon: 'rotate', category: 'edit', component: Rotate,
     keywords: { en: ['turn', 'orientation', 'landscape', 'portrait', 'flip'], ar: ['تدوير', 'اتجاه', 'أفقي', 'عمودي', 'قلب'] } },
-  { slug: 'resize-pdf', input: 'pdf', output: 'pdfs', icon: 'resize', category: 'organize', component: Resize,
+  { slug: 'resize-pdf', input: 'pdf', output: 'pdfs', icon: 'resize', category: 'edit', component: Resize,
     keywords: { en: ['page size', 'a4', 'letter', 'a3', 'scale', 'paper size', 'fit'], ar: ['تغيير الحجم', 'مقاس الصفحة', 'حجم الورق', 'A4', 'تكبير', 'تصغير الصفحة'] } },
+  { slug: 'crop-pdf', input: 'pdf', output: 'pdf', icon: 'crop', category: 'edit', component: Crop,
+    keywords: { en: ['trim', 'margins', 'cut edges', 'crop box', 'whitespace'], ar: ['قص', 'اقتصاص', 'هوامش', 'تشذيب', 'حواف'] } },
+  { slug: 'add-page-numbers', input: 'pdf', output: 'pdf', icon: 'hash', category: 'edit', component: PageNumbers,
+    keywords: { en: ['page numbers', 'numbering', 'paginate', 'footer', 'header', 'roman'], ar: ['ترقيم', 'أرقام الصفحات', 'ترقيم الصفحات', 'تذييل', 'ترويسة'] } },
+  { slug: 'watermark-pdf', input: 'pdf', output: 'pdf', icon: 'stamp', category: 'edit', component: Watermark,
+    keywords: { en: ['stamp', 'confidential', 'draft', 'logo', 'overlay', 'brand'], ar: ['علامة مائية', 'ختم', 'سري', 'مسودة', 'شعار'] } },
   { slug: 'compress-pdf', input: 'pdf', output: 'pdfs', icon: 'compress', category: 'optimize', component: Compress,
     keywords: { en: ['reduce', 'shrink', 'smaller', 'optimize', 'size'], ar: ['ضغط', 'تصغير', 'تقليل الحجم', 'حجم', 'تحسين'] } },
-  { slug: 'jpg-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert-to', component: ImageToPdf,
+  { slug: 'jpg-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert', component: ImageToPdf,
     keywords: { en: ['jpeg', 'image', 'photo', 'picture', 'scan', 'png', 'webp'], ar: ['صور', 'صورة', 'جي بي جي', 'تحويل صور', 'مسح ضوئي', 'سكان'] } },
-  { slug: 'png-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert-to', component: ImageToPdf,
+  { slug: 'png-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert', component: ImageToPdf,
     keywords: { en: ['image', 'screenshot', 'picture', 'jpg', 'webp'], ar: ['صور', 'صورة', 'لقطة شاشة', 'بي إن جي', 'تحويل صور'] } },
-  { slug: 'pdf-to-jpg', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert-from', component: PdfToImage,
+  { slug: 'pdf-to-jpg', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['jpeg', 'image', 'picture', 'export', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'جي بي جي', 'تصدير'] } },
-  { slug: 'pdf-to-png', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert-from', component: PdfToImage,
+  { slug: 'pdf-to-png', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['image', 'picture', 'export', 'lossless', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'بي إن جي', 'تصدير'] } },
   { slug: 'compare-pdf', input: 'pdf', output: 'report', icon: 'compare', category: 'advanced', component: Compare,
     keywords: { en: ['diff', 'difference', 'changes', 'versions', 'redline', 'track changes'], ar: ['مقارنة', 'فرق', 'الفروق', 'تغييرات', 'نسخ', 'مطابقة'] } },

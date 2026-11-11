@@ -1,6 +1,6 @@
 # FreePDF privacy policy
 
-_Applies to version 1.1.0. The in-app "How it works" page (`/privacy`) says the same thing in English
+_Applies to version 1.2.0. The in-app "How it works" page (`/privacy`) says the same thing in English
 and Arabic._
 
 ## Your documents
@@ -18,6 +18,12 @@ and Arabic._
   - Download links are released 30 seconds after the download starts.
   - Closing the tab releases everything.
 - **No retention elsewhere:** document contents are never written to browser storage.
+
+## Fonts for text you add
+
+When you add page numbers or a watermark containing Arabic (or other non-Latin) text, your browser
+downloads a font file from FreePDF's own site (`/pdfjs/fonts/…`) to embed in the PDF. The request
+carries nothing about your document. Like everything else, the font is applied on your device.
 
 ## Compare PDF
 

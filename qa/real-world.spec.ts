@@ -2,7 +2,7 @@ import { test, expect, type Page, type CDPSession } from '@playwright/test'
 import { appendFileSync, mkdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import JSZip from 'jszip'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFName } from 'pdf-lib'
 import { pypdf, qpdf, signatureIntact, textOf } from './validate'
 import { inspectRequest } from '../tests/e2e/fixtures'
 import { dirname } from 'node:path'
@@ -147,7 +147,7 @@ test('800-page document', async ({ page }) => {
     validPdf(await files[799].async('uint8array'), 1)
     return { actual: '800 files; last part validated (qpdf + pypdf, 1 page)', ms, outBytes: bytes.length }
   })
-  await page.goto('/extract-pages')
+  await page.goto('/extract-pdf')
   await select(page, f)
   await page.getByTestId('ranges').fill('1-400')
   await scenario({ id: 'P2', category: 'Multi-hundred pages', input, operation: 'Extract pages 1–400', expected: '400 pages, page 400 text intact' }, async () => {
@@ -234,7 +234,7 @@ test('digitally signed and certified PDFs', async ({ page }) => {
     if (intact === true) throw new Error('signature unexpectedly still intact after rotation')
     return { actual: `${validPdf(bytes)}; pyHanko intact=${intact}`, ms, outBytes: bytes.length }
   })
-  await page.goto('/extract-pages')
+  await page.goto('/extract-pdf')
   await select(page, signed)
   await page.getByRole('button', { name: 'Select all' }).click()
   await scenario({ id: 'G3', category: 'Digitally signed', input: sInput, operation: 'Extract all pages (no-op)', expected: 'Original returned byte-for-byte; signature still intact' }, async () => {
@@ -245,7 +245,7 @@ test('digitally signed and certified PDFs', async ({ page }) => {
     if (intact === false) throw new Error('signature broken')
     return { actual: `identical to input; pyHanko intact=${intact}`, ms, outBytes: bytes.length }
   })
-  await page.goto('/remove-pages')
+  await page.goto('/delete-pages')
   await select(page, certified)
   await scenario({ id: 'G4', category: 'Digitally signed', input: describeFile(certified, 'certification (DocMDP: no changes)'), operation: 'Remove pages (warning)', expected: 'Certification warning' }, async () => {
     await expect(page.getByTestId('file-warnings')).toContainText('certified by its author')
@@ -457,5 +457,80 @@ test('resize and compare (v1.1.0)', async ({ page }) => {
     await page.getByTestId('cmp-scan').click()
     await expect(page.getByTestId('cmp-scan-result')).toHaveText('No visual differences found.', { timeout: 5 * 60_000 })
     return { actual: 'no text changes; 0 of 20 pages visually different', ms: Date.now() - t0 }
+  })
+})
+
+/** v1.2.0 tools on the same large and hostile inputs. */
+test('Phase 1 tools (v1.2.0)', async ({ page }) => {
+  test.setTimeout(15 * 60_000)
+  const large = IN('large.pdf')
+  const p800 = IN('pages-800.pdf')
+
+  await page.goto('/add-page-numbers')
+  await select(page, p800)
+  await page.getByTestId('pn-prefix').fill('Page ')
+  await page.getByTestId('pn-suffix').fill(' of 800')
+  await scenario({ id: 'N1', category: 'Page numbers', input: describeFile(p800, '800 text pages'), operation: 'Add "Page n of 800" (footer)', expected: 'Every page numbered; text extractable' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    const last = textOf(bytes, 799)
+    if (!/Page 800 of 800/.test(last)) throw new Error(`last page: ${last.slice(-80)}`)
+    return { actual: `${validPdf(bytes, 800)}; “Page 800 of 800” on the last page`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/watermark-pdf')
+  await select(page, large)
+  await page.getByTestId('wm-text').fill('CONFIDENTIAL')
+  await page.getByText('Tiled', { exact: true }).click()
+  await scenario({ id: 'W1', category: 'Watermark', input: describeFile(large, '20 photo pages'), operation: 'Tiled text watermark, 30% opacity', expected: 'Valid; images untouched (size grows < 1%)' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    const growth = bytes.length / statSync(large).size - 1
+    if (growth < 0 || growth > 0.01) throw new Error(`size changed by ${(growth * 100).toFixed(2)}%`)
+    return { actual: `${validPdf(bytes, 20)}; +${(growth * 100).toFixed(3)}%`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/crop-pdf')
+  await select(page, p800)
+  await page.getByTestId('crop-top').fill('10')
+  await page.getByTestId('crop-bottom').fill('10')
+  await scenario({ id: 'K1', category: 'Crop', input: describeFile(p800, '800 text pages'), operation: 'Crop 10 mm top and bottom, all pages', expected: '800 pages, each 20 mm shorter; text kept' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    const doc = await PDFDocument.load(bytes)
+    const h = doc.getPage(799).getCropBox().height
+    if (Math.abs(h - (842 - (20 * 72) / 25.4)) > 0.5) throw new Error(`last page crop height ${h}`)
+    if (!/400/.test(textOf(bytes, 399))) throw new Error('text missing')
+    return { actual: `${validPdf(bytes, 800)}; crop height ${h.toFixed(1)} pt`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/extract-pdf')
+  await select(page, p800)
+  await page.getByTestId('pick-odd').click()
+  await scenario({ id: 'E1', category: 'Extract', input: describeFile(p800, '800 text pages'), operation: 'Extract odd pages', expected: '400 pages: 1, 3, 5 …' }, async () => {
+    const { ms, bytes } = await runTool(page)
+    if (!/799/.test(textOf(bytes, 399))) throw new Error('last page is not 799')
+    return { actual: `${validPdf(bytes, 400)}; last page is page 799`, ms, outBytes: bytes.length }
+  })
+
+  await page.goto('/organize-pdf')
+  await select(page, FX('rich.pdf'))
+  await page.getByRole('button', { name: 'Duplicate page 1' }).click()
+  await page.getByTestId('file-input').last().setInputFiles(p800)
+  await scenario({ id: 'O1', category: 'Organize', input: 'rich.pdf (fields, bookmarks, links) + pages-800.pdf inserted', operation: 'Duplicate page 1, insert 800 pages, save', expected: '805 pages; main file’s form field and bookmarks kept' }, async () => {
+    await expect(page.getByRole('list', { name: 'Pages' }).getByRole('listitem')).toHaveCount(805, { timeout: 60_000 })
+    const { ms, bytes } = await runTool(page)
+    const doc = await PDFDocument.load(bytes)
+    if (!doc.getForm().getFields().length) throw new Error('form field lost')
+    if (!doc.catalog.has(PDFName.of('Outlines'))) throw new Error('bookmarks lost')
+    return { actual: `${validPdf(bytes, 805)}; field + bookmarks kept`, ms, outBytes: bytes.length }
+  })
+
+  await page.addInitScript(() => localStorage.setItem('freepdf:lang', 'ar'))
+  await page.goto('/watermark-pdf')
+  await page.getByTestId('file-input').setInputFiles({ name: 'عقد.pdf', mimeType: 'application/pdf', buffer: readFileSync(FX('arabic.pdf')) })
+  await page.getByTestId('wm-text').fill('مسودة')
+  await scenario({ id: 'W2', category: 'Arabic', input: 'arabic.pdf, Arabic UI', operation: 'Arabic text watermark', expected: 'Arabic watermark embedded as text; Arabic file name kept' }, async () => {
+    const { ms, bytes, name } = await runTool(page)
+    if (name !== 'عقد-watermarked.pdf') throw new Error(`name ${name}`)
+    if (!textOf(bytes, 0).includes('مسودة')) throw new Error('watermark text not found')
+    return { actual: `${validPdf(bytes, 3)}; “مسودة” extractable`, ms, outBytes: bytes.length }
   })
 })

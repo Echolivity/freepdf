@@ -16,11 +16,13 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 
 | Path | Purpose |
 |------|---------|
-| `index.html`, `<tool>.html` (13), `privacy.html` | Prerendered app shell per route, each with its own title, description and Open Graph tags. Deep links work without host-specific single-page-app settings. |
+| `index.html`, `<tool>.html` (16), `privacy.html` | Prerendered app shell per route, each with its own title, description and Open Graph tags. Deep links work without host-specific single-page-app settings. |
 | `404.html` | Not-found page with `noindex`. Cloudflare serves it with status 404 for unknown paths. |
 | `assets/` | Hashed JS, CSS and fonts. Cached for a year (`immutable`). |
 | `pdfjs/<version>/` | PDF.js CMaps, standard fonts, WASM decoders and ICC profiles. The path is versioned, so they're immutable. The QuickJS document-script sandbox is deliberately excluded. |
+| `pdfjs/fonts/<version>/` | IBM Plex Sans Arabic (SIL OFL 1.1, licence included), embedded into PDFs only when page numbers or watermarks contain Arabic or other non-Latin text. Versioned, so immutable. |
 | `_headers` | Security and cache headers (see below). |
+| `_redirects` | Permanent (301) redirects for renamed tools: `/extract-pages` → `/extract-pdf`, `/remove-pages` → `/delete-pages`. |
 | `robots.txt`, `sitemap.xml` (sitemap only when `SITE_URL` is set) | Crawling. |
 | `theme-init.js`, `favicon.svg` | Applies theme and language before the first paint, and the site icon. |
 
@@ -104,25 +106,26 @@ curl -sI https://<site>/merge-pdf/ | grep -i location                   # 308 �
 Then follow [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md): manual browser and device checks, and
 confirming Web Analytics is off.
 
-## Verified behaviour (Cloudflare Pages runtime, `wrangler pages dev` 4.160, 1.1.0 build)
+## Verified behaviour (Cloudflare Pages runtime, `wrangler pages dev` 4.160, 1.2.0 build)
 
 | Check | Result |
 |-------|--------|
 | `/`, `/merge-pdf`, `/privacy` | 200 `text/html; charset=utf-8`, with per-route `<title>` |
 | `/merge-pdf/` and `/merge-pdf.html` | 308 redirect to `/merge-pdf` |
 | Unknown path | 404 with the custom 404 page and `noindex` (automated in `security.spec.ts`) |
+| `/extract-pages`, `/remove-pages` | 301 to `/extract-pdf` and `/delete-pages` (automated in `phase1.spec.ts`) |
 | JS (`.js`, `.mjs`) | `application/javascript`. WASM: `application/wasm`. Fonts: correct font types. |
 | `/assets/*`, `/pdfjs/<version>/*` | `Cache-Control: public, max-age=31536000, immutable` |
 | HTML | `Cache-Control: public, max-age=0, must-revalidate` (Cloudflare default) |
 | Security headers | CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP, CORP and X-Frame-Options all present |
-| Browser suite (Chromium desktop) | 80/80 passed inside the runtime |
-| Real-world QA | 35/35 scenarios passed inside the runtime (strict validators) |
-| WebKit engine (WebKitGTK 2.52) | 12/12 inside the runtime served over HTTPS (`--local-protocol https`) with the unmodified production CSP |
+| Browser suite (Chromium desktop) | 93/93 passed inside the runtime |
+| Real-world QA | 41/41 scenarios passed inside the runtime (strict validators) |
+| WebKit engine (WebKitGTK 2.52) | 14/14 inside the runtime served over HTTPS (`--local-protocol https`) with the unmodified production CSP |
 
-The live Cloudflare edge was not reachable from the build environment, and no deployment of 1.1.0 was
+The live Cloudflare edge was not reachable from the build environment, and no deployment of 1.2.0 was
 made from it. **Run the post-deploy checks above on the real URL.**
 
-## Publishing a release (manual steps; shown for 1.1.0)
+## Publishing a release (manual steps; shown for 1.2.0)
 
 Nothing below has been done on your behalf.
 
@@ -132,8 +135,8 @@ Nothing below has been done on your behalf.
    ```
 2. **Put the source in Git** (if the repository isn't on GitHub yet):
    ```bash
-   unzip freepdf-1.1.0-source.zip && cd freepdf-1.1.0
-   git init -b main && git add -A && git commit -m "FreePDF 1.1.0"
+   unzip freepdf-1.2.0-source.zip && cd freepdf-1.2.0
+   git init -b main && git add -A && git commit -m "FreePDF 1.2.0"
    git remote add origin git@github.com:<you>/freepdf.git && git push -u origin main
    ```
    Then let CI run **without** `DEPLOY_ENABLED`, and confirm all four test jobs are green, including
@@ -143,12 +146,12 @@ Nothing below has been done on your behalf.
      variable, then re-run the workflow on `main`.
    - *Terminal:* `npm ci && npm run build`, then
      `CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npx wrangler pages deploy dist --project-name=freepdf --branch=main`.
-   - *Dashboard / Drop:* upload the contents of `freepdf-1.1.0-dist.zip` (it unpacks to the site root:
+   - *Dashboard / Drop:* upload the contents of `freepdf-1.2.0-dist.zip` (it unpacks to the site root:
      `index.html`, `_headers`, `assets/`, `pdfjs/` …).
 4. **Verify the live site** with the `curl` commands above, then work through the "On the deployment"
    and "After promoting to production" sections of [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 5. **Tag only after steps 2–4 pass:**
    ```bash
-   git tag -a v1.1.0 -m "FreePDF 1.1.0" && git push origin v1.1.0
+   git tag -a v1.2.0 -m "FreePDF 1.2.0" && git push origin v1.2.0
    ```
-   Create the GitHub release from `docs/RELEASE_NOTES_v1.1.0.md` and attach the two ZIPs and `SHA256SUMS.txt`.
+   Create the GitHub release from `docs/RELEASE_NOTES_v1.2.0.md` and attach the two ZIPs and `SHA256SUMS.txt`.

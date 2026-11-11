@@ -1,4 +1,4 @@
-# Security and privacy controls (1.1.0)
+# Security and privacy controls (1.2.0)
 
 ## Threat model in one paragraph
 
@@ -30,6 +30,16 @@ There is no server-side attack surface: the deployment is static files only.
 | Clickjacking / embedding | `frame-ancestors 'none'`, `X-Frame-Options: DENY`, COOP and CORP `same-origin`. | Header test. |
 | Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
+
+## 1.2.0 additions
+
+| Area | Control |
+|------|---------|
+| New network request | The worker fetches `/pdfjs/fonts/<version>/IBMPlexSansArabic-*.ttf`, a same-origin GET with no document data, only when text outside the standard fonts is drawn. The privacy guard allows exactly this path pattern, and nothing else changed. The CSP is unchanged (`connect-src 'self'`). |
+| Crop | Only the CropBox changes. The UI and the FAQ state that hidden content is not removed, and point to redaction. Minimum page size is enforced. |
+| Page numbers, watermark | Drawn as new self-contained content streams. The original streams aren't parsed or rewritten. Image watermarks go through pdf-lib's PNG/JPEG embedders, and decoding errors become a clear error. Text sizes, opacity and page indices are validated in the worker. |
+| Organize | Inserted PDFs go through the same validation and limits as any input. They're copied page by page, and their catalogs (scripts, forms, bookmarks) aren't merged. Duplicated pages share content but not widgets or pop-ups. |
+| Dependency | `@pdf-lib/fontkit` 1.1.1 (MIT), loaded only in the worker. `npm audit`: 0 vulnerabilities. |
 
 ## 1.1.0 additions
 

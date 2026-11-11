@@ -1,5 +1,7 @@
 import type { NamedBytes } from '../lib/pdf/core'
-import type { PageOp } from '../lib/pdf/organize'
+import type { ArrangeOp, PageOp } from '../lib/pdf/organize'
+import type { PageNumberOptions, WatermarkOptions } from '../lib/pdf/stamp'
+import type { CropPage } from '../lib/pdf/crop'
 import type { CompressionLevel, CompressResult } from '../lib/pdf/compress'
 import type { ImagesToPdfOptions } from '../lib/pdf/images'
 import type { Message } from '../i18n/core'
@@ -23,6 +25,10 @@ export interface WorkerOps {
   compress: [{ file: NamedBytes; level: CompressionLevel }, CompressResult]
   imagesToPdf: [{ images: RawImage[]; options: ImagesToPdfOptions }, Uint8Array]
   pageCount: [{ file: NamedBytes }, number]
+  arrange: [{ file: NamedBytes; inserts: NamedBytes[]; ops: ArrangeOp[] }, Uint8Array]
+  pageNumbers: [{ file: NamedBytes; options: PageNumberOptions }, Uint8Array]
+  watermark: [{ file: NamedBytes; options: WatermarkOptions }, Uint8Array]
+  crop: [{ file: NamedBytes; pages: CropPage[] }, Uint8Array]
   resize: [{ file: NamedBytes; options: ResizeOptions }, Uint8Array]
   diffTokens: [{ a: Int32Array; b: Int32Array }, DiffRun[]]
 }

@@ -35,6 +35,13 @@ for (const lang of ['en', 'ar'] as const) {
       await page.getByTestId('run').click()
       await expect(page.getByTestId('cmp-stats')).toBeVisible({ timeout: 30_000 })
       await audit(page, 'compare result')
+      for (const [route, file] of [['/crop-pdf', 'rich.pdf'], ['/add-page-numbers', 'text-8p.pdf'], ['/watermark-pdf', 'text-8p.pdf'], ['/organize-pdf', 'text-8p.pdf'], ['/delete-pages', 'text-8p.pdf']] as const) {
+        await page.goto(route)
+        await upload(page, file)
+        await expect(page.getByTestId('run')).toBeVisible()
+        await page.waitForTimeout(800)
+        await audit(page, `${route} with a file`)
+      }
     })
   }
 }

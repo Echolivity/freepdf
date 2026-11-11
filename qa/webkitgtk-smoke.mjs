@@ -207,6 +207,36 @@ await check('Compare two versions (v1.1.0)', async () => {
   return text.split(' · pages')[0]
 })
 
+await check('Page numbers with an Arabic prefix (v1.2.0: embedded font, worker fetch)', async () => {
+  const { bytes } = await runTool('/add-page-numbers', [fx('text-8p.pdf')], {
+    before: async () => {
+      const prefix = await d.wait(until.elementLocated(By.css('[data-testid="pn-prefix"]')), 20_000)
+      await prefix.sendKeys('صفحة ')
+      await (await d.findElement(By.css('[data-testid="pn-style"] option[value="arabic-indic"]'))).click()
+    },
+  })
+  const doc = await PDFDocument.load(bytes)
+  if (doc.getPageCount() !== 8) throw new Error('page count')
+  const fonts = new Set()
+  for (const pg of doc.getPages()) pg.node.Resources()?.lookup(PDFName.of('Font'))?.entries().forEach(([k]) => fonts.add(k.toString()))
+  return `8 pages numbered; ${fonts.size} font resource(s); ${qpdf(bytes)}`
+})
+
+await check('Crop 15 mm from every side (v1.2.0)', async () => {
+  const { bytes } = await runTool('/crop-pdf', [fx('text-8p.pdf')], {
+    before: async () => {
+      for (const side of ['top', 'right', 'bottom', 'left']) {
+        const el = await d.wait(until.elementLocated(By.css(`[data-testid="crop-${side}"]`)), 20_000)
+        await el.clear()
+        await el.sendKeys('15')
+      }
+    },
+  })
+  const box = (await PDFDocument.load(bytes)).getPage(0).getCropBox()
+  if (Math.abs(box.width - (595 - 2 * 15 * 72 / 25.4)) > 1) throw new Error(`crop width ${box.width}`)
+  return `crop box ${box.width.toFixed(1)} × ${box.height.toFixed(1)} pt; ${qpdf(bytes)}`
+})
+
 await check('Organize: thumbnails render; embedded PDF JavaScript does not run', async () => {
   const doc = await PDFDocument.create()
   doc.addPage([400, 300]); doc.addPage([400, 300])

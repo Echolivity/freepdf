@@ -1,3 +1,4 @@
+import { RENAMED } from '../tools/registry'
 import { useCallback, useEffect, useState } from 'react'
 
 /**
@@ -34,7 +35,10 @@ export function useTheme(): [Theme, () => void] {
 export function getRecentTools(): string[] {
   try {
     const v = JSON.parse(read(RECENT_KEY) ?? '[]')
-    return Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 6) : []
+    if (!Array.isArray(v)) return []
+    // Tools that moved to a new address are listed under it.
+    const slugs = v.filter((s): s is string => typeof s === 'string').map((s) => RENAMED[s] ?? s)
+    return [...new Set(slugs)].slice(0, 6)
   } catch {
     return []
   }

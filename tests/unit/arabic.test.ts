@@ -67,8 +67,8 @@ describe('Arabic input', () => {
   it('finds tools by Arabic words, ignoring hamza/diacritic differences', () => {
     expect(searchTools('دمج')[0].slug).toBe('merge-pdf')
     expect(searchTools('ضغط').map((t) => t.slug)).toContain('compress-pdf')
-    expect(searchTools('استخراج').map((t) => t.slug)).toContain('extract-pages')
-    expect(searchTools('إستخراج').map((t) => t.slug)).toContain('extract-pages')
+    expect(searchTools('استخراج').map((t) => t.slug)).toContain('extract-pdf')
+    expect(searchTools('إستخراج').map((t) => t.slug)).toContain('extract-pdf')
     expect(searchTools('تدوير').map((t) => t.slug)).toContain('rotate-pdf')
     expect(searchTools('combine')[0].slug).toBe('merge-pdf')
   })

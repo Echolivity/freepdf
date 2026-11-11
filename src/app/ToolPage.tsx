@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { toolBySlug, toolKey } from '../tools/registry'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { RENAMED, toolBySlug, toolKey } from '../tools/registry'
 import { recordRecentTool } from './prefs'
 import { NotFound } from './NotFound'
 import { Icon } from '../components/Icon'
@@ -22,6 +22,8 @@ export function ToolPage() {
     tool ? t(toolKey(tool.slug, 'description')) : t('app.description'),
   )
 
+  const renamed = RENAMED[slug.replace(/\.html$/, '')]
+  if (renamed) return <Navigate to={`/${renamed}`} replace />
   if (!tool) return <NotFound />
   const Component = tool.component
 

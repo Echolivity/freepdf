@@ -48,7 +48,7 @@ test.describe('Phase 1 tools (end-to-end in a real browser)', () => {
   })
 
   test('Extract pages: thumbnail selection', async ({ page }) => {
-    await page.goto('/extract-pages')
+    await page.goto('/extract-pdf')
     await upload(page, 'text-8p.pdf')
     await page.getByRole('button', { name: 'Page 2', exact: true }).click()
     await page.getByRole('button', { name: 'Page 4', exact: true }).click({ modifiers: ['Shift'] })
@@ -58,7 +58,7 @@ test.describe('Phase 1 tools (end-to-end in a real browser)', () => {
   })
 
   test('Remove pages: typed ranges', async ({ page }) => {
-    await page.goto('/remove-pages')
+    await page.goto('/delete-pages')
     await upload(page, 'text-8p.pdf')
     await page.getByTestId('ranges').fill('1, 8')
     const { bytes, name } = await runAndDownload(page)

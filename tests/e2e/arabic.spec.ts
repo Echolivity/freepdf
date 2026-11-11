@@ -77,7 +77,7 @@ test('split accepts Arabic-Indic digits and the Arabic comma', async ({ page }) 
 })
 
 test('Arabic file names are preserved in downloads', async ({ page }) => {
-  await page.goto('/remove-pages')
+  await page.goto('/delete-pages')
   await page.getByTestId('file-input').setInputFiles({ name: 'عقد إيجار.pdf', mimeType: 'application/pdf', buffer: readFileSync(new URL('../fixtures/arabic.pdf', import.meta.url)) })
   await page.getByTestId('ranges').fill('٣')
   await page.getByTestId('run').click()

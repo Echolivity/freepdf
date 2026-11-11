@@ -9,11 +9,16 @@ import { useSeo } from './seo'
 
 const CAT_VAR: Record<Category, string> = {
   organize: 'var(--cat-organize)',
+  edit: 'var(--cat-from)',
+  convert: 'var(--cat-to)',
+  security: 'var(--cat-organize)',
   optimize: 'var(--cat-optimize)',
-  'convert-to': 'var(--cat-to)',
-  'convert-from': 'var(--cat-from)',
   advanced: 'var(--cat-advanced)',
+  ai: 'var(--cat-advanced)',
 }
+
+/** Categories that have at least one working tool, in home-page order. */
+const SHOWN = CATEGORIES.filter((c) => TOOLS.some((x) => x.category === c))
 
 export function ToolCard({ tool }: { tool: ToolDef }) {
   const { t } = useI18n()
@@ -32,7 +37,7 @@ export function ToolCard({ tool }: { tool: ToolDef }) {
   )
 }
 
-function CategorySection({ cat, gridClass, wide = false }: { cat: Category; gridClass: string; wide?: boolean }) {
+function CategorySection({ cat, gridClass, wide = true }: { cat: Category; gridClass: string; wide?: boolean }) {
   const { t } = useI18n()
   const tools = TOOLS.filter((x) => x.category === cat)
   if (!tools.length) return null
@@ -53,6 +58,7 @@ function CategorySection({ cat, gridClass, wide = false }: { cat: Category; grid
 export function Home() {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Category | 'all'>('all')
   const [recent, setRecent] = useState(() => getRecentTools().map(toolBySlug).filter((x): x is ToolDef => !!x))
   const results = useMemo(() => searchTools(query), [query])
   const searching = query.trim().length > 0
@@ -130,12 +136,24 @@ export function Home() {
           </section>
         ) : (
           <>
-            <CategorySection cat={CATEGORIES[0]} wide gridClass="sm:grid-cols-2 lg:grid-cols-3" />
-            <div className="grid gap-x-6 lg:grid-cols-3">
-              {CATEGORIES.slice(1).map((cat) => (
-                <CategorySection key={cat} cat={cat} gridClass="sm:grid-cols-2 lg:grid-cols-1" />
+            <div role="group" aria-label={t('home.filter')} className="-mx-1 mb-8 flex flex-wrap gap-2" data-testid="category-filter">
+              {(['all', ...SHOWN] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={filter === c}
+                  onClick={() => setFilter(c)}
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold transition-colors ${filter === c ? 'border-ink bg-ink text-paper' : 'border-line bg-surface hover:border-line-strong'}`}
+                >
+                  {c !== 'all' && <span className="h-2 w-2 rounded-full" style={{ background: CAT_VAR[c] }} />}
+                  {c === 'all' ? t('cat.all') : t(`cat.${c}` as MessageKey)}
+                  <span className={`tabular-nums ${filter === c ? 'text-paper/70' : 'text-muted'}`}>{c === 'all' ? TOOLS.length : TOOLS.filter((x) => x.category === c).length}</span>
+                </button>
               ))}
             </div>
+            {SHOWN.filter((c) => filter === 'all' || filter === c).map((cat) => (
+              <CategorySection key={cat} cat={cat} gridClass="sm:grid-cols-2 lg:grid-cols-4" />
+            ))}
           </>
         )}
       </div>

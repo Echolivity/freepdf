@@ -1,6 +1,6 @@
 # v1.1.0 and Phase 1 (v1.2.0): technical implementation plan
 
-Status: **plan only, nothing implemented yet.** Based on an inspection of the 1.0.0 codebase (commit `7d29d33`).
+Status: **v1.1.0 and Phase 1 (v1.2.0) implemented and tested** (see `RELEASE_NOTES_v1.1.0.md`, `RELEASE_NOTES_v1.2.0.md`). Phase 2 not started. Based on an inspection of the 1.0.0 codebase (commit `7d29d33`).
 
 ## 1. What already exists
 

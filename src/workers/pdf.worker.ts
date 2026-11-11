@@ -1,7 +1,9 @@
 /// <reference lib="webworker" />
-import { mergePdfs, splitPdf, extractPages, removePages, rotatePdf, organizePdf, getPageCount } from '../lib/pdf/organize'
+import { mergePdfs, splitPdf, extractPages, removePages, rotatePdf, organizePdf, getPageCount, arrangePages } from '../lib/pdf/organize'
 import { compressPdf } from '../lib/pdf/compress'
 import { resizePdf } from '../lib/pdf/resize'
+import { addPageNumbers, addWatermark } from '../lib/pdf/stamp'
+import { cropPdf } from '../lib/pdf/crop'
 import { diffTokens } from '../lib/compare/diff'
 import { imagesToPdf, type ImageInput } from '../lib/pdf/images'
 import { UserFacingError } from '../lib/validate'
@@ -31,6 +33,10 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       case 'organize': result = await organizePdf(req.args.file, req.args.ops); break
       case 'compress': result = await compressPdf(req.args.file, req.args.level, canvasCodec, progress); break
       case 'pageCount': result = await getPageCount(req.args.file); break
+      case 'arrange': result = await arrangePages(req.args.file, req.args.inserts, req.args.ops, progress); break
+      case 'pageNumbers': result = await addPageNumbers(req.args.file, req.args.options, progress); break
+      case 'watermark': result = await addWatermark(req.args.file, req.args.options, progress); break
+      case 'crop': result = await cropPdf(req.args.file, req.args.pages, progress); break
       case 'resize': result = await resizePdf(req.args.file, req.args.options, progress); break
       case 'diffTokens': result = diffTokens(req.args.a, req.args.b); break
       case 'imagesToPdf': {

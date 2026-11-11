@@ -45,7 +45,7 @@ test('signed and password-protected PDFs are flagged before processing', async (
   await expect(warnings).toContainText('“encrypted-user.pdf” is password-protected, so this tool can’t open it')
   await expect(page.getByText('Signed', { exact: true })).toBeVisible()
   // Certified documents get the stronger warning; empty signature fields get none.
-  await page.goto('/remove-pages')
+  await page.goto('/delete-pages')
   await upload(page, 'certified.pdf')
   await expect(page.getByTestId('file-warnings')).toContainText('is certified by its author, who locked it against changes')
   await page.goto('/organize-pdf')
