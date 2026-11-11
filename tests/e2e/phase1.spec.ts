@@ -11,8 +11,16 @@ const firstLine = async (bytes: Uint8Array) => (await pageTexts(bytes)).map((t) 
 
 /** Drag with pointer events, as a finger or mouse would (the grip captures the pointer). */
 async function pointerDrag(page: Page, from: Locator, to: Locator, pointerType: 'mouse' | 'touch' = 'mouse') {
-  const a = (await from.boundingBox())!
-  const b = (await to.boundingBox())!
+  // Tiles change height when their thumbnails finish rendering (placeholder aspect → real aspect), so
+  // wait until both boxes stop moving before aiming the synthetic pointer at them.
+  let a = (await from.boundingBox())!
+  let b = (await to.boundingBox())!
+  for (let stable = 0; stable < 3; ) {
+    await page.waitForTimeout(100)
+    const [a2, b2] = [(await from.boundingBox())!, (await to.boundingBox())!]
+    stable = JSON.stringify([a, b]) === JSON.stringify([a2, b2]) ? stable + 1 : 0
+    ;[a, b] = [a2, b2]
+  }
   const base = { pointerId: 7, pointerType, isPrimary: true, button: 0, buttons: 1, bubbles: true }
   await from.dispatchEvent('pointerdown', { ...base, clientX: a.x + a.width / 2, clientY: a.y + a.height / 2 })
   for (let i = 1; i <= 4; i++) {
