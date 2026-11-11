@@ -13,11 +13,20 @@ for (const lang of ['en', 'ar'] as const) {
       await page.goto(r)
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
       // On failure, name the elements that stick out so the cause is visible in the CI log.
-      const culprits = overflow > 1 ? await page.evaluate(() => [...document.querySelectorAll('body *')]
-        .map((el) => ({ el, r: el.getBoundingClientRect() }))
-        .filter(({ r }) => r.width > 0 && (r.right > window.innerWidth + 1 || r.left < -1))
-        .slice(0, 8)
-        .map(({ el, r }) => `<${el.tagName.toLowerCase()} class="${el.getAttribute('class') ?? ''}"> ${Math.round(r.left)}..${Math.round(r.right)} "${(el.textContent ?? '').trim().slice(0, 40)}"`)) : []
+      const culprits = overflow > 1 ? await page.evaluate(() => {
+        const d = document.documentElement
+        const tag = (el: Element) => `<${el.tagName.toLowerCase()} class="${el.getAttribute('class') ?? ''}">`
+        const boxes = [...document.querySelectorAll('body *')]
+          .map((el) => ({ el, r: el.getBoundingClientRect() }))
+          .filter(({ r }) => r.right > window.innerWidth + 1 || r.left < -1)
+          .slice(0, 6)
+          .map(({ el, r }) => `${tag(el)} ${Math.round(r.left)}..${Math.round(r.right)} "${(el.textContent ?? '').trim().slice(0, 30)}"`)
+        const spill = [...document.querySelectorAll('body *')]
+          .filter((el) => el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX === 'visible')
+          .slice(-6)
+          .map((el) => `${tag(el)} scroll ${el.scrollWidth} > client ${el.clientWidth}`)
+        return [`now: scrollWidth ${d.scrollWidth}, clientWidth ${d.clientWidth}, innerWidth ${window.innerWidth}, fonts ${document.fonts.status}`, ...boxes, ...spill]
+      }) : []
       expect(overflow, `${r} overflows by ${overflow}px (innerWidth ${page.viewportSize()?.width}): ${culprits.join(' ; ')}`).toBeLessThanOrEqual(1)
     }
   })
