@@ -106,9 +106,9 @@ jobs:
         if: always()
         run: |
           # Round 5: exact copy of a11y.spec.ts, then cut down. Each run starts a fresh Firefox.
-          for f in c1 c2 c3 c4; do
+          for f in c4 c5 c6 c7 c8 c9 c10 c4; do
             echo "--- copy $f ---"
-            FIREFOX_DIAG=1 npx playwright test tests/e2e/diag-$f.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "✓|✘|Page crashed|passed|failed|^\s+> [0-9]+ \|" | head -8 || true
+            FIREFOX_DIAG=1 npx playwright test tests/e2e/diag-$f.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|Page crashed|passed|failed|^\s+> [0-9]+ \|" | head -8 || true
           done
       - uses: actions/upload-artifact@v4
         if: failure()
