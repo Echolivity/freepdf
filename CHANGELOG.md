@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased — PDF conversion, batch 2
+
+See [docs/PLAN_conversion.md](docs/PLAN_conversion.md).
+
+- **Added:**
+  - Word to PDF (`/word-to-pdf`): docx-preview lays the document out, FreePDF draws it into PDF as
+    real text; Word's page size, margins, page breaks, headers and footers are used.
+  - Excel to PDF (`/excel-to-pdf`): a new XLSX reader (number/date formats, fonts, fills, borders,
+    alignment, merged cells, hidden rows/columns, right-to-left sheets); fit to width, gridlines.
+  - HTML to PDF (`/html-to-pdf`): allowlist sanitiser; nothing external is ever loaded.
+  - PDF to Word (`/pdf-to-word`), PDF to Excel (`/pdf-to-excel`), PDF to PowerPoint
+    (`/pdf-to-powerpoint`): Office files written directly (no library).
+- **Layout engine:** `domToPdf` turns a laid-out DOM into PDF pages: words at measured positions
+  (squeezed to measured widths), backgrounds, borders, images; pages cut between lines; running headers
+  and footers; list markers and CSS counters made real.
+- **Text extraction:** Symbol-font bullets, swapped lam-alef ligatures, list items and table rows.
+- **Validation:** `.docx`/`.xlsx`/`.html` recognised; old `.doc`/`.xls` and password-protected Office
+  files refused with an explanation.
+- **Dependency:** `docx-preview` 0.4.1 (Apache-2.0), loaded only by Word to PDF.
+
 ## Unreleased — PDF conversion, batch 1
 
 See [docs/PLAN_conversion.md](docs/PLAN_conversion.md).
@@ -22,8 +42,7 @@ See [docs/PLAN_conversion.md](docs/PLAN_conversion.md).
 - **Shared code:** `usePdfPasswords` (password prompts for read-only PDF tools), `PageRangeField`,
   `batchPages`.
 - **Dependency:** `utif2` 4.1.0 (MIT), loaded only when a TIFF is converted.
-- **Not offered:** PowerPoint to PDF (no in-browser slide renderer). Word/Excel/HTML to PDF and PDF to
-  Word/Excel/PowerPoint are batch 2.
+- **Not offered:** PowerPoint to PDF (no in-browser slide renderer).
 
 ## 1.2.0 — 2026-11-11 (Phase 1: core document utilities)
 

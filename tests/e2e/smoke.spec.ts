@@ -22,7 +22,7 @@ test('every tool card opens a working tool page with a drop zone', async ({ page
   expect(hrefs.length).toBeGreaterThanOrEqual(11)
   for (const href of hrefs) {
     await page.goto(href)
-    await expect(page.getByRole('button', { name: /^Select (PDF|image|text) files?$/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Select (PDF|image|text|Word|Excel|HTML) files?$/ })).toBeVisible()
   }
 })
 

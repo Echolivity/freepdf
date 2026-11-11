@@ -38,7 +38,7 @@ for (const lang of ['en', 'ar'] as const) {
       await page.getByTestId('run').click()
       await expect(page.getByTestId('cmp-stats')).toBeVisible({ timeout: 30_000 })
       await audit(page, 'compare result')
-      for (const [route, file] of [['/crop-pdf', 'rich.pdf'], ['/add-page-numbers', 'text-8p.pdf'], ['/watermark-pdf', 'text-8p.pdf'], ['/organize-pdf', 'text-8p.pdf'], ['/delete-pages', 'text-8p.pdf'], ['/tiff-to-pdf', 'convert/two-pages-lzw.tif'], ['/txt-to-pdf', 'convert/notes.txt'], ['/pdf-to-webp', 'text-8p.pdf'], ['/pdf-to-txt', 'text-8p.pdf'], ['/pdf-to-html', 'arabic.pdf']] as const) {
+      for (const [route, file] of [['/crop-pdf', 'rich.pdf'], ['/add-page-numbers', 'text-8p.pdf'], ['/watermark-pdf', 'text-8p.pdf'], ['/organize-pdf', 'text-8p.pdf'], ['/delete-pages', 'text-8p.pdf'], ['/tiff-to-pdf', 'convert/two-pages-lzw.tif'], ['/txt-to-pdf', 'convert/notes.txt'], ['/pdf-to-webp', 'text-8p.pdf'], ['/pdf-to-txt', 'text-8p.pdf'], ['/pdf-to-html', 'arabic.pdf'], ['/word-to-pdf', 'office/report.docx'], ['/excel-to-pdf', 'office/sheet.xlsx'], ['/html-to-pdf', 'office/page.html'], ['/pdf-to-word', 'text-8p.pdf'], ['/pdf-to-excel', 'text-8p.pdf'], ['/pdf-to-powerpoint', 'text-8p.pdf']] as const) {
         await page.goto(route)
         await upload(page, file)
         await expect(page.getByTestId('run')).toBeVisible()

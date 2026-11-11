@@ -1,0 +1,12 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Test page</title>
+<style>body{font-family:Georgia,serif;color:#222} h1{color:#1f3fcf} .box{background:#eef2ff;border:2px solid #1f3fcf;padding:8px} td,th{border:1px solid #888;padding:4px} table{border-collapse:collapse}</style>
+<link rel="stylesheet" href="https://example.com/evil.css"><script>document.title='pwned'</script></head>
+<body><h1>HTML to PDF</h1><p class="box">A styled box with <b>bold</b> and <i>italic</i> text.</p>
+<ul><li>First item</li><li>Second item</li></ul><ol start="3"><li>Third</li><li>Fourth</li></ol>
+<table><tr><th>Name</th><th>Value</th></tr><tr><td>Alpha</td><td>1</td></tr><tr><td>Beta</td><td>2</td></tr></table>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAA8CAIAAAAiz+n/AAABbklEQVR4Xu3bUWrCYBBF4V/xtV2d7kRX0aV0d11BKYEgBrWGe89M5J73kJkPE0nQ3cf5OJK/vf8U6a9AQwUaKtBQgYYKNFSgoQINFWioQEMFGuoAnWdVP1/frx73eTm9egjTrs9LpRWs/6kJfTG0Cfdeheg10LDvMl6chi4nvo7k5qBbEfPcBHRbYpLbC70JYobb+MCyOeUxjDO7oLeoPGWa3AJtmhXLMb8e2jEln3wLMbR8vsK0uyihtZN1SLiREjo9KNBQMmjhVdYq1V4y6PS4QEMFGirQUDJo8iU6mWovGXTKl2GLlJ9o1VXWJ+FGSugxlJOVJ1S2/IdFO19V8i3En+gp+ZRwjvkt0Ju2dihbbh1zpomt+Wb2/txgSvUCzJqPeIqAbs7tJqahG3IzxDXQTbhJ4kroOfj2zfvOcffop5nQC3GvawS9bAV9E9ZlraHfKdeTYbop0FCBhgo0VKChAg0VaKhAQwUaKtBQvxxSZLvJ54eWAAAAAElFTkSuQmCC" alt="inline" width="120" height="60"></p>
+<p><img src="https://example.com/tracker.png" alt="remote image"> <img src="local.png" alt="relative image"></p>
+<p onclick="alert(1)" style="background:url(https://example.com/bg.png)">Handlers and remote backgrounds are removed.</p>
+<p dir="rtl">فقرة عربية في صفحة HTML مع رقم 2026.</p>
+<iframe src="https://example.com"></iframe><a href="javascript:alert(1)">a link</a>
+</body></html>

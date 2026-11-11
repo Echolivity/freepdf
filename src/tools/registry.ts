@@ -26,8 +26,8 @@ export interface ToolDef {
   category: Category
   icon: IconName
   /** What the tool accepts and produces (shown on the tool page). */
-  input: 'pdf' | 'images' | 'text'
-  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html'
+  input: 'pdf' | 'images' | 'text' | 'docx' | 'xlsx' | 'html'
+  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html' | 'docx' | 'xlsx' | 'pptx'
   /** Search keywords in every language (titles and descriptions are searched too). */
   keywords: { en: string[]; ar: string[] }
   component: LazyExoticComponent<ComponentType<{ tool: ToolDef }>>
@@ -49,6 +49,8 @@ const PageNumbers = lazy(() => import('./page-numbers/PageNumbersTool'))
 const Watermark = lazy(() => import('./watermark/WatermarkTool'))
 const TextToPdf = lazy(() => import('./txt-to-pdf/TextToPdfTool'))
 const PdfToText = lazy(() => import('./pdf-to-txt/PdfToTextTool'))
+const OfficeToPdf = lazy(() => import('./office-to-pdf/OfficeToPdfTool'))
+const PdfToOffice = lazy(() => import('./pdf-to-office/PdfToOfficeTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -78,6 +80,12 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['jpeg', 'image', 'photo', 'picture', 'scan', 'png', 'webp'], ar: ['صور', 'صورة', 'جي بي جي', 'تحويل صور', 'مسح ضوئي', 'سكان'] } },
   { slug: 'png-to-pdf', input: 'images', output: 'pdfs', icon: 'imageIn', category: 'convert', component: ImageToPdf,
     keywords: { en: ['image', 'screenshot', 'picture', 'jpg', 'webp'], ar: ['صور', 'صورة', 'لقطة شاشة', 'بي إن جي', 'تحويل صور'] } },
+  { slug: 'word-to-pdf', input: 'docx', output: 'pdfs', icon: 'docIn', category: 'convert', component: OfficeToPdf,
+    keywords: { en: ['word', 'docx', 'document', 'office', 'convert', 'doc'], ar: ['وورد', 'مستند', 'أوفيس', 'تحويل', 'ملف وورد'] } },
+  { slug: 'excel-to-pdf', input: 'xlsx', output: 'pdfs', icon: 'sheetIn', category: 'convert', component: OfficeToPdf,
+    keywords: { en: ['excel', 'xlsx', 'spreadsheet', 'sheet', 'table', 'office', 'convert'], ar: ['إكسل', 'جدول', 'جدول بيانات', 'أوفيس', 'تحويل'] } },
+  { slug: 'html-to-pdf', input: 'html', output: 'pdfs', icon: 'htmlIn', category: 'convert', component: OfficeToPdf,
+    keywords: { en: ['html', 'web page', 'webpage', 'htm', 'website', 'convert'], ar: ['صفحة ويب', 'إتش تي إم إل', 'موقع', 'تحويل'] } },
   { slug: 'tiff-to-pdf', input: 'images', output: 'pdfs', icon: 'tiffIn', category: 'convert', component: ImageToPdf,
     keywords: { en: ['tif', 'tiff', 'scan', 'fax', 'multipage', 'multi-page', 'image'], ar: ['تيف', 'صور', 'مسح ضوئي', 'فاكس', 'متعدد الصفحات'] } },
   { slug: 'txt-to-pdf', input: 'text', output: 'pdfs', icon: 'textIn', category: 'convert', component: TextToPdf,
@@ -86,6 +94,12 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['jpeg', 'image', 'picture', 'export', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'جي بي جي', 'تصدير'] } },
   { slug: 'pdf-to-png', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['image', 'picture', 'export', 'lossless', 'convert'], ar: ['صور', 'صورة', 'تحويل إلى صور', 'بي إن جي', 'تصدير'] } },
+  { slug: 'pdf-to-word', input: 'pdf', output: 'docx', icon: 'docOut', category: 'convert', component: PdfToOffice,
+    keywords: { en: ['word', 'docx', 'edit', 'editable', 'document', 'office', 'convert'], ar: ['وورد', 'مستند', 'تحرير', 'قابل للتعديل', 'تحويل'] } },
+  { slug: 'pdf-to-excel', input: 'pdf', output: 'xlsx', icon: 'sheetOut', category: 'convert', component: PdfToOffice,
+    keywords: { en: ['excel', 'xlsx', 'table', 'tables', 'spreadsheet', 'extract tables', 'convert'], ar: ['إكسل', 'جدول', 'جداول', 'استخراج الجداول', 'تحويل'] } },
+  { slug: 'pdf-to-powerpoint', input: 'pdf', output: 'pptx', icon: 'slidesOut', category: 'convert', component: PdfToOffice,
+    keywords: { en: ['powerpoint', 'pptx', 'slides', 'presentation', 'ppt', 'convert'], ar: ['باوربوينت', 'شرائح', 'عرض تقديمي', 'تحويل'] } },
   { slug: 'pdf-to-webp', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,
     keywords: { en: ['webp', 'image', 'picture', 'export', 'web', 'convert'], ar: ['صور', 'صورة', 'ويب بي', 'تحويل إلى صور', 'تصدير'] } },
   { slug: 'pdf-to-txt', input: 'pdf', output: 'text', icon: 'textOut', category: 'convert', component: PdfToText,

@@ -7,7 +7,7 @@ import { upload, expectedDownloadName } from './helpers'
 test.use({ locale: 'ar-SA' })
 
 /** Words allowed to stay Latin in the Arabic UI: brand, formats, units, sizes, file names. */
-const ALLOWED = /\b(FreePDF|PDFs?|JPE?G|PNGs?|WebP|TIFF|TXT|HTML|UTF|ZIP|KB|MB|GB|A4|Letter|English|CSP|Web|Workers?|JavaScript|Word|Excel|PowerPoint|Shift|DPI|N)\b|[\w-]+\.(pdf|png|jpe?g|webp|zip)/gi
+const ALLOWED = /\b(FreePDF|PDFs?|JPE?G|PNGs?|WebP|TIFF|TXT|HTML|UTF|DOCX|XLSX|PPTX|ZIP|KB|MB|GB|A4|Letter|English|CSP|Web|Workers?|JavaScript|Word|Excel|PowerPoint|Shift|DPI|N)\b|[\w-]+\.(pdf|png|jpe?g|webp|zip)/gi
 
 async function assertNoEnglish(page: Page) {
   const text = await page.locator('body').innerText()

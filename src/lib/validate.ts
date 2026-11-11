@@ -2,7 +2,7 @@ import { LIMITS, MB } from '../config'
 import { msg, translate, type Message, type MessageKey, type Params } from '../i18n/core'
 import { scanPdfMarkers } from './inspect'
 
-export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp' | 'tiff' | 'text'
+export type FileKind = 'pdf' | 'jpeg' | 'png' | 'webp' | 'tiff' | 'text' | 'docx' | 'xlsx' | 'html'
 
 /** An error meant for the person using the app. Carries a message key so it can be shown in any language. */
 export class UserFacingError extends Error {
@@ -59,6 +59,26 @@ export function looksLikeText(head: Uint8Array, name: string): boolean {
     if (c < 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 0x0c && c !== 0x1b) control++
   }
   return control <= head.length * 0.01
+}
+
+/**
+ * Office Open XML files are ZIP archives: the name says which (the archive itself is checked when it
+ * is opened). HTML is text that looks like markup.
+ */
+export function sniffByName(head: Uint8Array, name: string): FileKind | null {
+  const zip = head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04
+  if (zip && /\.docx$/i.test(name)) return 'docx'
+  if (zip && /\.xlsx$/i.test(name)) return 'xlsx'
+  if (/\.x?html?$/i.test(name) && looksLikeText(head, 'x.txt')) {
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(head.subarray(0, 4096))
+    if (/<!doctype html|<html[\s>]|<head[\s>]|<body[\s>]|<(p|div|h[1-6]|table|ul|ol|span|br)[\s>/]/i.test(text)) return 'html'
+  }
+  return null
+}
+
+/** Old binary Office files (.doc/.xls/.ppt) and password-protected Office files share this container. */
+export function isLegacyOffice(head: Uint8Array): boolean {
+  return head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0
 }
 
 /** Read image dimensions from the header without decoding pixels. */
@@ -134,7 +154,7 @@ export interface ValidatedFile {
   encrypted?: boolean
 }
 
-const KIND_LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP', tiff: 'TIFF', text: 'TXT' }
+const KIND_LABEL: Record<FileKind, string> = { pdf: 'PDF', jpeg: 'JPG', png: 'PNG', webp: 'WebP', tiff: 'TIFF', text: 'TXT', docx: 'DOCX', xlsx: 'XLSX', html: 'HTML' }
 
 let counter = 0
 const newId = () => `f${Date.now().toString(36)}${(counter++).toString(36)}`
@@ -168,7 +188,11 @@ export async function validateFiles(
       continue
     }
     const head = new Uint8Array(await file.slice(0, 64 * 1024).arrayBuffer())
-    const kind = sniffKind(head) ?? (accept.includes('text') && looksLikeText(head, file.name) ? 'text' : null)
+    const kind = sniffKind(head) ?? sniffByName(head, file.name) ?? (accept.includes('text') && looksLikeText(head, file.name) ? 'text' : null)
+    if (!kind && isLegacyOffice(head) && accept.some((k) => k === 'docx' || k === 'xlsx')) {
+      rejected.push(msg('val.legacyOffice', { name: file.name }))
+      continue
+    }
     if (!kind || !accept.includes(kind)) {
       rejected.push(kind ? msg('val.wrongTypeLooks', { name: file.name, expected, actual: KIND_LABEL[kind] }) : msg('val.wrongType', { name: file.name, expected }))
       continue

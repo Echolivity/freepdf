@@ -121,3 +121,8 @@ export function releaseCanvas(canvas: HTMLCanvasElement) {
   canvas.width = 0
   canvas.height = 0
 }
+
+/** PDF.js operator codes (for reading where images are painted). */
+export function pdfjsOps(): Record<string, number> {
+  return pdfjs.OPS as unknown as Record<string, number>
+}

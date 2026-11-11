@@ -1,6 +1,6 @@
 # PDF conversion: implementation plan
 
-Status: **batch 1 implemented and tested** (unreleased; see the CHANGELOG). Batch 2 not started. Decisions agreed 2026-11-11.
+Status: **batches 1 and 2 implemented and tested** (unreleased; see the CHANGELOG). Decisions agreed 2026-11-11.
 
 ## Decisions
 
@@ -64,3 +64,55 @@ the memory behaviour of a 200-page fax is not).
   into one line.
 - Arabic embedded in a run of Latin text *inside a single PDF text fragment* may stay in visual
   order; whole fragments and per-glyph fragments are put in reading order.
+
+## Batch 2
+
+| Conversion | Tool | Engine |
+|------------|------|--------|
+| DOCX → PDF | `word-to-pdf` | [docx-preview](https://github.com/VolodymyrBaydalka/docxjs) 0.4.1 (Apache-2.0) renders the document into an off-screen shadow root, one element per Word page (using Word's own last page breaks). `domToPdf` then draws it. |
+| XLSX → PDF | `excel-to-pdf` | FreePDF's XLSX reader (`xlsx.ts`, JSZip + DOMParser) → one HTML table per sheet → `domToPdf`. |
+| HTML → PDF | `html-to-pdf` | Allowlist sanitiser (`htmlInput.ts`) → shadow root → `domToPdf`. |
+| PDF → DOCX | `pdf-to-word` | PDF.js text → lines/blocks (`pdfText.ts`); image placements from the operator list, pixels cropped from the rendered page; written by `ooxml.ts`. |
+| PDF → XLSX | `pdf-to-excel` | PDF.js text → rows and column bands (`pdfTables.ts`), numbers parsed; written by `ooxml.ts`. |
+| PDF → PPTX | `pdf-to-powerpoint` | Rendered pages as JPEG slides; written by `ooxml.ts`. |
+
+### Library survey (batch 2)
+
+| Need | Considered | Chosen | Why |
+|------|-----------|--------|-----|
+| DOCX layout | docx-preview, mammoth | docx-preview | Keeps styles, page size, margins, page breaks, headers/footers; depends only on JSZip. mammoth gives bare semantic HTML (no styles or pages). |
+| XLSX reading | SheetJS, ExcelJS, read-excel-file, own reader | Own reader | SheetJS's npm release (0.18.5) has open advisories and its fixed builds are only on its CDN (unreachable here); ExcelJS is 21 MB unpacked with Node dependencies; read-excel-file reads values without formats or styles. |
+| HTML/DOM → PDF | jsPDF `html()`, html2canvas, own engine | Own engine (`domToPdf.ts`) | html2canvas rasterises (no selectable text) and needs network access for resources; the browser's own layout plus measured drawing keeps text real and needs no dependency. |
+| Writing DOCX/XLSX/PPTX | docx, exceljs, pptxgenjs, own writer | Own writer (`ooxml.ts`) | Only a small subset of each format is needed; `docx` is 20 MB unpacked, pptxgenjs pulls Node modules. JSZip is already a dependency. |
+
+### What was verified (batch 2)
+
+- Unit tests (`tests/unit/office.test.ts`): Excel number/date formats (including scientific, currency,
+  thousands scaling, 1900/1904 systems), CSS counters and list styles, CSS sanitising, Office/HTML
+  sniffing, pagination, table detection (left-to-right and right-to-left), number parsing, the
+  lam-alef and bullet repairs, and the structure of generated DOCX/XLSX/PPTX packages.
+- Browser tests (`tests/e2e/office.spec.ts`, Chromium, under the privacy guard): each conversion end to
+  end with content checks on the output (text per page, page count and size, numbers and formats in the
+  workbook XML, slides and media in the deck), Arabic documents and sheets, a rejected legacy `.doc`,
+  a PDF without text, and that HTML input can't restyle the app.
+- Compared visually against LibreOffice's rendering of the same fixtures (report, Arabic document,
+  workbook); generated Office files opened with python-docx, openpyxl, python-pptx and converted by
+  LibreOffice (local QA, not in CI).
+- WCAG AA (axe) on all six new pages, English and Arabic, light and dark.
+- Fixtures: `scripts/make-office-fixtures.py` (python-docx, openpyxl, LibreOffice).
+
+Not verified: Microsoft Word, Excel or PowerPoint themselves (not available here), Firefox/Safari,
+very large documents, and DOCX features beyond the fixtures (text boxes, columns, charts, equations).
+
+### Known limits (batch 2)
+
+- Word → PDF: fonts that aren't installed are substituted, so line breaks may differ from Word;
+  Word's "contextual spacing" is applied only between items of the same list; headers and footers
+  are the ones for the whole section (first-page/odd-even variants are as docx-preview renders them).
+- Excel → PDF: charts, images, conditional formatting, comments, print areas and manual page breaks
+  are not read; text overflowing into empty neighbouring cells is shown, but `####` for numbers that
+  don't fit is not imitated.
+- PDF → Word: tables become separate lines of text; fonts, colours and exact spacing are not carried.
+- PDF → Excel: tables whose columns don't line up, cells spanning columns and wrapped cell text are
+  not detected.
+- PDF → PowerPoint: slides are pictures.

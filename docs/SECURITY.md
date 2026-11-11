@@ -31,6 +31,17 @@ There is no server-side attack surface: the deployment is static files only.
 | Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
 
+## Unreleased: conversion batch 2
+
+| Area | Control |
+|------|---------|
+| Network | No new requests. Office and HTML files are laid out in an off-screen element in the page; the CSP (`connect-src`/`img-src`/`font-src`/`frame-src`) still applies to anything in them. |
+| HTML input | Parsed with `DOMParser` (nothing runs), then rebuilt from an allowlist of elements and attributes. Dropped: scripts, frames, objects, forms, links, `<base>`, `<meta>`, media, SVG/MathML, every `on*` handler and `href`. Only `data:` images are kept; `url()` in CSS (other than `data:` images), `@import`, `expression()`, `behavior`, `-moz-binding` are removed, and fixed positioning is neutralised. The result is placed in a **shadow root**, so its CSS can't restyle or overlay the app. |
+| Word input | docx-preview builds DOM nodes itself (no HTML strings from the document). Embedded HTML ("altChunk"), which it would put in an iframe, is disabled; comments and tracked changes are not rendered. Pictures are `data:` URLs. Unreadable archives become a clear error. |
+| Excel input | Parsed with JSZip and `DOMParser` as XML; cell text is HTML-escaped when the table is built. A workbook with more than 250,000 cells to print is refused. |
+| Office output | Written by FreePDF: every piece of text is XML-escaped and characters XML can't carry are dropped; no macros, external relationships or embedded objects are ever written. Verified with python-docx, openpyxl, python-pptx and LibreOffice (local QA). |
+| Dependency | `docx-preview` 0.4.1 (Apache-2.0; its only dependency, JSZip, is already used). `npm audit`: 0 vulnerabilities. |
+
 ## Unreleased: conversion batch 1
 
 | Area | Control |

@@ -25,7 +25,7 @@ repository variable `DEPLOY_ENABLED` is `true`.
 |-----|------|--------|
 | `checks` | `npm ci`, `npm audit --audit-level=high`, typecheck, lint, unit/integration (with qpdf), production build | — |
 | `chromium` | Playwright device projects: `tablet-android`, `android-midrange`, `mobile`, `narrow-320` (117 tests) | `vite preview` |
-| `cross-engine` | Playwright `firefox`, `webkit`, `ipad-webkit`, `iphone-se-webkit` (175 tests) | `vite preview` |
+| `cross-engine` | Playwright `firefox` only for now (the WebKit projects are skipped in CI at the owner's request; run them locally with `ALL_BROWSERS=1`) | `vite preview` |
 | `cloudflare` | Playwright `desktop` project (93 tests) **and** the real-world QA (41 scenarios) with qpdf, pypdf strict and pyHanko validators | `wrangler pages dev` (workerd) |
 | `deploy` | `wrangler pages deploy dist` | needs all of the above |
 
@@ -42,7 +42,7 @@ repository variable `DEPLOY_ENABLED` is `true`.
 | `test:cloudflare` (`CI=1`) | ✅ **93 / 93**, including the 301 redirects for renamed tools |
 | `qa:cloudflare` (`CI=1`, strict validators) | ✅ **41 / 41** ([QA_REPORT.md](QA_REPORT.md)) |
 | WebKitGTK 2.52 via WebDriver, Cloudflare runtime over HTTPS | ✅ **14 / 14** |
-| Playwright Firefox / WebKit projects | ⛔ **BLOCKED here** (the browser downloads are refused). They run in CI's `cross-engine` job. |
+| Playwright Firefox / WebKit projects | ⛔ **BLOCKED here** (the browser downloads are refused). Firefox runs in CI's `cross-engine` job; WebKit is currently skipped there. |
 | `npm audit` | ✅ 0 vulnerabilities |
 
 Device projects are **emulations** (viewport, touch, pixel ratio, user agent) on the Chromium engine.

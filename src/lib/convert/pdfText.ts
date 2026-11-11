@@ -67,7 +67,12 @@ const FORM = (() => {
  * shape and ends with an isolated or final one; when the shapes say the opposite, the run is reversed
  * back. Finally presentation forms are replaced by the ordinary letters, so the text can be searched.
  */
-export function fixArabic(s: string): string {
+export function fixArabic(input: string): string {
+  // Symbol-font bullets (private-use code points) as real bullets.
+  let s = input.replace(/[\uf0b7\uf0a7\uf0d8\uf076\uf0a8\uf06c\uf06e]/g, '•')
+  // One glyph for lam + alef, mapped to two letters, can come back swapped: "األ" (alef, alef) is never
+  // Arabic, "الأ" is. Only that impossible double-alef pattern is repaired.
+  s = s.replace(/ا([اأإآ])ل/g, 'ال$1')
   if (!PRESENTATION.test(s)) return s
   // A run: Arabic words separated by spaces, Arabic punctuation or digits — never Latin text or dashes.
   const fixed = s.replace(/[\ufb50-\ufdff\ufe70-\ufeff\u0600-\u065f\u066a-\u06ef][\ufb50-\ufdff\ufe70-\ufeff\u0600-\u06ff\s،؛؟0-9]*[\ufb50-\ufdff\ufe70-\ufeff\u0600-\u065f\u066a-\u06ef]/g, (run) => {
@@ -138,17 +143,24 @@ function joinLine(items: TextItem[], pageRtl = false): Line {
   const all = items.map((i) => i.str).join('')
   const rtl = isRtlText(all) || (pageRtl && RTL_ONE.test(all))
   // Visual order, then reading order: right-to-left lines are read from their right edge…
-  let sorted = [...items].sort((a, b) => (rtl ? b.x + b.width - (a.x + a.width) : a.x - b.x))
+  const visual = [...items].sort((a, b) => (rtl ? b.x + b.width - (a.x + a.width) : a.x - b.x))
+  let sorted = visual
   // …except that numbers and Latin words inside them still read left to right (a small part of the
   // Unicode bidi algorithm): touching number fragments ("1448" "/" "05") form one number; Latin words
   // join across spaces; separate numbers (table cells) and edge punctuation keep the line's direction.
-  sorted = rtl ? ltrRunsInRtl(sorted) : rtlRunsInLtr(sorted)
+  const reversed = new Set<TextItem>()
+  sorted = rtl ? ltrRunsInRtl(sorted, reversed) : rtlRunsInLtr(sorted, reversed)
+  // Spacing is decided between *visual* neighbours: across a reordered run, the gap that matters is
+  // the one at the run's edge, not the distance to its far end.
+  const vi = new Map(visual.map((it, i) => [it, i]))
+  const boxGap = (a: TextItem, b: TextItem) => Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width)
   let text = ''
   let prev: TextItem | null = null
   for (const it of sorted) {
     if (prev) {
-      // The space between the two boxes, whichever way round they are.
-      const gap = Math.max(prev.x, it.x) - Math.min(prev.x + prev.width, it.x + it.width)
+      const i = vi.get(prev)!
+      const j = vi.get(it)!
+      const gap = Math.abs(j - i) === 1 ? boxGap(prev, it) : reversed.has(prev) && !reversed.has(it) ? boxGap(visual[j - 1], visual[j]) : boxGap(visual[i], visual[i + 1])
       const size = Math.max(prev.size, it.size)
       const spaced = /\s$/.test(text) || /^\s/.test(it.str)
       // A wide gap is a column or table break; a narrow one is a word space PDF didn't encode.
@@ -172,7 +184,7 @@ function joinLine(items: TextItem[], pageRtl = false): Line {
 const LATIN = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]/
 const DIGIT = /[0-9٠-٩۰-۹]/
 
-function ltrRunsInRtl(sorted: TextItem[]): TextItem[] {
+function ltrRunsInRtl(sorted: TextItem[], reversed: Set<TextItem>): TextItem[] {
   const kind = (it: TextItem) => (RTL_ONE.test(it.str) ? 'R' : LATIN.test(it.str) ? 'L' : DIGIT.test(it.str) ? 'D' : 'N')
   const gap = (a: TextItem, b: TextItem) => Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width)
   const touching = (a: TextItem, b: TextItem) => gap(a, b) <= Math.max(a.size, b.size) * 0.15
@@ -195,6 +207,7 @@ function ltrRunsInRtl(sorted: TextItem[]): TextItem[] {
     let tail = run.length
     while (head < tail && kind(run[head]) === 'N') head++
     while (tail > head && kind(run[tail - 1]) === 'N') tail--
+    if (tail - head > 1) for (const r of run.slice(head, tail)) reversed.add(r)
     run = [...run.slice(0, head), ...run.slice(head, tail).reverse(), ...run.slice(tail)]
     out.push(...run)
     i = j
@@ -203,7 +216,7 @@ function ltrRunsInRtl(sorted: TextItem[]): TextItem[] {
 }
 
 /** Arabic fragments inside a left-to-right line are drawn right to left: put them in reading order. */
-function rtlRunsInLtr(sorted: TextItem[]): TextItem[] {
+function rtlRunsInLtr(sorted: TextItem[], reversed: Set<TextItem>): TextItem[] {
   const isR = (it: TextItem) => RTL_ONE.test(it.str)
   const isN = (it: TextItem) => !isR(it) && !LATIN.test(it.str) && !DIGIT.test(it.str)
   const out: TextItem[] = []
@@ -213,6 +226,7 @@ function rtlRunsInLtr(sorted: TextItem[]): TextItem[] {
     // An Arabic run: Arabic fragments, and spaces or punctuation that sit between two of them.
     let j = i + 1
     while (j < sorted.length && (isR(sorted[j]) || (isN(sorted[j]) && sorted.slice(j + 1).find((x) => !isN(x)) && isR(sorted.slice(j + 1).find((x) => !isN(x))!)))) j++
+    if (j - i > 1) for (const r of sorted.slice(i, j)) reversed.add(r)
     out.push(...sorted.slice(i, j).reverse())
     i = j
   }
@@ -242,6 +256,8 @@ export function joinParagraph(lines: string[]): string {
   }
   return out
 }
+
+const LIST_MARKER = /^\s*(?:[•▪◦●○■□➢✓–-]\s|(?:\d{1,3}|[a-zA-Z]|[ivxlcIVXLC]{1,5})[.)]\s|[٠-٩]{1,3}[.)-]\s)/
 
 /** Group lines into paragraphs and headings by vertical spacing and size. */
 export function buildBlocks(lines: Line[], body: number): Block[] {
@@ -274,6 +290,9 @@ export function buildBlocks(lines: Line[], body: number): Block[] {
       const gap = prev.y - l.y
       const size = Math.max(prev.size, l.size)
       const sizeChange = Math.abs(prev.size - l.size) / Math.min(prev.size, l.size) > 0.12
+      // Table rows (lines with column gaps) and list items each stand on their own.
+      const tabular = prev.text.includes('\t') || l.text.includes('\t')
+      if (tabular || LIST_MARKER.test(l.text)) { flush(); cur.push(l); continue }
       // Baselines further apart than usual (or going back up the page) start a new block.
       if (gap > size * breakAt || gap < 0 || sizeChange) flush()
     }
