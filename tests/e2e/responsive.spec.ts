@@ -11,6 +11,9 @@ for (const lang of ['en', 'ar'] as const) {
     await page.addInitScript((l) => localStorage.setItem('freepdf:lang', l), lang)
     for (const r of ROUTES) {
       await page.goto(r)
+      // Measure the settled layout: before the web font has loaded, fallback glyph widths can briefly differ.
+      await page.evaluate(() => document.fonts.ready)
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity))
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
       // On failure, name the elements that stick out so the cause is visible in the CI log.
       const culprits = overflow > 1 ? await page.evaluate(() => {

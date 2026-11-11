@@ -96,6 +96,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y qpdf
       - run: npx playwright install --with-deps firefox webkit
       - run: npx playwright test --project=firefox --project=webkit --project=ipad-webkit --project=iphone-se-webkit
+      # Diagnostics only (does not change the job result): browser-process output for the Firefox a11y run.
+      - name: Firefox a11y browser log (diagnostics)
+        if: failure()
+        run: DEBUG=pw:browser npx playwright test tests/e2e/a11y.spec.ts --project=firefox --retries=0 --grep "en, light" 2>&1 | tail -n 300 || true
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
