@@ -14,14 +14,17 @@ export function Layout() {
   }, [pathname])
 
   const navCls = ({ isActive }: { isActive: boolean }) =>
-    `rounded-lg px-2.5 py-2 text-[15px] font-semibold transition-colors sm:px-3 ${isActive ? 'text-ink' : 'text-muted hover:text-ink'}`
+    `relative h-10 items-center rounded-full px-3 text-[15px] font-semibold transition-colors ${
+      isActive ? 'bg-surface text-ink shadow-card ring-1 ring-line' : 'text-muted hover:text-ink'
+    }`
+  const ctrlCls = 'inline-flex h-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink'
 
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#main" className="sr-only-focusable fixed start-3 top-3 z-50 rounded-lg bg-accent px-4 py-2 font-semibold text-on-accent">
         {t('nav.skip')}
       </a>
-      <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur supports-[backdrop-filter]:bg-paper/70">
+      <header className="sticky top-0 z-40 border-b border-line/80 bg-paper/85 backdrop-blur-md supports-[backdrop-filter]:bg-paper/70">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-1 px-4 sm:gap-2 sm:px-6">
           <Link to="/" className="me-auto flex items-center gap-2.5 rounded-lg" aria-label={t('nav.home')}>
             <Logo className="h-8 w-8" />
@@ -30,14 +33,15 @@ export function Layout() {
               Free<span className="text-accent">PDF</span>
             </span>
           </Link>
-          <nav aria-label={t('nav.main')} className="flex items-center gap-0.5">
-            <NavLink to="/" end className={navCls}>{t('nav.tools')}</NavLink>
-            <NavLink to="/privacy" className={`${navCls({ isActive: pathname === '/privacy' })} hidden sm:inline-block`}>{t('nav.how')}</NavLink>
+          <nav aria-label={t('nav.main')} className="flex items-center gap-1">
+            <NavLink to="/" end className={(a) => `${navCls(a)} inline-flex`}>{t('nav.tools')}</NavLink>
+            <NavLink to="/privacy" className={`${navCls({ isActive: pathname === '/privacy' })} hidden sm:inline-flex`}>{t('nav.how')}</NavLink>
           </nav>
+          <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line-strong sm:block" />
           <button
             type="button"
             onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-            className="h-10 rounded-lg px-2.5 text-[15px] font-semibold text-muted transition-colors hover:bg-surface hover:text-ink"
+            className={`${ctrlCls} px-3 text-[15px] font-semibold`}
             // The visible language name (in its own language) is the accessible name (WCAG 2.5.3);
             // the longer description goes in the tooltip.
             title={t('lang.otherLabel')}
@@ -50,7 +54,7 @@ export function Layout() {
             type="button"
             onClick={toggleTheme}
             data-testid="theme-toggle"
-            className="grid h-10 w-10 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-ink"
+            className={`${ctrlCls} w-10`}
             aria-label={theme === 'dark' ? t('theme.toLight') : t('theme.toDark')}
             title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
           >
@@ -63,16 +67,25 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p className="flex items-center gap-2">
-            <Icon name="shield" size={18} className="shrink-0 text-ok" />
-            {t('footer.local')}
-          </p>
-          <p className="flex items-center gap-4">
-            <span>{t('footer.tagline')}</span>
-            <Link to="/privacy" className="underline decoration-line-strong underline-offset-4 hover:text-ink">{t('footer.privacy')}</Link>
-          </p>
+      <footer className="mt-8 border-t border-line bg-surface-2/60">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-end">
+          <div className="space-y-4">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-lg">
+              <Logo className="h-7 w-7" />
+              <span dir="ltr" className="font-display text-lg font-bold tracking-tight">Free<span className="text-accent">PDF</span></span>
+            </Link>
+            <p className="flex max-w-md items-start gap-2 text-[15px] text-ink">
+              <Icon name="shield" size={18} className="mt-0.5 shrink-0 text-ok" />
+              {t('footer.local')}
+            </p>
+          </div>
+          <div className="space-y-3 text-sm text-muted md:text-end">
+            <p className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">
+              <Link to="/" className="font-semibold text-ink hover:text-accent">{t('nav.tools')}</Link>
+              <Link to="/privacy" className="font-semibold text-ink hover:text-accent">{t('footer.privacy')}</Link>
+            </p>
+            <p>{t('footer.tagline')}</p>
+          </div>
         </div>
       </footer>
     </div>

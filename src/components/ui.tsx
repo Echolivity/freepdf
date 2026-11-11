@@ -14,14 +14,14 @@ export function Button({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; icon?: IconName; size?: 'sm' | 'md' | 'lg' }) {
   const v = {
-    primary: 'bg-accent text-on-accent hover:bg-accent-hover disabled:bg-line-strong disabled:text-muted',
-    secondary: 'border border-line-strong bg-surface text-ink hover:border-ink/40 disabled:opacity-50',
+    primary: 'bg-accent text-on-accent shadow-glow hover:bg-accent-hover disabled:bg-surface-2 disabled:text-muted disabled:shadow-none disabled:ring-1 disabled:ring-inset disabled:ring-line-strong',
+    secondary: 'border border-line-strong bg-surface text-ink shadow-card hover:border-ink/35 hover:bg-surface-2 disabled:opacity-50',
     ghost: 'text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-50',
     danger: 'text-danger hover:bg-danger-soft disabled:opacity-50',
   }[variant]
   const s = { sm: 'h-9 px-3 text-sm gap-1.5 rounded-lg', md: 'h-11 px-4 text-[15px] gap-2 rounded-xl', lg: 'h-14 px-6 text-[17px] gap-2.5 rounded-2xl' }[size]
   return (
-    <button type="button" className={`inline-flex items-center justify-center font-semibold transition-colors disabled:cursor-not-allowed ${v} ${s} ${className}`} {...rest}>
+    <button type="button" className={`inline-flex items-center justify-center font-semibold transition-[background-color,border-color,color,box-shadow] disabled:cursor-not-allowed ${v} ${s} ${className}`} {...rest}>
       {icon && <Icon name={icon} size={size === 'lg' ? 22 : 18} />}
       {children}
     </button>
@@ -83,8 +83,8 @@ export function Segmented<T extends string | number>({
         {options.map((o) => (
           <label
             key={String(o.value)}
-            className={`flex cursor-pointer flex-col rounded-xl border px-3 py-2.5 text-[15px] transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
-              o.value === value ? 'border-accent bg-accent-soft font-semibold text-ink' : 'border-line bg-surface hover:border-line-strong'
+            className={`flex min-h-11 cursor-pointer flex-col justify-center rounded-xl border px-3 py-2.5 text-[15px] leading-snug transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
+              o.value === value ? 'border-accent bg-accent-soft font-semibold text-ink ring-1 ring-accent' : 'border-line bg-paper hover:border-line-strong'
             }`}
           >
             <input type="radio" name={name} className="sr-only" checked={o.value === value} onChange={() => onChange(o.value)} />
@@ -104,7 +104,7 @@ export function Workspace({ main, side }: { main: ReactNode; side: ReactNode }) 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
       <div className="min-w-0">{main}</div>
-      <aside className="rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-24" aria-label={t('common.options')}>
+      <aside className="rounded-2xl border border-line bg-surface p-5 shadow-lift lg:sticky lg:top-24" aria-label={t('common.options')}>
         <div className="space-y-5">{side}</div>
       </aside>
     </div>

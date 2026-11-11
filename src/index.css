@@ -3,52 +3,61 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --paper: #f5f3ec;
-  --surface: #ffffff;
-  --surface-2: #faf9f5;
-  --ink: #15161a;
-  --muted: #5b5d65;
-  --line: #e1ddd1;
-  --line-strong: #cbc6b7;
-  --accent: #1d3fd8;
-  --accent-hover: #1733b5;
-  --accent-soft: #e5e9fb;
+  /* Editorial palette: warm paper, near-black ink, one cobalt accent. Category hues are muted so the accent leads. */
+  --paper: #f6f4ee;
+  --surface: #fffefa;
+  --surface-2: #efece4;
+  --ink: #131418;
+  --muted: #595b62;
+  --line: #e2ddd1;
+  --line-strong: #c9c2b2;
+  --accent: #1f3fcf;
+  --accent-hover: #1832a8;
+  --accent-soft: #e7ebfb;
   --on-accent: #ffffff;
   --danger: #b42318;
-  --danger-soft: #fdecea;
-  --ok: #0e7c5a;
-  --ok-soft: #e3f4ec;
-  --cat-organize: #1d3fd8;
-  --cat-optimize: #0e7c5a;
-  --cat-to: #b45309;
-  --cat-from: #7c3aed;
-  --cat-advanced: #be185d;
-  --grid-dot: rgba(21, 22, 26, 0.09);
+  --danger-soft: #fbebe8;
+  --ok: #0d7454;
+  --ok-soft: #e2f2ea;
+  --cat-organize: #1f3fcf;
+  --cat-optimize: #0d7454;
+  --cat-to: #a4520f;
+  --cat-from: #6b44b8;
+  --cat-advanced: #a8326a;
+  --grid-dot: rgba(19, 20, 24, 0.085);
+  --shadow-sm: 0 1px 0 rgba(19, 20, 24, 0.03), 0 1px 3px rgba(19, 20, 24, 0.05);
+  --shadow-md: 0 1px 0 rgba(19, 20, 24, 0.03), 0 14px 32px -18px rgba(19, 20, 24, 0.28);
+  --shadow-lg: 0 2px 0 rgba(19, 20, 24, 0.02), 0 30px 60px -30px rgba(19, 20, 24, 0.35);
+  --shadow-accent: 0 10px 24px -12px color-mix(in srgb, var(--accent) 70%, transparent);
   color-scheme: light;
 }
 
 .dark {
-  --paper: #101114;
-  --surface: #17191e;
-  --surface-2: #1c1f25;
-  --ink: #ecebe5;
-  --muted: #a0a2ab;
-  --line: #2a2d35;
-  --line-strong: #3a3e48;
-  --accent: #8399ff;
-  --accent-hover: #a2b2ff;
-  --accent-soft: #1e2444;
-  --on-accent: #0c0f1f;
+  --paper: #0e0f12;
+  --surface: #15171c;
+  --surface-2: #1b1e25;
+  --ink: #eeebe3;
+  --muted: #a3a5ad;
+  --line: #262a33;
+  --line-strong: #383d49;
+  --accent: #8ea0ff;
+  --accent-hover: #aab8ff;
+  --accent-soft: #1d2445;
+  --on-accent: #0b0e1d;
   --danger: #ff8a7a;
   --danger-soft: #3a1714;
-  --ok: #4fd1a1;
+  --ok: #53cf9f;
   --ok-soft: #10302a;
-  --cat-organize: #8399ff;
-  --cat-optimize: #4fd1a1;
-  --cat-to: #f2a65a;
-  --cat-from: #b69cff;
-  --cat-advanced: #f9a8d4;
-  --grid-dot: rgba(236, 235, 229, 0.07);
+  --cat-organize: #8ea0ff;
+  --cat-optimize: #53cf9f;
+  --cat-to: #efa463;
+  --cat-from: #b9a1ff;
+  --cat-advanced: #f3a3c9;
+  --grid-dot: rgba(238, 235, 227, 0.065);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 36px -20px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  --shadow-accent: 0 10px 28px -14px color-mix(in srgb, var(--accent) 60%, transparent);
   color-scheme: dark;
 }
 
@@ -71,9 +80,15 @@
   --color-danger-soft: var(--danger-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --shadow-card: var(--shadow-sm);
+  --shadow-lift: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+  --shadow-glow: var(--shadow-accent);
 }
 
 html {
+  /* Keep scrolled-to and focused elements clear of the sticky 64px header (WCAG 2.4.11). */
+  scroll-padding-top: 5rem;
   background: var(--paper);
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
@@ -109,6 +124,28 @@ h1, h2, h3, .font-display {
   background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.2px);
   background-size: 18px 18px;
 }
+
+/* Fades the dot field out towards the bottom edge. */
+.dot-grid-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent);
+}
+
+::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+/* Native controls pick up the accent (checkboxes, radios, ranges). */
+input[type="checkbox"], input[type="radio"], input[type="range"], progress { accent-color: var(--accent); }
+
+/* Selects: one consistent chevron, on the inline end in both directions. */
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-inline-end: 2.25rem !important;
+}
+[dir="rtl"] select:not([multiple]) { background-position: left 0.85rem center; }
 
 .ink-underline {
   background-image: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent) 22%, transparent) 62%, color-mix(in srgb, var(--accent) 22%, transparent) 92%, transparent 92%);

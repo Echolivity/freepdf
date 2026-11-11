@@ -8,7 +8,7 @@ export function NotFound() {
       <p className="font-display text-7xl font-bold text-accent">404</p>
       <h1 className="mt-4 text-3xl font-bold">{t('nf.title')}</h1>
       <p className="mt-3 text-muted">{t('nf.body')}</p>
-      <Link to="/" className="mt-8 inline-flex rounded-xl bg-accent px-5 py-3 font-semibold text-on-accent hover:bg-accent-hover">
+      <Link to="/" className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-accent px-5 font-semibold text-on-accent shadow-glow hover:bg-accent-hover">
         {t('nf.cta')}
       </Link>
     </div>

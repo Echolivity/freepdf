@@ -70,9 +70,9 @@ export function Dropzone({
 
   if (compact) {
     return (
-      <div {...dragHandlers} className={`rounded-xl border-2 border-dashed transition-colors ${over ? 'border-accent bg-accent-soft' : 'border-line-strong'}`}>
+      <div {...dragHandlers} className={`rounded-xl border-2 border-dashed transition-colors ${over ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-accent/60'}`}>
         {picker}
-        <button type="button" onClick={choose} className="flex w-full items-center justify-center gap-2 px-4 py-3 text-[15px] font-semibold text-muted hover:text-ink">
+        <button type="button" onClick={choose} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-semibold text-muted hover:text-ink">
           <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : 'drop.addMoreImages')}
         </button>
       </div>
@@ -80,34 +80,48 @@ export function Dropzone({
   }
 
   return (
-    <div
-      {...dragHandlers}
-      className={`dot-grid relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed px-6 py-14 text-center transition-colors sm:py-20 ${
-        over ? 'border-accent bg-accent-soft' : 'border-line-strong bg-surface-2'
-      }`}
-    >
+    <div {...dragHandlers} className="relative overflow-hidden rounded-[28px] border border-line bg-surface p-2 shadow-lift sm:p-3">
       {picker}
-      <span className="mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-accent text-on-accent shadow-[0_10px_30px_-12px_var(--accent)]">
-        <Icon name="upload" size={30} />
-      </span>
-      <button
-        type="button"
-        onClick={choose}
-        className="rounded-2xl bg-accent px-7 py-3.5 text-lg font-semibold text-on-accent transition-colors hover:bg-accent-hover"
+      <div
+        className={`relative flex flex-col items-center justify-center overflow-hidden rounded-[22px] border-2 border-dashed px-6 py-12 text-center transition-colors duration-200 sm:py-16 ${
+          over ? 'border-accent bg-accent-soft' : 'border-line-strong bg-surface-2/60'
+        }`}
       >
-        {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : multiple ? 'drop.selectImages' : 'drop.selectImage')}
-      </button>
-      <p className="mt-4 text-muted">
-        {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}
-      </p>
-      <p className="mt-6 text-sm text-muted">
-        {t('drop.limits', { kinds, mb: LIMITS.maxFileBytes / MB, job: LIMITS.maxJobBytes / MB })}
-      </p>
-      <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
-        <Icon name="shield" size={16} className="text-ok" />
-        {t('drop.stays')}{' '}
-        <Link to="/privacy" className="font-semibold underline decoration-line-strong underline-offset-4 hover:text-ink">{t('nav.how')}</Link>
-      </p>
+        <div aria-hidden="true" className="dot-grid dot-grid-fade pointer-events-none absolute inset-0" />
+        {/* Two sheets and an upload badge: what goes in, and that it stays here. */}
+        <span aria-hidden="true" className={`relative mb-7 block h-24 w-28 transition-transform duration-300 ${over ? 'motion-safe:-translate-y-1 motion-safe:scale-105' : ''}`}>
+          <span className="absolute start-1 top-2 h-[84px] w-16 -rotate-[8deg] rounded-lg border border-line-strong bg-surface shadow-card" />
+          <span className="absolute end-3 top-0 h-[88px] w-[68px] rotate-[5deg] rounded-lg border border-line-strong bg-surface shadow-lift">
+            <span className="absolute inset-x-3 top-4 h-1.5 rounded-full bg-ink/80" />
+            <span className="absolute inset-x-3 top-8 h-1 rounded-full bg-line-strong" />
+            <span className="absolute start-3 end-5 top-11 h-1 rounded-full bg-line-strong" />
+            <span className="absolute inset-x-3 top-[3.6rem] h-1 rounded-full bg-line-strong" />
+          </span>
+          <span className="absolute -bottom-1 end-0 grid h-12 w-12 place-items-center rounded-2xl bg-accent text-on-accent shadow-glow ring-4 ring-surface-2">
+            <Icon name="upload" size={24} strokeWidth={2} />
+          </span>
+        </span>
+        <button
+          type="button"
+          onClick={choose}
+          className="relative min-h-14 rounded-2xl bg-accent px-7 py-3.5 text-lg font-semibold text-on-accent shadow-glow transition-[background-color,transform] hover:bg-accent-hover motion-safe:active:translate-y-px"
+        >
+          {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : multiple ? 'drop.selectImages' : 'drop.selectImage')}
+        </button>
+        <p className="relative mt-4 text-muted">
+          {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}
+        </p>
+      </div>
+      <div className="flex flex-col items-center gap-x-6 gap-y-2 px-4 pb-2 pt-4 text-center text-sm text-muted sm:flex-row sm:justify-between sm:px-5 sm:pb-1 sm:pt-3.5 sm:text-start">
+        <p>{t('drop.limits', { kinds, mb: LIMITS.maxFileBytes / MB, job: LIMITS.maxJobBytes / MB })}</p>
+        <p className="flex items-center gap-1.5">
+          <Icon name="shield" size={16} className="shrink-0 text-ok" />
+          <span>
+            {t('drop.stays')}{' '}
+            <Link to="/privacy" className="font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:text-accent">{t('nav.how')}</Link>
+          </span>
+        </p>
+      </div>
     </div>
   )
 }

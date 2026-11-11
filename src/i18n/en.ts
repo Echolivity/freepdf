@@ -91,6 +91,7 @@ export const en = {
   'tool.pdf-to-png.short': 'Save each page as a lossless PNG.',
   'tool.pdf-to-png.description': 'Convert every page of a PDF into a PNG image at the resolution you choose.',
   'tool.allTools': 'All tools',
+  'tool.breadcrumb': 'Breadcrumb',
   // Tool page: about, limits, FAQ
   'about.title': 'About this tool',
   'about.input': 'Accepts',

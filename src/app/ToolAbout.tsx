@@ -23,12 +23,12 @@ export function ToolAbout({ tool }: { tool: ToolDef }) {
     ['faq.devices.q', 'faq.devices.a'],
   ]
   return (
-    <div className="mt-16 grid gap-10 border-t border-line pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div className="mt-20 grid gap-10 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-14">
       <section aria-labelledby="about-h">
         <h2 id="about-h" className="text-2xl font-semibold">{t('about.title')}</h2>
-        <dl className="mt-5 space-y-4">
+        <dl className="mt-5 divide-y divide-line border-y border-line">
           {facts.map((f) => (
-            <div key={f.label} className="flex gap-3">
+            <div key={f.label} className="flex gap-3 py-3.5">
               <dt className="flex w-28 shrink-0 items-start gap-2 text-sm font-semibold text-muted">
                 <Icon name={f.icon} size={18} className="mt-0.5 shrink-0" /> {t(f.label)}
               </dt>
@@ -40,10 +40,10 @@ export function ToolAbout({ tool }: { tool: ToolDef }) {
       </section>
       <section aria-labelledby="faq-h">
         <h2 id="faq-h" className="text-2xl font-semibold">{t('faq.title')}</h2>
-        <div className="mt-4 divide-y divide-line rounded-2xl border border-line bg-surface">
+        <div className="mt-5 divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
           {faq.map(([q, a, params]) => (
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+              <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-4 rounded-md font-semibold hover:text-accent">
                 {t(q)}
                 <Icon name="plus" size={18} className="shrink-0 text-muted transition-transform group-open:rotate-45" />
               </summary>

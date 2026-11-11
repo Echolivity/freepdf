@@ -44,7 +44,7 @@ export function FileList({
           onDragOver={(e) => { if (dragIndex === null) return; e.preventDefault(); setOverIndex(i) }}
           onDrop={(e) => { e.preventDefault(); if (dragIndex !== null && onMove) onMove(dragIndex, i); setDragIndex(null); setOverIndex(null) }}
           onDragEnd={() => { setDragIndex(null); setOverIndex(null) }}
-          className={`fade-in flex items-center gap-3 rounded-xl border bg-surface p-2.5 pr-3 transition-colors ${
+          className={`fade-in flex items-center gap-3 rounded-xl border bg-surface p-2.5 pe-2 shadow-card transition-colors ${
             overIndex === i && dragIndex !== i ? 'border-accent' : 'border-line'
           } ${dragIndex === i ? 'opacity-50' : ''}`}
         >
@@ -52,7 +52,7 @@ export function FileList({
             <span className="hidden cursor-grab text-muted sm:block" aria-hidden="true"><Icon name="grip" size={18} /></span>
           )}
           {reorderable && <span className="w-6 text-center font-display text-sm font-semibold text-muted">{i + 1}</span>}
-          <span className="grid h-14 w-11 shrink-0 place-items-center overflow-hidden rounded-md bg-surface-2">
+          <span className="grid h-14 w-11 shrink-0 place-items-center overflow-hidden rounded-md bg-surface-2 ring-1 ring-line">
             <FileThumb file={f} />
           </span>
           <span className="min-w-0 flex-1">

@@ -59,12 +59,18 @@ export function Privacy() {
   const [cleared, setCleared] = useState(false)
   useSeo(t('privacy.docTitle'), t('privacy.intro'))
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-20 pt-12 sm:px-6">
-      <h1 className="text-4xl font-bold sm:text-5xl">{t('privacy.title')}</h1>
-      <p className="mt-4 text-lg text-muted">{t('privacy.intro')}</p>
-      <ul className="mt-10 space-y-8">
+    <>
+    <div className="relative overflow-hidden border-b border-line">
+      <div aria-hidden="true" className="dot-grid dot-grid-fade absolute inset-0" />
+      <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16">
+        <h1 className="text-4xl font-bold tracking-[-0.03em] sm:text-5xl">{t('privacy.title')}</h1>
+        <p className="mt-4 text-lg leading-relaxed text-muted">{t('privacy.intro')}</p>
+      </div>
+    </div>
+    <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6">
+      <ul className="grid gap-4 sm:grid-cols-2">
         {POINTS.map((p) => (
-          <li key={p.n} className="flex gap-4">
+          <li key={p.n} className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
               <Icon name={p.icon} size={22} />
             </span>
@@ -76,7 +82,7 @@ export function Privacy() {
         ))}
       </ul>
 
-      <section className="mt-14 rounded-2xl border border-line bg-surface p-6" aria-labelledby="storage-h">
+      <section className="mt-10 rounded-2xl border border-line bg-surface p-6 shadow-card" aria-labelledby="storage-h">
         <h2 id="storage-h" className="text-xl font-semibold">{t('privacy.storage.title')}</h2>
         <p className="mt-2 text-muted">{t('privacy.storage.body')}</p>
         <table className="mt-4 w-full text-[15px]">
@@ -108,16 +114,17 @@ export function Privacy() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-2xl border border-line bg-surface p-6" aria-labelledby="limits-h">
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card" aria-labelledby="limits-h">
         <h2 id="limits-h" className="text-xl font-semibold">{t('privacy.limits.title')}</h2>
         <p className="mt-2 mb-4 text-muted">{t('privacy.limits.body')}</p>
         <LimitsTable />
       </section>
 
-      <section className="mt-6 rounded-2xl border border-line bg-surface p-6">
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
         <h2 className="text-xl font-semibold">{t('privacy.server.title')}</h2>
         <p className="mt-2 text-muted">{t('privacy.server.body')}</p>
       </section>
     </div>
+    </>
   )
 }

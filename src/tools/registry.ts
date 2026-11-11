@@ -7,6 +7,17 @@ export type Category = 'organize' | 'edit' | 'convert' | 'security' | 'optimize'
 /** Home-page order. Categories without working tools (security, ai for now) are not shown. */
 export const CATEGORIES: Category[] = ['organize', 'edit', 'convert', 'security', 'optimize', 'advanced', 'ai']
 
+/** Each category's colour (a CSS variable from index.css), used for its dot, card tile and tool header. */
+export const CAT_VAR: Record<Category, string> = {
+  organize: 'var(--cat-organize)',
+  edit: 'var(--cat-from)',
+  convert: 'var(--cat-to)',
+  security: 'var(--cat-organize)',
+  optimize: 'var(--cat-optimize)',
+  advanced: 'var(--cat-advanced)',
+  ai: 'var(--cat-advanced)',
+}
+
 /** Tools whose address changed. Old links keep working (Cloudflare 301 in public/_redirects, plus an in-app redirect). */
 export const RENAMED: Record<string, string> = { 'extract-pages': 'extract-pdf', 'remove-pages': 'delete-pages' }
 

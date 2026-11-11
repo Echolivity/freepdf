@@ -97,6 +97,7 @@ export const ar: Record<MessageKey, Msg> = {
   'tool.pdf-to-png.short': 'احفظ كل صفحة كصورة PNG بلا فقدان في الجودة.',
   'tool.pdf-to-png.description': 'حوّل كل صفحة من ملف PDF إلى صورة PNG بالدقة التي تختارها.',
   'tool.allTools': 'كل الأدوات',
+  'tool.breadcrumb': 'مسار التنقل',
   'about.title': 'عن هذه الأداة',
   'about.input': 'المدخلات',
   'about.output': 'الناتج',
