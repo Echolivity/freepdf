@@ -65,3 +65,24 @@ test('E9 axe, then split + structured.pdf', async ({ page }) => {
 test('E10 axe, wait 3 s, then split + rich.pdf', async ({ page }) => {
   await run(page, 'E10', async () => { await page.goto('/split-pdf'); await axe(page); await page.waitForTimeout(3000); await page.getByTestId('file-input').first().setInputFiles(fx('rich.pdf')); await thumb(page) })
 })
+
+// Round 2: the full a11y sequence (init script → home → privacy → split → upload), one step left out each time.
+const animationsDone = (page: Page) =>
+  page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity))
+async function sequence(page: Page, o: { init?: boolean; home?: boolean; privacy?: boolean; axe?: boolean; wait?: boolean }) {
+  if (o.init !== false) await page.addInitScript(() => { localStorage.setItem('freepdf:lang', 'en'); localStorage.setItem('freepdf:theme', 'light') })
+  const audit = async () => { if (o.wait !== false) await animationsDone(page); if (o.axe !== false) await axe(page) }
+  if (o.home !== false) { await page.goto('/'); await audit() }
+  if (o.privacy !== false) { await page.goto('/privacy'); await audit() }
+  await page.goto('/split-pdf')
+  await audit()
+  await page.getByTestId('file-input').first().setInputFiles(fx('rich.pdf'))
+  await thumb(page)
+}
+test('G0 full sequence (control)', async ({ page }) => { await run(page, 'G0', () => sequence(page, {})) })
+test('G1 without the init script', async ({ page }) => { await run(page, 'G1', () => sequence(page, { init: false })) })
+test('G2 without the home step', async ({ page }) => { await run(page, 'G2', () => sequence(page, { home: false })) })
+test('G3 without the privacy step', async ({ page }) => { await run(page, 'G3', () => sequence(page, { privacy: false })) })
+test('G4 without axe', async ({ page }) => { await run(page, 'G4', () => sequence(page, { axe: false })) })
+test('G5 without the animation wait', async ({ page }) => { await run(page, 'G5', () => sequence(page, { wait: false })) })
+test('G6 privacy page then split, no axe, no init', async ({ page }) => { await run(page, 'G6', () => sequence(page, { init: false, home: false, axe: false, wait: false })) })
