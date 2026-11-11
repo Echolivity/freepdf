@@ -92,6 +92,8 @@ jobs:
         with:
           name: dist
           path: dist
+      - name: Install qpdf (structural validation in e2e tests)
+        run: sudo apt-get update && sudo apt-get install -y qpdf
       - run: npx playwright install --with-deps firefox webkit
       - run: npx playwright test --project=firefox --project=webkit --project=ipad-webkit --project=iphone-se-webkit
       - uses: actions/upload-artifact@v4

@@ -28,3 +28,9 @@ export async function runAndDownloadZip(page: Page): Promise<{ bytes: Buffer; na
   const [dl] = await Promise.all([page.waitForEvent('download'), btn.click()])
   return { bytes: readFileSync((await dl.path())!), name: dl.suggestedFilename() }
 }
+
+/**
+ * Playwright's WebKit reports download names with spaces replaced by underscores (an engine/driver quirk;
+ * the app sets the same `download` attribute in every browser). Compare against what that engine reports.
+ */
+export const expectedDownloadName = (name: string, browserName: string) => (browserName === 'webkit' ? name.replace(/ /g, '_') : name)

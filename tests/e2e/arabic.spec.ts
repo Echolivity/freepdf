@@ -2,7 +2,7 @@ import { expect, test, type Page } from './fixtures'
 import { readFileSync } from 'node:fs'
 import JSZip from 'jszip'
 import { PDFDocument } from 'pdf-lib'
-import { upload } from './helpers'
+import { upload, expectedDownloadName } from './helpers'
 
 test.use({ locale: 'ar-SA' })
 
@@ -76,13 +76,13 @@ test('split accepts Arabic-Indic digits and the Arabic comma', async ({ page }) 
   await assertNoEnglish(page)
 })
 
-test('Arabic file names are preserved in downloads', async ({ page }) => {
+test('Arabic file names are preserved in downloads', async ({ page, browserName }) => {
   await page.goto('/delete-pages')
   await page.getByTestId('file-input').setInputFiles({ name: 'عقد إيجار.pdf', mimeType: 'application/pdf', buffer: readFileSync(new URL('../fixtures/arabic.pdf', import.meta.url)) })
   await page.getByTestId('ranges').fill('٣')
   await page.getByTestId('run').click()
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download').click()])
-  expect(dl.suggestedFilename()).toBe('عقد إيجار-edited.pdf')
+  expect(dl.suggestedFilename()).toBe(expectedDownloadName('عقد إيجار-edited.pdf', browserName))
 })
 
 test('organize controls are mirrored and still move pages in reading order', async ({ page }) => {

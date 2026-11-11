@@ -1,10 +1,10 @@
 import { test, expect } from './fixtures'
 import { readFileSync } from 'node:fs'
 import { PDFDocument } from 'pdf-lib'
-import { upload } from './helpers'
+import { upload, expectedDownloadName } from './helpers'
 
 /** A complete job on every device profile: choose files, set an option, process, download, start over. */
-test('merge with mixed Arabic/English file names works end to end', async ({ page }) => {
+test('merge with mixed Arabic/English file names works end to end', async ({ page, browserName }) => {
   await page.goto('/merge-pdf')
   await page.getByTestId('file-input').setInputFiles([
     { name: 'تقرير Q3 final.pdf', mimeType: 'application/pdf', buffer: readFileSync(new URL('../fixtures/arabic.pdf', import.meta.url)) },
@@ -13,7 +13,7 @@ test('merge with mixed Arabic/English file names works end to end', async ({ pag
   await expect(page.getByRole('list', { name: 'Selected files' }).getByRole('listitem')).toHaveCount(2)
   await page.getByTestId('run').click()
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download').click()])
-  expect(dl.suggestedFilename()).toBe('تقرير Q3 final-merged.pdf')
+  expect(dl.suggestedFilename()).toBe(expectedDownloadName('تقرير Q3 final-merged.pdf', browserName))
   expect((await PDFDocument.load(readFileSync((await dl.path())!))).getPageCount()).toBe(11)
   await page.getByTestId('start-over').click()
   await expect(page.getByRole('button', { name: 'Select PDF files' })).toBeVisible()

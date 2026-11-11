@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 import { readFileSync } from 'node:fs'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import JSZip from 'jszip'
-import { fixtureBytes, runAndDownload, runAndDownloadZip, upload } from './helpers'
+import { fixtureBytes, runAndDownload, runAndDownloadZip, upload, expectedDownloadName } from './helpers'
 import { pageTexts, visualSizes } from '../unit/render'
 import { qpdfCheck } from '../unit/helpers'
 
@@ -76,14 +76,14 @@ test.describe('Resize PDF', () => {
     await expect(page.getByRole('alert')).toContainText('password-protected')
   })
 
-  test('works in Arabic with an Arabic file name', async ({ page }) => {
+  test('works in Arabic with an Arabic file name', async ({ page, browserName }) => {
     await page.addInitScript(() => localStorage.setItem('freepdf:lang', 'ar'))
     await page.goto('/resize-pdf')
     await page.getByTestId('file-input').setInputFiles({ name: 'عقد إيجار.pdf', mimeType: 'application/pdf', buffer: fixtureBytes('arabic.pdf') })
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('تغيير حجم PDF')
     await page.getByTestId('rs-size').selectOption('a5')
     const { bytes, name } = await runAndDownload(page)
-    expect(name).toBe('عقد إيجار-a5.pdf')
+    expect(name).toBe(expectedDownloadName('عقد إيجار-a5.pdf', browserName))
     expect((await pageTexts(bytes))[0]).toEqual((await pageTexts(fixtureBytes('arabic.pdf')))[0])
   })
 })
