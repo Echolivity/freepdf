@@ -105,11 +105,10 @@ jobs:
       - name: Firefox crash experiments (diagnostics)
         if: always()
         run: |
-          FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|passed|failed" || true
-          # Round 4: is it "first test in a fresh browser"? Each invocation below starts a new Firefox.
-          for g in "H0 real" "E1 split" "E3 axe, then split \+ rich" "G4 without axe" "G0 full" "E1 split|H0 real" "E3 axe, then split \+ rich|H0 real"; do
-            echo "--- cold run: $g ---"
-            FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts -g "$g" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG [A-Z0-9]+(:| \+[0-9]+ms (upload|expect|done|PAGE|ERROR|pageerror))|passed|failed" || true
+          # Round 5: exact copy of a11y.spec.ts, then cut down. Each run starts a fresh Firefox.
+          for f in c1 c2 c3 c4; do
+            echo "--- copy $f ---"
+            FIREFOX_DIAG=1 npx playwright test tests/e2e/diag-$f.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "✓|✘|Page crashed|passed|failed|^\s+> [0-9]+ \|" | head -8 || true
           done
       - uses: actions/upload-artifact@v4
         if: failure()
