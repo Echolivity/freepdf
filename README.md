@@ -1,119 +1,235 @@
+<div align="center">
+
+<img src="public/favicon.svg" alt="FreePDF logo" width="72" height="72">
+
 # FreePDF
 
-**Private PDF tools. Your files stay on your device.**
+**Your PDFs. Your device. Your privacy.**
 
-FreePDF is a set of PDF tools that runs entirely in your browser. Files are read, processed and handed
-back to you on your own device, and they are never uploaded. There's no account, no subscription, no
-daily quota, no watermark and no advertising. The site is plain static files, so it costs almost nothing
-to host, which is how it can stay free.
+PDF tools that run entirely in your browser. Merge, split, organize, compress, convert and compare
+PDFs without your files ever leaving your device.
 
-Version **1.2.0**. Further reading:
+[![Version 1.2.0](https://img.shields.io/badge/version-1.2.0-1f3fcf)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-131418)](#license)
+[![Languages: English and Arabic](https://img.shields.io/badge/languages-English%20%7C%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9-0d7454)](#languages)
+[![Privacy: no uploads](https://img.shields.io/badge/privacy-no%20uploads-0d7454)](#privacy-and-security)
 
-- [Release notes](docs/RELEASE_NOTES_v1.2.0.md)
-- [Test and QA report](docs/TEST_AND_QA_REPORT.md)
-- [Deployment guide](docs/DEPLOYMENT.md)
-- [Security](docs/SECURITY.md)
-- [Privacy](docs/PRIVACY.md)
-- [Changelog](CHANGELOG.md)
+[Features](#features) · [Privacy](#privacy-and-security) · [Getting started](#getting-started) · [Testing](#testing) · [Deployment](#deployment) · [Docs](#documentation)
 
-## Tools available today
+</div>
 
-| Tool | What it does | Good to know |
-|------|--------------|--------------|
-| Merge PDF | Combine PDFs in the order you choose | Keeps page content, links and annotations, plus the first file's title and author. Bookmarks, fillable form fields and attachments are **not** merged yet. |
-| Split PDF | Custom ranges (`1-3, 5, 8-`, Arabic digits accepted), every page, or every N pages | Splits into 40 parts or fewer keep each part's bookmarks, fields and links. Larger splits keep page content only. |
-| Extract PDF pages (`/extract-pdf`) | Pick pages from thumbnails, by range, or odd/even; one PDF, one PDF per page, or every page as its own PDF | Bookmarks and links pointing at pages you leave out are removed. |
-| Delete PDF pages (`/delete-pages`) | Thumbnails, ranges, odd/even/invert; undo/redo; preview the result | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up. |
-| Organize PDF | Drag to reorder (mouse, touch or keyboard), rotate, duplicate, delete, insert pages from other PDFs, act on a selection, download selected pages, undo/redo, preview | The main document is edited in place, so its structure is preserved. Duplicates share the page content; form-field widgets aren't duplicated. Inserted pages keep content and links, not their file's bookmarks or fields. |
-| Rotate PDF | Rotate every page of one or more PDFs | Adds to the existing rotation. Lossless. |
-| Crop PDF | Drag a crop box or type margins; all pages, selected pages, or a different crop per page; preview | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them. |
-| Add page numbers | Header/footer, left/centre/right, start number, prefix/suffix, 1-2-3, Roman, Arabic-Indic numerals, font, size, colour, selected pages, skip cover; live preview | Real text on a separate layer; pages aren't re-rendered. Arabic text uses an embedded Arabic+Latin font (about 100 KB). |
-| Watermark PDF | Text or JPG/PNG image; 9 positions or tiled; rotation, opacity, font and size; over or behind the content; selected pages; live preview | A separate layer, so quality is unchanged and the image is stored once. A watermark is a visible mark, not protection. |
-| Resize PDF | A4, Letter, A3, A5, Legal or a custom size; fit page, fit width, or change the paper without scaling; all or selected pages | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. |
-| Compress PDF | **Lossless**: repacks without touching images. **Light / Balanced / Strong** (lossy): re-encode photos and scans. | A per-file report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved. |
-| Compare PDF | Two versions side by side: word-level text changes highlighted, a pixel-difference overlay, a visual check of every page, and a PDF report of changed pages | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only. |
-| JPG / PNG to PDF | JPG, PNG or WebP to one PDF, or one PDF per image | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured. |
-| PDF to JPG / PNG | One image per page at 72, 150 or 300 DPI | Password-protected PDFs can be opened here with their password. |
+<br>
 
-Tools that rewrite a PDF **warn before processing** when a file is digitally signed or certified, because
-any change makes the signature invalid. They also warn when a file is password-protected and they can't
-open it. Operations that change nothing return your original file untouched, so its signature stays
-valid.
+> [!NOTE]
+> There is no public deployment yet. To try FreePDF, [run it locally](#getting-started) or
+> [deploy your own copy](#deployment) to Cloudflare Pages.
 
-Tools that are still planned (password protection and unlock, editing, signing, forms, metadata and
-more) are listed in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). They are **not** available yet and
-aren't shown in the app. Everything in the table above is available now.
+## Why FreePDF
 
-## Free, with technical safety limits
+Most online PDF tools upload your documents to a server. FreePDF doesn't have one to upload to: the
+site is plain static files, and all the work happens on your device.
 
-There's no payment, no subscription and no daily or monthly quota. There **are** technical limits.
-Everything is processed in your browser's memory, and a PDF can briefly need several times its file
-size, so these limits stop a large job from crashing the tab. They are shown on every upload screen
-and on the "How it works" page.
+- 🔒 **Local processing.** Files are read, processed and handed back in your browser tab.
+- 🚫 **No uploads.** The Content Security Policy blocks connections to other sites, and the host has
+  no endpoint that accepts files.
+- 👤 **No account.** No sign-up, no login, no cookies.
+- 🆓 **Free and open source.** No subscription, no daily quota, no watermark, no ads. Static hosting
+  costs almost nothing, which is how it stays free.
+- 🌍 **English and Arabic.** Including a full right-to-left interface.
 
-| Limit | Computers | Phones / low-memory devices* |
-|-------|-----------|------------------------------|
-| One file | 250 MB | 100 MB |
-| One job (all files together) | 600 MB | 200 MB |
-| Files per job | 200 | 200 |
-| Image size | 100 megapixels | 100 megapixels |
+## Features
 
-\* A device counts as constrained when the browser reports 4 GB of memory or less, or, where the
-browser doesn't report memory, when it has a touch-first (coarse) pointer. The limits live in
-`src/config.ts`.
+**14 tools on 16 pages**, all available today.
 
-## Privacy
+### Organize PDFs
 
-**Your documents never leave the browser tab.** In detail:
+| Tool                  | What it does                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Merge PDF**         | Combine PDFs in the order you choose.                                                                                                 |
+| **Split PDF**         | By custom ranges (`1-3, 5, 8-`, Arabic digits accepted), every page, or every N pages.                                                |
+| **Extract PDF pages** | Pick pages from thumbnails, by range, or odd/even; get one PDF, or one PDF per page.                                                  |
+| **Delete PDF pages**  | Remove pages by thumbnail, range or odd/even/invert, with undo/redo and a preview.                                                    |
+| **Organize PDF**      | Reorder by dragging (mouse, touch or keyboard), rotate, duplicate, delete, and insert pages from other PDFs. Undo/redo and a preview. |
 
-- **Processing:** pdf-lib runs in a fresh Web Worker for each job, and the worker is terminated
-  afterwards. PDF.js renders pages, and Canvas/OffscreenCanvas handle images.
-- **Network:**
-  - **Third-party origins:** the CSP in `public/_headers` restricts connections to the site itself
-    (`connect-src 'self'`) and forbids remote scripts, frames and plugins.
-  - **The site's own origin:** CSP can't block this. Instead, the app never sends file data, and the
-    static host has no endpoint that accepts uploads.
-  - **Enforcement:** a global test guard enforces all of this on every browser test (see Testing).
-- **Retention:** results are in-memory Blobs only. Previews are released immediately on "Start over".
-  Download links are released 30 seconds after the download starts. Closing the tab frees everything.
+### Edit and modify
+
+| Tool                 | What it does                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Rotate PDF**       | Rotate every page of one or more PDFs, losslessly.                                                          |
+| **Crop PDF**         | Drag a crop box or type margins, for all pages, selected pages or each page separately.                     |
+| **Add page numbers** | Header or footer, any alignment, prefix/suffix, 1-2-3, Roman or Arabic-Indic numerals, with a live preview. |
+| **Watermark PDF**    | Text or a JPG/PNG image; 9 positions or tiled; rotation and opacity; over or behind the content.            |
+| **Resize PDF**       | A4, Letter, A3, A5, Legal or a custom size: fit page, fit width, or change the paper without scaling.       |
+
+### Optimize and compress
+
+| Tool             | What it does                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Compress PDF** | **Lossless** repacking, or **Light / Balanced / Strong** re-encoding of photos and scans, with a per-file report. |
+
+### Compare and convert
+
+| Tool                 | What it does                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Compare PDF**      | Two versions side by side: word-level text changes, a pixel-difference overlay, a visual check of every page, and a PDF report. |
+| **JPG / PNG to PDF** | JPG, PNG or WebP images to one PDF, or one PDF per image.                                                                       |
+| **PDF to JPG / PNG** | One image per page at 72, 150 or 300 DPI.                                                                                       |
+
+<details>
+<summary><b>What each tool keeps, and what it doesn't</b></summary>
+
+<br>
+
+| Tool                               | Good to know                                                                                                                                                                                                                                                                            |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Merge PDF                          | Keeps page content, links and annotations, plus the first file's title and author. Bookmarks, fillable form fields and attachments are **not** merged yet.                                                                                                                              |
+| Split PDF                          | Splits into 40 parts or fewer keep each part's bookmarks, fields and links. Larger splits keep page content only.                                                                                                                                                                       |
+| Extract PDF pages (`/extract-pdf`) | Bookmarks and links pointing at pages you leave out are removed.                                                                                                                                                                                                                        |
+| Delete PDF pages (`/delete-pages`) | Remaining fields, bookmarks, links, metadata and attachments are kept. Anything pointing at removed pages is cleaned up.                                                                                                                                                                |
+| Organize PDF                       | The main document is edited in place, so its structure is preserved. Duplicates share the page content; form-field widgets aren't duplicated. Inserted pages keep content and links, not their file's bookmarks or fields. You can also act on a selection and download selected pages. |
+| Rotate PDF                         | Adds to the existing rotation.                                                                                                                                                                                                                                                          |
+| Crop PDF                           | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them.                                                                                                                                                             |
+| Add page numbers                   | Real text on a separate layer; pages aren't re-rendered. Font, size, colour, selected pages and skipping the cover are configurable. Arabic text uses an embedded Arabic+Latin font (about 100 KB).                                                                                     |
+| Watermark PDF                      | A separate layer, so quality is unchanged and the image is stored once. Font, size and selected pages are configurable. A watermark is a visible mark, not protection.                                                                                                                  |
+| Resize PDF                         | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. Works on all or selected pages.                                     |
+| Compress PDF                       | The report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved.                                                            |
+| Compare PDF                        | Both files are only read. Pages are paired by number. Scans (no text layer) get the visual comparison only.                                                                                                                                                                             |
+| JPG / PNG to PDF                   | JPGs are embedded byte-for-byte, PNG transparency is kept, and phone-photo orientation is honoured.                                                                                                                                                                                     |
+| PDF to JPG / PNG                   | Password-protected PDFs can be opened here with their password.                                                                                                                                                                                                                         |
+
+Tools that rewrite a PDF **warn before processing** when a file is digitally signed or certified,
+because any change makes the signature invalid. They also warn when a file is password-protected and
+they can't open it. Operations that change nothing return your original file untouched, so its
+signature stays valid.
+
+</details>
+
+## Privacy and security
+
+**Your documents never leave the browser tab.**
+
+| Layer                     | How it works                                                                                                                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Processing**            | pdf-lib runs in a fresh Web Worker for each job, and the worker is terminated afterwards. PDF.js renders pages; Canvas/OffscreenCanvas handle images.                       |
+| **Third-party origins**   | The CSP in [`public/_headers`](public/_headers) restricts connections to the site itself (`connect-src 'self'`) and forbids remote scripts, frames and plugins.             |
+| **The site's own origin** | CSP can't block this, so instead the app never sends file data, and the static host has no endpoint that accepts uploads.                                                   |
+| **Retention**             | Results are in-memory Blobs only. Previews are released immediately on "Start over"; download links 30 seconds after the download starts. Closing the tab frees everything. |
+| **Enforcement**           | A global privacy guard wraps every browser test (see [Testing](#testing)).                                                                                                  |
+
+**External services.** The app itself uses none at runtime: fonts, the PDF.js worker and the Arabic
+font used for page numbers and watermarks are all served from the site's own origin. There is no
+analytics, telemetry or advertising. (The badges at the top of this README come from shields.io and
+appear on GitHub only, never in the app.)
 
 **What is stored in the browser** (localStorage, on this device only, never sent anywhere):
 
-| Key | Value | Written when |
-|-----|-------|--------------|
-| `freepdf:theme` | `light` or `dark` | You use the theme button |
-| `freepdf:lang` | `en` or `ar` | You use the language button |
-| `freepdf:recent` | JSON list of up to 6 **tool slugs** (e.g. `["merge-pdf"]`), never file names | You open a tool |
+| Key              | Value                                                                        | Written when                |
+| ---------------- | ---------------------------------------------------------------------------- | --------------------------- |
+| `freepdf:theme`  | `light` or `dark`                                                            | You use the theme button    |
+| `freepdf:lang`   | `en` or `ar`                                                                 | You use the language button |
+| `freepdf:recent` | JSON list of up to 6 **tool slugs** (e.g. `["merge-pdf"]`), never file names | You open a tool             |
 
 Nothing else is stored: no cookies, sessionStorage, IndexedDB, Cache Storage or service worker. The
 "How it works" page lists these keys and has a button that clears them, and the home page can clear
-the recent list. The full policy is in [docs/PRIVACY.md](docs/PRIVACY.md).
+the recent list.
+
+Full details: [Privacy policy](docs/PRIVACY.md) · [Security](docs/SECURITY.md)
+
+## Device requirements
+
+FreePDF needs **Web Workers, OffscreenCanvas and ES2022**: current Chrome, Edge and Firefox, and
+Safari 16.4 or later. See [Testing](#testing) for which engines were actually tested.
+
+Everything is processed in your browser's memory, and a PDF can briefly need several times its file
+size. These **technical limits** stop a large job from crashing the tab (there are no usage quotas):
+
+| Limit                        |   Computers    | Phones and low-memory devices\* |
+| ---------------------------- | :------------: | :-----------------------------: |
+| One file                     |     250 MB     |             100 MB              |
+| One job (all files together) |     600 MB     |             200 MB              |
+| Files per job                |      200       |               200               |
+| Image size                   | 100 megapixels |         100 megapixels          |
+
+\* A device counts as constrained when the browser reports 4 GB of memory or less, or, where the
+browser doesn't report memory, when it has a touch-first (coarse) pointer. The limits are shown on
+every upload screen and live in [`src/config.ts`](src/config.ts).
 
 ## Languages
 
-English and Arabic. The Arabic interface is fully right-to-left, and Arabic-language browsers get it by
-default. Strings live in `src/i18n/en.ts` (the source of truth) and `src/i18n/ar.ts`. The build fails if
-a translation is missing, and a unit test checks that placeholders match. Numbers use Western digits;
-page-range input also accepts Arabic-Indic digits.
+|                                                          | English |              العربية (Arabic)               |
+| -------------------------------------------------------- | :-----: | :-----------------------------------------: |
+| Full interface, including error messages                 |   ✅    |                     ✅                      |
+| Right-to-left layout with mirrored direction icons       |    —    |                     ✅                      |
+| Self-hosted typeface                                     |   ✅    |                     ✅                      |
+| Tool search keywords                                     |   ✅    |                     ✅                      |
+| Arabic text written into PDFs (page numbers, watermarks) |    —    | ✅ shaped with fontkit and an embedded font |
 
-## Browser support
+Arabic-language browsers get the Arabic interface by default. Strings live in
+[`src/i18n/en.ts`](src/i18n/en.ts) (the source of truth) and [`src/i18n/ar.ts`](src/i18n/ar.ts). The
+build fails if a translation is missing, and a unit test checks that placeholders match. Numbers use
+Western digits; page-range input also accepts Arabic-Indic digits.
 
-The app needs Web Workers, OffscreenCanvas and ES2022, which means current versions of Chrome, Edge,
-Firefox and Safari (Safari 16.4 or later). See [Testing](#testing) for which engines were actually
-tested in this release.
+## Getting started
 
-## Development
-
-Requires Node 22.13+.
+**Prerequisites:** [Node.js](https://nodejs.org/) 22.13 or later, and npm.
 
 ```bash
+git clone https://github.com/Echolivity/freepdf.git
+cd freepdf
 npm ci
 npm run dev          # http://localhost:5173
-npm run build        # → dist/   (set SITE_URL=https://your.domain for canonical links + sitemap)
-npm run preview      # serves dist/ with the production security headers
 ```
 
+| Command           | What it does                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------ |
+| `npm run dev`     | Development server at `http://localhost:5173`                                                          |
+| `npm run build`   | Production build into `dist/` (set `SITE_URL=https://your.domain` for canonical links and the sitemap) |
+| `npm run preview` | Serves `dist/` with the production security headers                                                    |
+
+**Stack:** React, TypeScript, Vite, Tailwind CSS, pdf-lib, PDF.js and JSZip.
+
 ## Testing
+
+### Results for 1.2.0
+
+| Suite                                                          | Tests | Result |
+| -------------------------------------------------------------- | ----: | :----: |
+| Unit and integration (Vitest)                                  |   158 |   ✅   |
+| Browser tests on 5 Chromium device profiles (Playwright)\*     |   209 |   ✅   |
+| Browser tests inside the Cloudflare runtime                    |    93 |   ✅   |
+| Real-world QA scenarios                                        |    41 |   ✅   |
+| WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime |    14 |   ✅   |
+
+\* Plus 1 Cloudflare-only test, which is skipped there.
+
+These ran in the build environment. Playwright's Firefox and WebKit projects, real Safari and physical
+devices were **not** executed there. In CI, the `cross-engine` job currently runs the **Firefox**
+project only; the WebKit (Safari) projects are skipped for now and can be run locally with
+`ALL_BROWSERS=1`.
+
+> [!WARNING]
+> **Known issue:** in CI, Firefox's page process crashes during 4 accessibility checks on the Split PDF
+> page. It is still under investigation and has not been reproduced outside CI.
+
+Full results: [Test and QA report](docs/TEST_AND_QA_REPORT.md) · What CI runs, job by job: [Testing guide](docs/TESTING.md)
+
+### How quality is checked
+
+- 🛡️ **Privacy guard.** An automatic fixture ([`tests/e2e/fixtures.ts`](tests/e2e/fixtures.ts)) wraps
+  **every** browser test. The test fails if any of these happens:
+  - a request leaves the origin;
+  - a non-GET request, or a request with a body;
+  - an unexpected path or query string;
+  - analytics hosts, CSP violations or uncaught page errors;
+  - file names or document content in the console (pages and workers);
+  - storage beyond the three documented keys.
+
+  A unit test makes sure no spec can bypass the guard.
+
+- 📄 **Real output checks.** Generated PDFs are checked with `qpdf --check` (mandatory in CI),
+  re-rendered and pixel-compared, and compression uses a real JPEG encoder in Node.
+
+### Run the tests
 
 ```bash
 npm test                 # unit/integration (Vitest, Node): processing, compression, structure, i18n
@@ -125,64 +241,78 @@ npm run qa:cloudflare    # the same QA inside the Cloudflare runtime (needs pyth
 ALL_BROWSERS=1 npm run test:e2e   # also Firefox + WebKit (needs: npx playwright install firefox webkit)
 ```
 
-What CI runs, job by job, is listed in [docs/TESTING.md](docs/TESTING.md).
+Details, and the list of what is _not_ covered, are in [docs/TESTING.md](docs/TESTING.md).
 
-Results for this release are in [docs/TEST_AND_QA_REPORT.md](docs/TEST_AND_QA_REPORT.md):
-- 158 unit tests;
-- 209 browser tests on 5 Chromium device profiles (plus 1 Cloudflare-only test skipped there);
-- 93 inside the Cloudflare runtime;
-- 41 real-world QA scenarios;
-- 14 WebKit-engine checks (WebKitGTK) inside the Cloudflare runtime.
+## Deployment
 
-All passed. Playwright's Firefox and WebKit projects, Safari and physical devices were **not** executed
-in the build environment; CI runs the Firefox and WebKit projects.
+FreePDF is a **static site** built for **Cloudflare Pages on the free plan**. It uses no Workers code,
+KV, D1 or R2. The largest file is about 1.3 MB, against a 25 MiB limit. Every route is emitted as its
+own HTML file, so deep links work on Cloudflare Pages, Workers static assets / Cloudflare Drop and any
+other static host.
 
-- **Privacy guard:** an automatic fixture (`tests/e2e/fixtures.ts`) wraps **every** browser test. The
-  test fails if any of these happens:
-  - a request leaves the origin;
-  - a non-GET request, or a request with a body;
-  - an unexpected path or query string;
-  - analytics hosts, CSP violations or uncaught page errors;
-  - file names or document content in the console (pages and workers);
-  - storage beyond the three documented keys.
+| Option                  | How                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Quickest**            | Go to <https://cloudflare.com/drop>, drop the contents of `dist/` (or a ZIP of them), then **Claim** the site into your account.                                                                                                                                                                                                                                                                            |
+| **Pages dashboard**     | In **Workers & Pages**, create an application, choose to upload your own files, and upload `dist/`.                                                                                                                                                                                                                                                                                                         |
+| **CI (GitHub Actions)** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the test suite and `npm audit`. It deploys **only** when the repository variable `DEPLOY_ENABLED=true` is set, together with the secrets `CLOUDFLARE_API_TOKEN` (Pages: Edit) and `CLOUDFLARE_ACCOUNT_ID`. Optional variables: `CF_PAGES_PROJECT` (default `freepdf`) and `SITE_URL` (the public address, for canonical links and the sitemap). |
+| **Custom domain**       | In your Cloudflare project, go to **Custom domains** and add the domain. Once it serves HTTPS, the `Strict-Transport-Security` header from `_headers` takes effect.                                                                                                                                                                                                                                         |
 
-  A unit test makes sure no spec can bypass the guard.
-- **Real output checks:** generated PDFs are checked with `qpdf --check` (mandatory in CI),
-  re-rendered and pixel-compared, and compression uses a real JPEG encoder in Node.
-- Details and the list of what is *not* covered are in [docs/TESTING.md](docs/TESTING.md).
+> [!IMPORTANT]
+> Keep Cloudflare Web Analytics **off**. It injects a third-party script that the CSP would block, and
+> it would contradict the privacy policy.
 
-## Deployment (Cloudflare, free plan)
+Before releasing, follow the [release checklist](docs/RELEASE_CHECKLIST.md). Full guide:
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-The full guide is [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short:
+## Documentation
 
-The site is static. It uses no Workers code, KV, D1 or R2. The largest file is about 1.3 MB, against a
-25 MiB limit. Every route is emitted as its own HTML file, so deep links work on Cloudflare Pages,
-Workers static assets / Cloudflare Drop and any other static host.
+| Document                                            | Contents                                     |
+| --------------------------------------------------- | -------------------------------------------- |
+| [Release notes 1.2.0](docs/RELEASE_NOTES_v1.2.0.md) | What's new in this release                   |
+| [Changelog](CHANGELOG.md)                           | Every release                                |
+| [Architecture](docs/ARCHITECTURE.md)                | Design, tool-by-tool feasibility and roadmap |
+| [Privacy](docs/PRIVACY.md)                          | The full privacy policy                      |
+| [Security](docs/SECURITY.md)                        | Security model and headers                   |
+| [Testing](docs/TESTING.md)                          | Test suites and CI jobs                      |
+| [Test and QA report](docs/TEST_AND_QA_REPORT.md)    | Results for this release                     |
+| [QA report](docs/QA_REPORT.md)                      | Real-world QA scenarios                      |
+| [Deployment](docs/DEPLOYMENT.md)                    | Cloudflare deployment guide                  |
+| [Release checklist](docs/RELEASE_CHECKLIST.md)      | Steps before a release                       |
 
-- **Quickest:** go to <https://cloudflare.com/drop>, drop the contents of `dist/` (or a ZIP of them),
-  then **Claim** the site into your account.
-- **Pages dashboard:** in **Workers & Pages**, create an application, choose to upload your own files,
-  and upload `dist/`.
-- **CI (GitHub Actions):** `.github/workflows/ci.yml` runs the full test suite (Chromium, Firefox,
-  WebKit) and `npm audit`. It deploys **only** when the repository variable `DEPLOY_ENABLED=true` is set,
-  together with the secrets `CLOUDFLARE_API_TOKEN` (Pages: Edit) and `CLOUDFLARE_ACCOUNT_ID`.
-  Optional variables:
-  - `CF_PAGES_PROJECT` (default `freepdf`)
-  - `SITE_URL`, the public address, for canonical links and the sitemap
-- **Custom domain:** in your Cloudflare project, go to **Custom domains** and add the domain. Once it
-  serves HTTPS, the `Strict-Transport-Security` header from `_headers` takes effect.
+## Roadmap
 
-Before releasing, follow [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md). Keep Cloudflare Web
-Analytics **off**: it injects a third-party script that the CSP would block, and it would contradict the
-privacy policy.
+Everything under [Features](#features) is available now. The items below are **planned, not
+available**, and are not shown in the app.
 
-## Licence
+| Planned                        | Notes                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Headers and footers            |                                                                                                  |
+| Password protection and unlock | Via qpdf-wasm. Unlock requires the password; passwords are never cracked.                        |
+| Metadata removal               |                                                                                                  |
+| Redaction                      | True removal needs content-stream rewriting; some structures may get "can't guarantee" warnings. |
+| PDF editing and annotations    | Text, images, drawing, signatures, forms.                                                        |
+| OCR                            | English first. Arabic OCR will be tested separately and isn't promised until measured.           |
 
-MIT. Third-party code:
-- pdf-lib (MIT)
-- PDF.js (Apache-2.0)
-- JSZip (MIT/GPLv3, used under MIT)
-- pako (MIT)
-- React (MIT)
+**Not planned:** PDF/A conversion (proper validation needs veraPDF, which doesn't run in the browser)
+and AI tools. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[docs/PLAN_v1.2.0.md](docs/PLAN_v1.2.0.md) for details.
 
-Fonts (all SIL OFL): Bricolage Grotesque, Atkinson Hyperlegible Next, Readex Pro, IBM Plex Sans Arabic.
+## License
+
+**MIT** (as declared in [`package.json`](package.json)).
+
+### Acknowledgements
+
+FreePDF is built on these open-source projects:
+
+| Project                                                      | License                   |
+| ------------------------------------------------------------ | ------------------------- |
+| [pdf-lib](https://github.com/Hopding/pdf-lib)                | MIT                       |
+| [PDF.js](https://github.com/mozilla/pdf.js)                  | Apache-2.0                |
+| [JSZip](https://github.com/Stuk/jszip)                       | MIT/GPLv3, used under MIT |
+| [pako](https://github.com/nodeca/pako)                       | MIT and Zlib              |
+| [fontkit (pdf-lib fork)](https://github.com/Hopding/fontkit) | MIT                       |
+| [React](https://github.com/react/react)                      | MIT                       |
+
+**Fonts** (all SIL Open Font License): Bricolage Grotesque, Atkinson Hyperlegible Next, Readex Pro,
+IBM Plex Sans Arabic.
