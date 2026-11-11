@@ -44,7 +44,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -68,7 +68,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Desktop Chromium runs in the cloudflare job instead, so it isn't executed twice.
       - run: npx playwright test --project=tablet-android --project=android-midrange --project=mobile --project=narrow-320
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-chromium
@@ -110,7 +110,7 @@ jobs:
             echo "--- copy $f ---"
             FIREFOX_DIAG=1 npx playwright test tests/e2e/diag-$f.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|Page crashed|passed|failed|^\s+> [0-9]+ \|" | head -8 || true
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-cross-engine
@@ -144,13 +144,13 @@ jobs:
         run: npm run test:cloudflare
       - name: Real-world QA (30 scenarios) on Cloudflare's Pages runtime
         run: npm run qa:cloudflare
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: qa-report
           path: docs/QA_REPORT.md
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-cloudflare
