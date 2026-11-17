@@ -147,7 +147,9 @@ jobs:
           retention-days: 7
 
   deploy:
-    needs: [checks, chromium, cross-engine, cloudflare]
+    # Firefox (cross-engine) is advisory for now, at the owner's request: its axe sweeps crash Firefox's content
+    # process in CI (see docs/TESTING.md). It still runs and still reports; it just doesn't block a deploy.
+    needs: [checks, chromium, cloudflare]
     runs-on: ubuntu-latest
     permissions:
       contents: read

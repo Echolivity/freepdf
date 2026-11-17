@@ -53,7 +53,8 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 4. `cloudflare`: the desktop browser suite and the 30-scenario real-world QA inside Cloudflare's Pages
    runtime (`wrangler pages dev`), with qpdf, pypdf and pyHanko validators.
 
-The deploy job needs all four to pass.
+The deploy job needs `checks`, `chromium` and `cloudflare` to pass. `cross-engine` (Firefox) is advisory
+for now: it runs and reports, but doesn't block a deploy (see [TESTING.md](TESTING.md)).
 
 It **deploys only when you allow it**. Configure these in **Settings → Secrets and variables → Actions**:
 
