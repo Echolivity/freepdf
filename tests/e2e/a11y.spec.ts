@@ -7,6 +7,9 @@ async function audit(page: import('@playwright/test').Page, label: string) {
   // Let entrance animations (e.g. the 220 ms fade-in of results) finish: axe measures contrast on the
   // current, half-transparent frame otherwise. Infinite animations (loading skeletons) are ignored.
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity))
+  // Audit the settled screen: wait until page thumbnails have finished rendering (their placeholders pulse).
+  // Running axe while PDF.js is still drawing also crashes Firefox's content process in CI (SIGSEGV).
+  await page.waitForFunction(() => !document.querySelector('.animate-pulse'), undefined, { polling: 250, timeout: 30_000 })
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')})`)).toEqual([])
