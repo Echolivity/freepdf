@@ -4,10 +4,10 @@
  * the page's pictures; Excel gets tables rebuilt from text positions; PowerPoint gets each page as a slide
  * picture. Runs in the tab; nothing is uploaded.
  */
-import { buildDocx, buildPptx, buildXlsx, type DocxPart } from './ooxml'
+import { buildDocx, buildPptx, buildXlsx, type DocxPart, type Slide, type SlideText } from './ooxml'
 import { readPageText, type DocLike, type PageText } from './pdfExport'
-import { bodySize, buildBlocks, type Block } from './pdfText'
-import { gridFromSpans } from './pdfTables'
+import { bodySize, buildBlocks, isRtlText, type Block } from './pdfText'
+import { gridFromSpans, rowsFromSpans } from './pdfTables'
 import { CancelledError } from '../workerClient'
 
 export interface PageImage { x: number; y: number; w: number; h: number }
@@ -195,16 +195,107 @@ export async function pdfToXlsx(doc: DocLike, pages: number[], o: ExcelOptions &
   return { bytes, rows }
 }
 
-export async function pdfToPptx(doc: DocLike, pages: number[], o: { title: string; dpi: number; crop: Cropper; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<Uint8Array> {
-  const slides = []
+/** A box in PDF points from the page's top-left corner. */
+export interface Box { x: number; y: number; w: number; h: number }
+
+/**
+ * Renders a page twice at `scale` (as drawn, and without its text) and returns the text-free picture
+ * plus, for each box, the colour of the text drawn there, or null when no visible text was drawn in it
+ * (an OCR text layer, invisible text): such boxes get no text box, so nothing appears twice.
+ */
+export type SlideRenderer = (pageNumber: number, scale: number, boxes: Box[]) => Promise<{ bytes: Uint8Array; ext: 'png' | 'jpeg'; colors: (string | null)[] }>
+
+/**
+ * The colour of the text in one box: compare the page as drawn with the page drawn without text, and
+ * average the pixels that changed most (glyph cores rather than anti-aliased edges). Null if fewer than
+ * a handful of pixels changed.
+ */
+export function textColor(full: Uint8ClampedArray, bare: Uint8ClampedArray, width: number, height: number, box: Box, scale: number): string | null {
+  const x0 = Math.max(0, Math.floor(box.x * scale))
+  const y0 = Math.max(0, Math.floor(box.y * scale))
+  const x1 = Math.min(width, Math.ceil((box.x + box.w) * scale))
+  const y1 = Math.min(height, Math.ceil((box.y + box.h) * scale))
+  let max = 0
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const i = (y * width + x) * 4
+    const d = Math.abs(full[i] - bare[i]) + Math.abs(full[i + 1] - bare[i + 1]) + Math.abs(full[i + 2] - bare[i + 2])
+    if (d > max) max = d
+  }
+  if (max < 48) return null
+  let r = 0, g = 0, b = 0, n = 0
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const i = (y * width + x) * 4
+    const d = Math.abs(full[i] - bare[i]) + Math.abs(full[i + 1] - bare[i + 1]) + Math.abs(full[i + 2] - bare[i + 2])
+    if (d >= max * 0.7) { r += full[i]; g += full[i + 1]; b += full[i + 2]; n++ }
+  }
+  if (n < 4) return null
+  const hex = (v: number) => Math.round(v / n).toString(16).padStart(2, '0').toUpperCase()
+  return hex(r) + hex(g) + hex(b)
+}
+
+/** Text boxes for one page: one per paragraph, one per cell for rows with column gaps. */
+export function slideTexts(text: PageText, body: number): Omit<SlideText, 'color'>[] {
+  const out: Omit<SlideText, 'color'>[] = []
+  const H = text.height
+  for (const b of buildBlocks(text.lines, body)) {
+    const ls = b.lines
+    if (ls.length === 1 && ls[0].text.includes('\t')) {
+      // Cells keep their own positions, so columns stay where they were.
+      const l = ls[0]
+      const base = H - l.y
+      const spans = text.spans.filter((sp) => Math.abs(sp.angle) < 1 && Math.abs(sp.y - base) <= l.size * 0.5)
+      for (const row of rowsFromSpans(spans)) {
+        for (const c of row.cells) {
+          out.push({ x: c.x0, y: base - l.size * 0.96, w: c.x1 - c.x0, h: l.size * 1.2, lines: [c.text], size: l.size, lineGap: l.size * 1.2, rtl: isRtlText(c.text), align: 'start' })
+        }
+      }
+      continue
+    }
+    const gaps = ls.slice(1).map((l, i) => ls[i].y - l.y)
+    // Evenly spaced lines stay one text box (one paragraph per line); uneven ones get a box each, since a
+    // text box has one line spacing.
+    const even = gaps.length > 0 && gaps.every((g) => g > 0) && Math.max(...gaps) / Math.min(...gaps) < 1.15
+    const groups = even || ls.length === 1 ? [ls] : ls.map((l) => [l])
+    for (const g of groups) {
+      const size = g.reduce((m, l) => m + l.size, 0) / g.length
+      const lineGap = g.length > 1 ? (g[0].y - g[g.length - 1].y) / (g.length - 1) : size * 1.2
+      // Office puts the first baseline about 0.8 of the line spacing below the top of the box.
+      const top = H - g[0].y - lineGap * 0.8
+      const bottom = H - g[g.length - 1].y + lineGap * 0.2
+      const x0 = Math.min(...g.map((l) => l.x0))
+      const x1 = Math.max(...g.map((l) => l.x1))
+      out.push({ x: x0, y: top, w: x1 - x0, h: bottom - top, lines: g.map((l) => l.text.replace(/\t+/g, ' ')), size, lineGap, rtl: b.rtl, align: align(b, text.width) })
+    }
+  }
+  return out
+}
+
+export interface PptxOptions { title: string; dpi: number; editable: boolean; crop: Cropper; render: SlideRenderer; signal?: AbortSignal; onProgress?: (f: number) => void }
+
+export async function pdfToPptx(doc: DocLike, pages: number[], o: PptxOptions): Promise<{ bytes: Uint8Array; textBoxes: number }> {
+  const slides: Slide[] = []
+  let textBoxes = 0
   for (let k = 0; k < pages.length; k++) {
     if (o.signal?.aborted) throw new CancelledError()
     const page = await doc.getPage(pages[k])
     const vp = page.getViewport({ scale: 1 })
+    const rotated = ((page.rotate ?? 0) % 360) !== 0
     page.cleanup()
-    const img = await o.crop(pages[k], null, o.dpi / 72)
-    slides.push({ image: img.bytes, ext: img.ext, width: vp.width, height: vp.height })
+    // Rotated pages keep the picture-only slide: their text positions are in another frame.
+    const text = o.editable && !rotated ? await readPageText(doc, pages[k]) : null
+    const boxes = text ? slideTexts(text, bodySize(text.lines)) : []
+    if (boxes.length) {
+      const r = await o.render(pages[k], o.dpi / 72, boxes)
+      const texts = boxes.flatMap((b, i) => (r.colors[i] ? [{ ...b, color: r.colors[i]! }] : []))
+      textBoxes += texts.length
+      // Nothing visible to edit (a scan with an OCR layer): the plain page picture is the slide.
+      if (texts.length) slides.push({ image: r.bytes, ext: r.ext, width: vp.width, height: vp.height, texts })
+      else { const img = await o.crop(pages[k], null, o.dpi / 72); slides.push({ image: img.bytes, ext: img.ext, width: vp.width, height: vp.height }) }
+    } else {
+      const img = await o.crop(pages[k], null, o.dpi / 72)
+      slides.push({ image: img.bytes, ext: img.ext, width: vp.width, height: vp.height })
+    }
     o.onProgress?.(((k + 1) / pages.length) * 0.95)
   }
-  return buildPptx(slides, { title: o.title })
+  return { bytes: await buildPptx(slides, { title: o.title }), textBoxes }
 }

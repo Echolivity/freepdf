@@ -2,6 +2,8 @@ import { bodySize, buildBlocks, buildLines, isRtlText, itemsFromContent, pageTex
 
 /** The bits of a PDF.js document/page this module uses (so tests can pass Node's legacy build). */
 interface PageLike {
+  /** Page rotation in degrees (PDF.js pages have it). */
+  rotate?: number
   getViewport(o: { scale: number }): { width: number; height: number; transform: number[] }
   getTextContent(): Promise<{ items: unknown[] }>
   cleanup(): void

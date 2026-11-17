@@ -64,7 +64,7 @@ Legend: **B** = fully in-browser · **B-wasm** = in-browser using a WebAssembly 
 | 18–19 | PDF → JPG / PNG | B | PDF.js render → canvas | ✅ Phase 1 |
 | 20 | PDF → Word | B | PDF.js text + positions → `docx` | Reconstructs paragraphs/fonts; complex layouts are approximate. Labelled as such. |
 | 21 | PDF → Excel | B | PDF.js text positions → column detection → SheetJS CE / ExcelJS | Works for real (non-scanned) tables. |
-| 22 | PDF → PowerPoint | B | PDF.js render + `pptxgenjs` | One slide per page; image background + editable text boxes. |
+| 22 | PDF → PowerPoint | B | PDF.js render (text removed) + own OOXML writer | One slide per page; image background + editable text boxes. |
 | 23 | PDF → text | B | PDF.js `getTextContent` | Scanned PDFs need OCR (Phase 3: tesseract.js, self-hosted language data). |
 | 24–31 | Add text / images / page numbers / watermark / header-footer / draw / sign / fill forms | B | pdf-lib (+ PDF.js for the editing canvas) | ✅ Page numbers and watermark shipped in 1.2.0 (pdf-lib + fontkit, embedded IBM Plex Sans Arabic). The rest are planned. |
 | 32 | Protect with password | B-wasm | qpdf-wasm (AES-256) | pdf-lib cannot encrypt. |

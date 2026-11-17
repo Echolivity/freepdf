@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased — PDF to Word tables
+## Unreleased — PDF to Word tables, editable PowerPoint text
 
+- **Added:** PDF to PowerPoint makes editable slides by default: one text box per paragraph or table
+  cell (Arial, colour sampled from the page) over the page drawn without its text. **Pictures** keeps
+  the exact page pictures. Pages with no visible text (scans, OCR layers) and rotated pages stay pictures.
 - **Added:** PDF to Word rebuilds tables as real Word tables (header row, end-aligned numbers,
   right-to-left tables), with an option to turn it off. The result note counts the tables.
 - **Fixed:** a header and values that don't overlap horizontally no longer split one column into two

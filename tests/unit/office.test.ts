@@ -5,7 +5,7 @@ import { evalContent, formatCounter } from '../../src/lib/convert/pseudo'
 import { sanitizeCss, stripActive } from '../../src/lib/convert/htmlInput'
 import { paginate } from '../../src/lib/convert/domToPdf'
 import { gridFromSpans, parseNumber } from '../../src/lib/convert/pdfTables'
-import { findTables } from '../../src/lib/convert/pdfToOffice'
+import { findTables, slideTexts, textColor } from '../../src/lib/convert/pdfToOffice'
 import { buildDocx, buildPptx, buildXlsx, sheetName, xmlText } from '../../src/lib/convert/ooxml'
 import { buildBlocks, buildLines, fixArabic, type TextItem } from '../../src/lib/convert/pdfText'
 import { sniffByName, isLegacyOffice } from '../../src/lib/validate'
@@ -175,6 +175,36 @@ describe('tables for PDF to Word', () => {
   })
 })
 
+describe('editable slides', () => {
+  it('finds the text colour by comparing the page with and without its text', () => {
+    // 10×10 px white page; the "text" is a 3×3 blue patch with a lighter anti-aliased edge.
+    const W = 10
+    const bare = new Uint8ClampedArray(W * W * 4).fill(255)
+    const full = bare.slice()
+    const paint = (x: number, y: number, rgb: [number, number, number]) => full.set([...rgb, 255], (y * W + x) * 4)
+    for (let y = 2; y < 5; y++) for (let x = 2; x < 5; x++) paint(x, y, [31, 63, 207])
+    paint(5, 3, [180, 190, 240])
+    expect(textColor(full, bare, W, W, { x: 0, y: 0, w: 10, h: 10 }, 1)).toBe('1F3FCF')
+    // Nothing drawn there (invisible OCR text): no text box.
+    expect(textColor(full, bare, W, W, { x: 6, y: 6, w: 4, h: 4 }, 1)).toBeNull()
+  })
+  it('makes one box per evenly spaced paragraph, one per line otherwise, one per table cell', () => {
+    const H = 800
+    const rows: [string, number, number, number][] = [
+      ['A paragraph that wraps', 20, 700, 110], ['onto a second line', 20, 686, 90],
+      ['Label one', 20, 640, 45], ['Label two', 20, 600, 45],
+      ['Name', 20, 560, 25], ['Total', 300, 560, 25],
+    ]
+    const items = rows.map(([str, x, y, w]) => item(str, x, y, w))
+    const text = { number: 1, width: 600, height: H, lines: buildLines(items), spans: rows.map(([str, x, y, w]) => span(str, x, H - y, w)) }
+    const boxes = slideTexts(text, 10)
+    expect(boxes.map((b) => b.lines)).toEqual([['A paragraph that wraps', 'onto a second line'], ['Label one'], ['Label two'], ['Name'], ['Total']])
+    expect(boxes[0].lineGap).toBe(14)
+    expect(boxes[0].y).toBeCloseTo(H - 700 - 14 * 0.8)
+    expect(boxes[4].x).toBe(300)
+  })
+})
+
 describe('Office packages', () => {
   const parts = async (bytes: Uint8Array) => {
     const zip = await JSZip.loadAsync(bytes)
@@ -226,6 +256,30 @@ describe('Office packages', () => {
     expect(doc).toMatch(/<w:jc w:val="right"\/><\/w:pPr><w:r><w:rPr><\/w:rPr><w:t xml:space="preserve">1,200</)
     expect(doc).toContain('<w:bidiVisual/>')
     expect(new DOMParserLite(doc).ok).toBe(true)
+  })
+  it('writes slides with editable text boxes over the picture', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+    const bytes = await buildPptx(
+      [{ image: png, ext: 'png', width: 720, height: 405, texts: [
+        { x: 36, y: 20, w: 300, h: 40, lines: ['Title & <more>'], size: 28, lineGap: 33.6, rtl: false, align: 'start', color: '1F3FCF' },
+        { x: 400, y: 100, w: 280, h: 20, lines: ['مرحبا'], size: 12, lineGap: 14.4, rtl: true, align: 'start', color: '000000' },
+      ] }],
+      { title: 'Deck' },
+    )
+    const zip = await JSZip.loadAsync(bytes)
+    const slide = await zip.file('ppt/slides/slide1.xml')!.async('string')
+    expect(slide.match(/<p:cNvSpPr txBox="1"\/>/g)).toHaveLength(2)
+    expect(slide).toContain('<a:t>Title &amp; &lt;more&gt;</a:t>')
+    expect(slide).toContain('sz="2800"')
+    expect(slide).toContain('<a:srgbClr val="1F3FCF"/>')
+    expect(slide).toContain('<a:spcPts val="3360"/>')
+    // Right-to-left text starts on the right.
+    expect(slide).toContain('<a:pPr algn="r" rtl="1">')
+    expect(slide).toContain('lang="ar-SA"')
+    // 36 pt = 457200 EMU from the left; the picture comes first, so text sits on top.
+    expect(slide).toContain('<a:off x="457200" y="254000"/>')
+    expect(slide.indexOf('<p:pic>')).toBeLessThan(slide.indexOf('<p:sp>'))
+    expect(new DOMParserLite(slide).ok).toBe(true)
   })
   it('writes a workbook with numbers, formats, right-to-left sheets and unique names', async () => {
     const bytes = await buildXlsx(

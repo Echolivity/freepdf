@@ -176,7 +176,37 @@ export async function buildXlsx(sheets: XlsxSheet[], o: { title: string; numbers
 
 // ---------------------------------------------------------------------------------------- PPTX
 
-export interface Slide { image: Uint8Array; ext: 'jpeg' | 'png'; width: number; height: number }
+/** An editable text box over the slide picture, in PDF points from the page's top-left corner. */
+export interface SlideText {
+  x: number
+  y: number
+  w: number
+  h: number
+  /** One paragraph per line of the PDF, so lines break where they did in the PDF. */
+  lines: string[]
+  size: number
+  /** Distance between baselines, in points. */
+  lineGap: number
+  rtl: boolean
+  align: 'start' | 'center' | 'end'
+  /** Hex RGB, e.g. "1F2937". */
+  color: string
+}
+export interface Slide { image: Uint8Array; ext: 'jpeg' | 'png'; width: number; height: number; texts?: SlideText[] }
+
+function slideText(t: SlideText, id: number, k: number, ox: number, oy: number): string {
+  const emu = (pt: number) => Math.round(pt * EMU * k)
+  const hund = (pt: number) => Math.max(100, Math.round(pt * k * 100))
+  const algn = t.align === 'center' ? 'ctr' : (t.align === 'end') !== t.rtl ? 'r' : 'l'
+  const paras = t.lines
+    .map((line) => {
+      const rtl = t.rtl || isRtlText(line)
+      const rPr = `<a:rPr lang="${rtl ? 'ar-SA' : 'en-US'}" sz="${hund(t.size)}" dirty="0"><a:solidFill><a:srgbClr val="${t.color}"/></a:solidFill><a:latin typeface="Arial"/><a:cs typeface="Arial"/></a:rPr>`
+      return `<a:p><a:pPr algn="${algn}"${rtl ? ' rtl="1"' : ''}><a:lnSpc><a:spcPts val="${hund(t.lineGap)}"/></a:lnSpc></a:pPr><a:r>${rPr}<a:t>${xmlText(line)}</a:t></a:r></a:p>`
+    })
+    .join('')
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${ox + emu(t.x)}" y="${oy + emu(t.y)}"/><a:ext cx="${Math.max(1, emu(t.w))}" cy="${Math.max(1, emu(t.h))}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>${paras}</p:txBody></p:sp>`
+}
 
 const THEME = `${XML}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="FreePDF"><a:themeElements><a:clrScheme name="FreePDF"><a:dk1><a:srgbClr val="000000"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="1F2937"/></a:dk2><a:lt2><a:srgbClr val="F3F4F6"/></a:lt2><a:accent1><a:srgbClr val="1F3FCF"/></a:accent1><a:accent2><a:srgbClr val="0D7454"/></a:accent2><a:accent3><a:srgbClr val="A4520F"/></a:accent3><a:accent4><a:srgbClr val="6B44B8"/></a:accent4><a:accent5><a:srgbClr val="A8326A"/></a:accent5><a:accent6><a:srgbClr val="595B62"/></a:accent6><a:hlink><a:srgbClr val="1F3FCF"/></a:hlink><a:folHlink><a:srgbClr val="6B44B8"/></a:folHlink></a:clrScheme><a:fontScheme name="FreePDF"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="FreePDF"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`
 
@@ -202,7 +232,7 @@ export async function buildPptx(slides: Slide[], o: { title: string }): Promise<
     const h = Math.round(s.height * EMU * k)
     const x = Math.round((cx - w) / 2)
     const y = Math.round((cy - h) / 2)
-    zip.file(`ppt/slides/slide${n}.xml`, `${XML}<p:sld ${ns}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:pic><p:nvPicPr><p:cNvPr id="2" name="Page ${n}" descr="Page ${n}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`)
+    zip.file(`ppt/slides/slide${n}.xml`, `${XML}<p:sld ${ns}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:pic><p:nvPicPr><p:cNvPr id="2" name="Page ${n}" descr="Page ${n}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>${(s.texts ?? []).map((t, j) => slideText(t, j + 3, k, x, y)).join('')}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`)
     zip.file(`ppt/slides/_rels/slide${n}.xml.rels`, `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${name}"/></Relationships>`)
   })
   zip.file('ppt/slideMasters/slideMaster1.xml', `${XML}<p:sldMaster ${ns}>${emptyTree}<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`)

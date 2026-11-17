@@ -8,7 +8,7 @@ Status: **batches 1 and 2 implemented and tested** (unreleased; see the CHANGELO
 |----------|----------|
 | DOCX / XLSX / HTML → PDF | Basic in-browser conversion (batch 2). Text stays selectable; headings, paragraphs, lists, tables and images are kept; complex layout may differ. Limits are stated in the tool. |
 | PPTX → PDF | **Not offered.** There is no open-source client-side slide renderer; the docs explain why. |
-| PDF → DOCX / XLSX / PPTX | Editable with limits (batch 2): Word gets paragraphs and images, Excel gets tables detected from text positions, PowerPoint gets one slide image per page. |
+| PDF → DOCX / XLSX / PPTX | Editable with limits (batch 2): Word gets paragraphs and images, Excel gets tables detected from text positions, PowerPoint gets editable text boxes over a text-free page picture (or pictures only). |
 | Delivery | Two batches. Batch 1 is the reliable formats; stop and report before batch 2. |
 | Servers | None. No file is ever sent anywhere; nothing falls back to a server. |
 
@@ -74,7 +74,7 @@ the memory behaviour of a 200-page fax is not).
 | HTML → PDF | `html-to-pdf` | Allowlist sanitiser (`htmlInput.ts`) → shadow root → `domToPdf`. |
 | PDF → DOCX | `pdf-to-word` | PDF.js text → lines/blocks (`pdfText.ts`); image placements from the operator list, pixels cropped from the rendered page; written by `ooxml.ts`. |
 | PDF → XLSX | `pdf-to-excel` | PDF.js text → rows and column bands (`pdfTables.ts`), numbers parsed; written by `ooxml.ts`. |
-| PDF → PPTX | `pdf-to-powerpoint` | Rendered pages as JPEG slides; written by `ooxml.ts`. |
+| PDF → PPTX | `pdf-to-powerpoint` | Page rendered without its text operators (PDF.js `operationsFilter`; annotation text kept) as the slide picture, plus one text box per paragraph or table cell; text colour from comparing the page drawn with and without text (no visible change → no box, so OCR layers aren't doubled). Written by `ooxml.ts`. |
 
 ### Library survey (batch 2)
 
@@ -115,4 +115,4 @@ very large documents, and DOCX features beyond the fixtures (text boxes, columns
 - PDF → Word: tables whose columns line up become Word tables (merged or wrapped cells aren't detected); fonts, colours and exact spacing are not carried.
 - PDF → Excel: tables whose columns don't line up, cells spanning columns and wrapped cell text are
   not detected.
-- PDF → PowerPoint: slides are pictures.
+- PDF → PowerPoint: text boxes use Arial and one colour per paragraph; mixed styles within a paragraph aren't kept. Rotated and scanned pages stay pictures.

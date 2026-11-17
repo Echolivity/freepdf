@@ -12,7 +12,7 @@ import { deriveName } from '../../lib/files'
 import type { OutputFile } from '../../lib/output'
 import { batchPages, batchRangeError } from '../../lib/ranges'
 import { canvasToBlob, closePdf, openPdf, pdfjsOps, releaseCanvas, renderPage, type PDFDocumentProxy } from '../../lib/render/pdfjs'
-import type { Cropper } from '../../lib/convert/pdfToOffice'
+import { textColor, type Box, type Cropper, type SlideRenderer } from '../../lib/convert/pdfToOffice'
 import type { DocLike } from '../../lib/convert/pdfExport'
 import { UserFacingError, type FileKind } from '../../lib/validate'
 import { CancelledError } from '../../lib/workerClient'
@@ -53,6 +53,25 @@ function cropper(doc: PDFDocumentProxy): { crop: Cropper; dispose: () => void } 
   return { crop, dispose: () => { if (cached) releaseCanvas(cached.canvas); cached = null } }
 }
 
+/** Slide backgrounds without text, and the colour of the text each box covered (see SlideRenderer). */
+function slideRenderer(doc: PDFDocumentProxy): SlideRenderer {
+  return async (n, scale, boxes: Box[]) => {
+    const full = await renderPage(doc, n, scale)
+    const bare = await renderPage(doc, n, scale, 0, { noText: true })
+    try {
+      const { width, height } = bare.canvas
+      const a = full.canvas.getContext('2d')!.getImageData(0, 0, width, height).data
+      const b = bare.canvas.getContext('2d')!.getImageData(0, 0, width, height).data
+      const colors = boxes.map((box) => textColor(a, b, width, height, box, bare.scaleUsed))
+      const blob = await canvasToBlob(bare.canvas, 'image/jpeg', 0.9)
+      return { bytes: new Uint8Array(await blob.arrayBuffer()), ext: 'jpeg', colors }
+    } finally {
+      releaseCanvas(full.canvas)
+      releaseCanvas(bare.canvas)
+    }
+  }
+}
+
 export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
   const { t } = useI18n()
   const target = TARGET[tool.slug] ?? 'docx'
@@ -66,6 +85,7 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
   const [perPage, setPerPage] = useState(true)
   const [numbers, setNumbers] = useState(true)
   const [dpi, setDpi] = useState<150 | 220>(150)
+  const [editable, setEditable] = useState(true)
   const rangeError = batchRangeError(range)
   const startOver = () => { job.reset(); sel.clear(); pw.reset(); setRange('') }
 
@@ -96,8 +116,9 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
             bytes = r.bytes
             note = { key: 'p2o.noteExcel', params: { count: perPage ? pages.length : 1, rows: r.rows } }
           } else {
-            bytes = await office.pdfToPptx(d, pages, { title, dpi, crop: c.crop, signal, onProgress })
-            note = { key: 'p2o.notePpt', params: { count: pages.length } }
+            const r = await office.pdfToPptx(d, pages, { title, dpi, editable, crop: c.crop, render: slideRenderer(doc), signal, onProgress })
+            bytes = r.bytes
+            note = r.textBoxes ? { key: 'p2o.notePptText', params: { count: pages.length, boxes: r.textBoxes } } : { key: 'p2o.notePpt', params: { count: pages.length } }
           }
           out.push({ name: deriveName(f.name, '', target), blob: new Blob([bytes as BlobPart], { type: MIME[target] }), note })
         } finally {
@@ -161,6 +182,14 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
                 </>
               )}
               {target === 'pptx' && (
+                <Segmented<'text' | 'picture'>
+                  label={t('p2o.slides')}
+                  value={editable ? 'text' : 'picture'}
+                  onChange={(v) => setEditable(v === 'text')}
+                  options={[{ value: 'text', label: t('p2o.slidesEditable'), hint: t('p2o.slidesEditableHint') }, { value: 'picture', label: t('p2o.slidesPicture'), hint: t('p2o.slidesPictureHint') }]}
+                />
+              )}
+              {target === 'pptx' && (
                 <Segmented<150 | 220>
                   label={t('p2i.resolution')}
                   value={dpi}
@@ -173,7 +202,7 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
               <Button variant="primary" size="lg" icon={icon} className="w-full" disabled={pw.locked.length > 0 || pw.checking || !!rangeError} onClick={convert} data-testid="run">
                 {t(target === 'docx' ? 'p2o.runWord' : target === 'xlsx' ? 'p2o.runExcel' : 'p2o.runPpt')}
               </Button>
-              <Notice tone="info">{t(target === 'docx' ? 'p2o.limitsWord' : target === 'xlsx' ? 'p2o.limitsExcel' : 'p2o.limitsPpt')}</Notice>
+              <Notice tone="info">{t(target === 'docx' ? 'p2o.limitsWord' : target === 'xlsx' ? 'p2o.limitsExcel' : editable ? 'p2o.limitsPpt' : 'p2o.limitsPptPicture')}</Notice>
               <LocalBadge />
             </>
           }

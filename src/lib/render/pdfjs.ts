@@ -77,6 +77,7 @@ export async function renderPage(
   pageNumber: number,
   scale: number,
   extraRotation = 0,
+  opts: { noText?: boolean } = {},
 ): Promise<{ canvas: HTMLCanvasElement; scaleUsed: number }> {
   const page = await doc.getPage(pageNumber)
   try {
@@ -87,7 +88,29 @@ export async function renderPage(
     const canvas = document.createElement('canvas')
     canvas.width = Math.max(1, Math.floor(viewport.width))
     canvas.height = Math.max(1, Math.floor(viewport.height))
-    await page.render({ canvas, viewport, background: '#ffffff' }).promise
+    // noText: draw everything except the text-showing operators (a slide background under editable text).
+    // Text inside annotations (filled-in form fields, stamps) is part of the picture and stays.
+    let operationsFilter: ((i: number, list: { fnArray: number[] }) => boolean) | undefined
+    if (opts.noText) {
+      const O = pdfjs.OPS
+      const textOps = new Set([O.showText, O.showSpacedText, O.nextLineShowText, O.nextLineSetSpacingShowText])
+      const skip = new WeakMap<object, Uint8Array>()
+      operationsFilter = (i, list) => {
+        let mask = skip.get(list)
+        if (!mask || mask.length < list.fnArray.length) {
+          mask = new Uint8Array(list.fnArray.length)
+          let depth = 0
+          list.fnArray.forEach((fn, k) => {
+            if (fn === O.beginAnnotation) depth++
+            else if (fn === O.endAnnotation) depth = Math.max(0, depth - 1)
+            else if (depth === 0 && textOps.has(fn)) mask![k] = 1
+          })
+          skip.set(list, mask)
+        }
+        return !mask[i]
+      }
+    }
+    await page.render({ canvas, viewport, background: '#ffffff', operationsFilter }).promise
     return { canvas, scaleUsed: s }
   } finally {
     page.cleanup()

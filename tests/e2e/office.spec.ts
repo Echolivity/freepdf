@@ -116,7 +116,7 @@ test.describe('PDF to Word, Excel and PowerPoint', () => {
     await expect(page.getByText(/2 sheets · 9 rows/)).toBeVisible()
   })
 
-  test('PDF to PowerPoint: one picture slide per page; several files give a ZIP', async ({ page }) => {
+  test('PDF to PowerPoint: editable text over a text-free picture; several files give a ZIP', async ({ page }) => {
     await page.goto('/pdf-to-powerpoint')
     await upload(page, 'office/report-lo.pdf', 'text-8p.pdf')
     await page.getByTestId('page-range').fill('1-2')
@@ -126,6 +126,24 @@ test.describe('PDF to Word, Excel and PowerPoint', () => {
     const deck = await JSZip.loadAsync(await outer.files['text-8p.pptx'].async('uint8array'))
     expect(Object.keys(deck.files).filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n))).toHaveLength(2)
     expect(Object.keys(deck.files).filter((n) => /^ppt\/media\/image\d+\.jpeg$/.test(n))).toHaveLength(2)
+    const report = await JSZip.loadAsync(await outer.files['report-lo.pptx'].async('uint8array'))
+    const s1 = await report.file('ppt/slides/slide1.xml')!.async('string')
+    expect(s1).toContain('<a:t>Quarterly Report</a:t>')
+    expect(s1).toContain('<a:t>Region</a:t>')
+    // The heading keeps its blue (sampled from the page).
+    const hex = /<a:srgbClr val="([0-9A-F]{6})"\/><\/a:solidFill><a:latin typeface="Arial"\/><a:cs typeface="Arial"\/><\/a:rPr><a:t>Quarterly Report/.exec(s1)![1]
+    const [r, , b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16))
+    expect(b - r).toBeGreaterThan(40)
+  })
+
+  test('PDF to PowerPoint: Pictures gives exact page pictures with no text boxes', async ({ page }) => {
+    await page.goto('/pdf-to-powerpoint')
+    await upload(page, 'office/report-lo.pdf')
+    await page.getByText('Pictures', { exact: true }).click()
+    const { bytes } = await runAndDownload(page)
+    const s1 = await (await JSZip.loadAsync(bytes)).file('ppt/slides/slide1.xml')!.async('string')
+    expect(s1).not.toContain('txBox')
+    await expect(page.getByText(/^2 slides$/)).toBeVisible()
   })
 
   test('PDF to Excel on a PDF without text explains why', async ({ page }) => {
