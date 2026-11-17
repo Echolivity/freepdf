@@ -7,13 +7,13 @@ import { fixturePath, runAndDownload, upload } from './helpers'
  * Instruments the page before the app loads: counts live FreePDF processing workers (ours only, not
  * PDF.js's), and tracks object URLs created/revoked. Optionally makes the first N processing workers
  * crash, to exercise the out-of-memory / worker-crash path for real (the app sees a genuine `error` event).
- * `hangNth` makes the Nth processing worker never receive its job (its messages are held back), so the
- * job is guaranteed to still be running when the test cancels it, however fast the machine is.
+ * While `window.__fp.hold` is true, jobs posted to processing workers are held back (never delivered), so
+ * a job is guaranteed to still be running when the test cancels it, however fast the machine is.
  */
-async function instrument(page: import('@playwright/test').Page, opts: { crashFirst?: number; hangNth?: number } = {}) {
-  await page.addInitScript(([crashFirst, hangNth]: [number, number]) => {
-    const w = window as unknown as { __fp: { live: number; created: number; urls: Set<string>; createdUrls: number } }
-    w.__fp = { live: 0, created: 0, urls: new Set(), createdUrls: 0 }
+async function instrument(page: import('@playwright/test').Page, opts: { crashFirst?: number } = {}) {
+  await page.addInitScript((crashFirst: number) => {
+    const w = window as unknown as { __fp: { live: number; created: number; urls: Set<string>; createdUrls: number; hold: boolean } }
+    w.__fp = { live: 0, created: 0, urls: new Set(), createdUrls: 0, hold: false }
     const Native = window.Worker
     const ours = (u: string | URL) => /\/pdf\.worker-[^/.]+\.js$/.test(String(u))
     window.Worker = class extends Native {
@@ -27,7 +27,8 @@ async function instrument(page: import('@playwright/test').Page, opts: { crashFi
           const t = this.terminate.bind(this)
           let done = false
           this.terminate = () => { if (!done) { done = true; w.__fp.live-- } t() }
-          if (w.__fp.created === hangNth) this.postMessage = () => {}
+          const post = this.postMessage.bind(this) as (m: unknown, t?: Transferable[]) => void
+          this.postMessage = ((m: unknown, t?: Transferable[]) => { if (!w.__fp.hold) post(m, t) }) as Worker['postMessage']
         }
       }
     } as typeof Worker
@@ -35,7 +36,7 @@ async function instrument(page: import('@playwright/test').Page, opts: { crashFi
     const revoke = URL.revokeObjectURL.bind(URL)
     URL.createObjectURL = (o: Blob | MediaSource) => { const u = create(o); w.__fp.urls.add(u); w.__fp.createdUrls++; return u }
     URL.revokeObjectURL = (u: string) => { w.__fp.urls.delete(u); revoke(u) }
-  }, [opts.crashFirst ?? 0, opts.hangNth ?? 0] as [number, number])
+  }, opts.crashFirst ?? 0)
 }
 const stats = (page: import('@playwright/test').Page) =>
   page.evaluate(() => { const s = (window as unknown as { __fp: { live: number; created: number; urls: Set<string>; createdUrls: number } }).__fp; return { live: s.live, created: s.created, openUrls: s.urls.size, createdUrls: s.createdUrls } })
@@ -62,8 +63,7 @@ test('signed and password-protected PDFs are flagged before processing', async (
 })
 
 test('every job’s worker is terminated: after success, after cancel, and on repeat runs', async ({ page }) => {
-  // The 4th job (the Compress run below) is held so it can be cancelled deterministically.
-  await instrument(page, { hangNth: 4 })
+  await instrument(page)
   await page.goto('/merge-pdf')
   for (let i = 0; i < 3; i++) {
     await upload(page, 'text-8p.pdf', 'scan.pdf')
@@ -74,10 +74,13 @@ test('every job’s worker is terminated: after success, after cancel, and on re
 
   await page.goto('/compress-pdf')
   await upload(page, 'compress/photos.pdf')
+  // Hold the job so it is still running when Cancel is clicked (it could otherwise finish first).
+  await page.evaluate(() => { (window as unknown as { __fp: { hold: boolean } }).__fp.hold = true })
   await page.getByTestId('run').click()
   await page.getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByTestId('run')).toBeVisible()
   await expect.poll(async () => (await stats(page)).live).toBe(0)
+  await page.evaluate(() => { (window as unknown as { __fp: { hold: boolean } }).__fp.hold = false })
   // ...and the tool still works afterwards.
   const { bytes } = await runAndDownload(page)
   expect((await PDFDocument.load(bytes)).getPageCount()).toBe(3)
