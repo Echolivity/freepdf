@@ -16,7 +16,7 @@
     "test:all": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e",
     "fixtures:arabic": "node scripts/make-arabic-fixture.mjs",
     "fixtures": "python3 scripts/make-compress-fixtures.py && node scripts/make-arabic-fixture.mjs",
-    "audit": "npm audit --audit-level=high",
+    "audit": "node scripts/audit.mjs",
     "test:cloudflare": "node scripts/test-cloudflare.mjs",
     "qa": "node qa/run.mjs",
     "qa:cloudflare": "node qa/run.mjs --cloudflare"

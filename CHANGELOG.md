@@ -9,6 +9,9 @@
   right-to-left tables), with an option to turn it off. The result note counts the tables.
 - **Fixed:** a header and values that don't overlap horizontally no longer split one column into two
   (PDF to Word and PDF to Excel).
+- **CI:** `npm audit` runs through `scripts/audit.mjs`, which accepts only listed advisories with a
+  reason and an expiry date. Accepted until 2026-12-31: GHSA-fc5q-39xc-vjpf (picomatch ReDoS; no fixed
+  release exists; reached only through build tools, not shipped). Firefox blocks deploys again.
 - **Tests:** fixed the Firefox CI crash in the accessibility sweep (five axe rules crash
   Playwright's Firefox partway through it; they're disabled in Firefox only and still run in Chromium). The sweep waits for
   visible thumbnails to finish rendering. The cancel test holds its job so it can't finish first.

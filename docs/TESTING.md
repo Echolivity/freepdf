@@ -23,7 +23,7 @@ repository variable `DEPLOY_ENABLED` is `true`.
 
 | Job | Runs | Server |
 |-----|------|--------|
-| `checks` | `npm ci`, `npm audit --audit-level=high`, typecheck, lint, unit/integration (with qpdf), production build | — |
+| `checks` | `npm ci`, `npm audit --audit-level=high` (`scripts/audit.mjs`), typecheck, lint, unit/integration (with qpdf), production build | — |
 | `chromium` | Playwright device projects: `tablet-android`, `android-midrange`, `mobile`, `narrow-320` (117 tests) | `vite preview` |
 | `cross-engine` | Playwright `firefox` only for now (the WebKit projects are skipped in CI at the owner's request; run them locally with `ALL_BROWSERS=1`) | `vite preview` |
 | `cloudflare` | Playwright `desktop` project (93 tests) **and** the real-world QA (41 scenarios) with qpdf, pypdf strict and pyHanko validators | `wrangler pages dev` (workerd) |

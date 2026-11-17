@@ -28,7 +28,7 @@ There is no server-side attack surface: the deployment is static files only.
 | Breaking digital signatures | Signed and certified files are detected before processing and warned about. No-op operations return the original bytes. | QA G1–G4 with pyHanko validation. |
 | Silent quality loss | The Lossless level never touches pixels. Lossy levels are labelled "Lossy", and a per-file report lists what was re-encoded and what was skipped. | Compression matrix tests, QA L1/L2. |
 | Clickjacking / embedding | `frame-ancestors 'none'`, `X-Frame-Options: DENY`, COOP and CORP `same-origin`. | Header test. |
-| Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
+| Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI via `scripts/audit.mjs`, which accepts only listed advisories with a reason and an expiry date. Current exception: GHSA-fc5q-39xc-vjpf (picomatch ReDoS, no fixed release yet; build tooling only, not shipped; until 2026-12-31). Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
 
 ## Unreleased: conversion batch 2

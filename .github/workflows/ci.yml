@@ -1,7 +1,7 @@
 name: CI / Deploy
 
 # What runs where (each suite runs exactly once; docs/TESTING.md mirrors this table):
-#   checks        npm audit, typecheck, lint, unit tests (with qpdf), production build
+#   checks        npm audit (scripts/audit.mjs), typecheck, lint, unit tests (with qpdf), production build
 #   chromium      e2e on emulated Chromium devices (tablet, mid-range Android, Pixel, 320 px) vs `vite preview`
 #   cross-engine  e2e on Firefox + WebKit (desktop, iPad, iPhone SE emulation) vs `vite preview`
 #   cloudflare    full desktop e2e suite + 30-scenario real-world QA vs Cloudflare's Pages runtime
@@ -37,7 +37,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Dependency audit (fail on high/critical)
-        run: npm audit --audit-level=high
+        # npm audit --audit-level=high, minus dated exceptions listed (with reasons) in the script.
+        run: node scripts/audit.mjs
       - name: Install qpdf (structural validation in unit tests)
         run: sudo apt-get update && sudo apt-get install -y qpdf
       - run: npm run typecheck
