@@ -14,17 +14,6 @@ async function audit(page: import('@playwright/test').Page, label: string) {
     undefined,
     { polling: 250, timeout: 30_000 },
   )
-  // Firefox only: let the DOM be quiet for 1 s first. Starting axe (or polling the page) while it is still
-  // changing crashes Firefox's content process (SIGSEGV) in CI; isolated in CI experiments, see docs/TESTING.md.
-  if (page.context().browser()?.browserType().name() === 'firefox') {
-    await page.evaluate(() => new Promise<void>((done) => {
-      let t = setTimeout(finish, 1000)
-      const mo = new MutationObserver(() => { clearTimeout(t); t = setTimeout(finish, 1000) })
-      const cap = setTimeout(finish, 10_000)
-      function finish() { mo.disconnect(); clearTimeout(cap); done() }
-      mo.observe(document, { subtree: true, childList: true, attributes: true, characterData: true })
-    }))
-  }
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')})`)).toEqual([])
