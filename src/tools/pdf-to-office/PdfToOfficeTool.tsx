@@ -61,6 +61,7 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
   const pw = usePdfPasswords(sel.files)
   const [range, setRange] = useState('')
   const [pageBreaks, setPageBreaks] = useState(true)
+  const [tables, setTables] = useState(true)
   const [images, setImages] = useState(true)
   const [perPage, setPerPage] = useState(true)
   const [numbers, setNumbers] = useState(true)
@@ -85,10 +86,10 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
           let bytes: Uint8Array
           let note: OutputFile['note']
           if (target === 'docx') {
-            const r = await office.pdfToDocx(d, pages, { pageBreaks, images, title, OPS: pdfjsOps(), crop: c.crop, signal, onProgress })
+            const r = await office.pdfToDocx(d, pages, { pageBreaks, images, tables, title, OPS: pdfjsOps(), crop: c.crop, signal, onProgress })
             if (!r.text && !r.images) throw new UserFacingError('err.noTextLayer', { count: 1 })
             bytes = r.bytes
-            note = { key: r.text ? 'p2o.noteWord' : 'p2o.noteWordScan', params: { count: pages.length, images: r.images } }
+            note = { key: r.text ? 'p2o.noteWord' : 'p2o.noteWordScan', params: { count: pages.length, images: r.images, tables: r.tables } }
           } else if (target === 'xlsx') {
             const r = await office.pdfToXlsx(d, pages, { perPage, numbers, title, sheetLabel: (n) => t('p2t.pageMarker', { n }), signal, onProgress })
             if (!r.rows) throw new UserFacingError('err.noTextLayer', { count: 1 })
@@ -134,6 +135,10 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
                   <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
                     <input type="checkbox" className="h-5 w-5" checked={images} onChange={(e) => setImages(e.target.checked)} />
                     {t('p2o.images')}
+                  </label>
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
+                    <input type="checkbox" className="h-5 w-5" checked={tables} onChange={(e) => setTables(e.target.checked)} />
+                    {t('p2o.tables')}
                   </label>
                   <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
                     <input type="checkbox" className="h-5 w-5" checked={pageBreaks} onChange={(e) => setPageBreaks(e.target.checked)} />

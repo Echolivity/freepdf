@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — PDF to Word tables
+
+- **Added:** PDF to Word rebuilds tables as real Word tables (header row, end-aligned numbers,
+  right-to-left tables), with an option to turn it off. The result note counts the tables.
+- **Fixed:** a header and values that don't overlap horizontally no longer split one column into two
+  (PDF to Word and PDF to Excel).
+- **Tests:** the Firefox accessibility sweep waits for visible thumbnails to finish rendering before
+  auditing, and for the Split thumbnails with `waitFor`; temporary Firefox diagnostics removed.
+
 ## Unreleased — PDF conversion, batch 2
 
 See [docs/PLAN_conversion.md](docs/PLAN_conversion.md).

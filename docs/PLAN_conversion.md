@@ -112,7 +112,7 @@ very large documents, and DOCX features beyond the fixtures (text boxes, columns
 - Excel → PDF: charts, images, conditional formatting, comments, print areas and manual page breaks
   are not read; text overflowing into empty neighbouring cells is shown, but `####` for numbers that
   don't fit is not imitated.
-- PDF → Word: tables become separate lines of text; fonts, colours and exact spacing are not carried.
+- PDF → Word: tables whose columns line up become Word tables (merged or wrapped cells aren't detected); fonts, colours and exact spacing are not carried.
 - PDF → Excel: tables whose columns don't line up, cells spanning columns and wrapped cell text are
   not detected.
 - PDF → PowerPoint: slides are pictures.

@@ -73,7 +73,7 @@ test.describe('HTML to PDF', () => {
 test.describe('PDF to Word, Excel and PowerPoint', () => {
   const zipText = async (bytes: Buffer, part: string) => (await JSZip.loadAsync(bytes)).file(part)!.async('string')
 
-  test('PDF to Word: headings, list items, paragraphs and the picture', async ({ page }) => {
+  test('PDF to Word: headings, list items, paragraphs, the table and the picture', async ({ page }) => {
     await page.goto('/pdf-to-word')
     await upload(page, 'office/report-lo.pdf')
     const { bytes, name } = await runAndDownload(page)
@@ -84,7 +84,13 @@ test.describe('PDF to Word, Excel and PowerPoint', () => {
     expect(xml).toMatch(/<w:pStyle w:val="Heading1"\/><\/w:pPr><w:r><w:rPr><\/w:rPr><w:t xml:space="preserve">Quarterly Report<\/w:t>/)
     expect(xml).toContain('>• Revenue grew 12%<')
     expect(xml).toContain('<w:br w:type="page"/>')
-    await expect(page.getByText(/2 pages · 1 picture/)).toBeVisible()
+    // The Region / Q1 / Q2 table comes back as a real Word table, numbers end-aligned.
+    expect(xml.match(/<w:tbl>/g)).toHaveLength(1)
+    const table = xml.slice(xml.indexOf('<w:tbl>'), xml.indexOf('</w:tbl>'))
+    expect([...table.matchAll(/<w:tr>/g)]).toHaveLength(4)
+    expect([...table.matchAll(/<w:t xml:space="preserve">([^<]*)</g)].map((m) => m[1])).toEqual(['Region', 'Q1', 'Q2', 'North', '1,200', '1,350', 'South', '980', '1,010', 'Total', '2,180', '2,360'])
+    expect(table).toContain('<w:jc w:val="right"/>')
+    await expect(page.getByText(/2 pages · 1 picture\(s\) · 1 table/)).toBeVisible()
   })
 
   test('PDF to Word keeps Arabic right-to-left and in reading order', async ({ page }) => {

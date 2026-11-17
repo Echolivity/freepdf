@@ -86,7 +86,20 @@ export function gridFromSpans(spans: Span[]): Grid {
     }
     return row
   })
-  const widths = ordered.map(([a, b]) => b - a)
+  // A header and its values that don't overlap horizontally (short labels over longer numbers, or
+  // differently aligned) give two column bands for one column. Neighbouring columns that never both
+  // hold text in the same row are one column: merge them.
+  const ranges = ordered.map(([a, b]) => [a, b] as [number, number])
+  for (let i = 0; i + 1 < ranges.length; ) {
+    const clash = out.some((row) => row[i] && row[i + 1])
+    const used = out.filter((row) => row[i] || row[i + 1]).length
+    if (!clash && used > 1 && out.some((row) => row[i]) && out.some((row) => row[i + 1])) {
+      for (const row of out) { row[i] = row[i] ?? row[i + 1]; row.splice(i + 1, 1) }
+      ranges[i] = [Math.min(ranges[i][0], ranges[i + 1][0]), Math.max(ranges[i][1], ranges[i + 1][1])]
+      ranges.splice(i + 1, 1)
+    } else i++
+  }
+  const widths = ranges.map(([a, b]) => b - a)
   return { rows: out, widths, rtl }
 }
 

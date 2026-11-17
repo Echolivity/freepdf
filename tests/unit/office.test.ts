@@ -5,6 +5,7 @@ import { evalContent, formatCounter } from '../../src/lib/convert/pseudo'
 import { sanitizeCss, stripActive } from '../../src/lib/convert/htmlInput'
 import { paginate } from '../../src/lib/convert/domToPdf'
 import { gridFromSpans, parseNumber } from '../../src/lib/convert/pdfTables'
+import { findTables } from '../../src/lib/convert/pdfToOffice'
 import { buildDocx, buildPptx, buildXlsx, sheetName, xmlText } from '../../src/lib/convert/ooxml'
 import { buildBlocks, buildLines, fixArabic, type TextItem } from '../../src/lib/convert/pdfText'
 import { sniffByName, isLegacyOffice } from '../../src/lib/validate'
@@ -112,6 +113,15 @@ describe('tables from positioned text', () => {
     expect(g.rtl).toBe(true)
     expect(g.rows).toEqual([['البند', 'القيمة'], ['الإيجار', '24,000']])
   })
+  it('joins a header and values that do not overlap horizontally into one column', () => {
+    // Right-to-left: short headers sit right of their (wider) values without overlapping them.
+    const g = gridFromSpans([
+      span('التاريخ', 40, 50, 30), span('المبلغ', 200, 50, 25), span('الدفعة', 380, 50, 28),
+      span('2026-11-10', 10, 65, 55), span('12,000', 160, 65, 30), span('الأولى', 330, 65, 28),
+    ])
+    expect(g.rows).toEqual([['الدفعة', 'المبلغ', 'التاريخ'], ['الأولى', '12,000', '2026-11-10']])
+    expect(g.widths).toHaveLength(3)
+  })
   it('turns numeric text into numbers with a matching format', () => {
     expect(parseNumber('1,234.50')).toEqual({ value: 1234.5, format: '#,##0.00' })
     expect(parseNumber('7.2%')).toEqual({ value: 0.072, format: '0.0%' })
@@ -135,6 +145,33 @@ describe('text clean-up for Office output', () => {
   it('keeps list items and table rows as separate blocks', () => {
     const lines = buildLines([item('• One', 20, 700, 30), item('• Two', 20, 688, 30), item('Name', 20, 676, 25), item('Total', 200, 676, 25), item('A', 20, 664, 8), item('1', 200, 664, 8)])
     expect(buildBlocks(lines, 10).map((b) => b.text)).toEqual(['• One', '• Two', 'Name Total', 'A 1'])
+  })
+})
+
+describe('tables for PDF to Word', () => {
+  // One page (height 800): a title, a 3-row table, a paragraph, then two "label   value" lines far apart.
+  const H = 800
+  const page = (rows: [string, number, number, number][]) => {
+    const items = rows.map(([str, x, y, w]) => item(str, x, y, w))
+    return { items, text: { number: 1, width: 600, height: H, lines: buildLines(items), spans: rows.map(([str, x, y, w]) => span(str, x, H - y, w)) } }
+  }
+  it('finds consecutive rows with column gaps and rebuilds the grid', () => {
+    const { text } = page([
+      ['Quarterly figures', 20, 760, 90],
+      ['Region', 20, 730, 35], ['Q1', 200, 730, 12], ['Q2', 320, 730, 12],
+      ['North', 20, 716, 30], ['1,200', 200, 716, 25], ['1,350', 320, 716, 25],
+      ['South', 20, 702, 30], ['980', 200, 702, 18], ['1,010', 320, 702, 25],
+      ['A closing paragraph of ordinary text.', 20, 670, 180],
+    ])
+    const blocks = buildBlocks(text.lines, 10)
+    const t = findTables(blocks, text)
+    expect(t).toHaveLength(1)
+    expect(blocks[t[0].from].text).toBe('Region Q1 Q2')
+    expect(t[0].grid.rows).toEqual([['Region', 'Q1', 'Q2'], ['North', '1,200', '1,350'], ['South', '980', '1,010']])
+  })
+  it('leaves a single line with a column gap as a paragraph', () => {
+    const { text } = page([['Total', 20, 730, 25], ['2,180', 300, 730, 25], ['Body text that follows the line.', 20, 690, 150]])
+    expect(findTables(buildBlocks(text.lines, 10), text)).toEqual([])
   })
 })
 
@@ -170,6 +207,24 @@ describe('Office packages', () => {
     expect(doc).toContain('<w:br w:type="page"/>')
     // The picture is scaled to the text width: 487.28 pt = 6188456 EMU.
     expect(doc).toContain('<wp:extent cx="6188456" cy="3094228"/>')
+    expect(new DOMParserLite(doc).ok).toBe(true)
+  })
+  it('writes a Word table with a header row, end-aligned numbers and right-to-left direction', async () => {
+    const bytes = await buildDocx(
+      [
+        { type: 'table', rows: [['Region', 'Q1'], ['North', '1,200'], ['South', null]], widths: [100, 50], rtl: false, size: 11 },
+        { type: 'table', rows: [['البند', 'القيمة'], ['الإيجار', '24,000']], widths: [60, 60], rtl: true, size: 11 },
+      ],
+      { title: 'T', pageWidth: 595.28, pageHeight: 841.89, margins: { top: 54, right: 54, bottom: 54, left: 54 }, bodySize: 11 },
+    )
+    const doc = await (await parts(bytes)).text('word/document.xml')
+    expect(doc.match(/<w:tbl>/g)).toHaveLength(2)
+    // Column widths keep the PDF's 2:1 proportion across the 487.28 pt text width (twips).
+    expect(doc).toContain('<w:gridCol w:w="6497"/><w:gridCol w:w="3249"/>')
+    expect(doc).toContain('<w:trPr><w:tblHeader/></w:trPr>')
+    expect(doc).toMatch(/<w:b\/><w:bCs\/><\/w:rPr><w:t xml:space="preserve">Region</)
+    expect(doc).toMatch(/<w:jc w:val="right"\/><\/w:pPr><w:r><w:rPr><\/w:rPr><w:t xml:space="preserve">1,200</)
+    expect(doc).toContain('<w:bidiVisual/>')
     expect(new DOMParserLite(doc).ok).toBe(true)
   })
   it('writes a workbook with numbers, formats, right-to-left sheets and unique names', async () => {

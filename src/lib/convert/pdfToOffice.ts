@@ -1,7 +1,7 @@
 /**
  * PDF → Word / Excel / PowerPoint, from what PDF.js reads (text with positions, image placements,
- * rendered pages). Editable with limits: Word gets headings and paragraphs in reading order plus the
- * page's pictures; Excel gets tables rebuilt from text positions; PowerPoint gets each page as a slide
+ * rendered pages). Editable with limits: Word gets headings, paragraphs and tables in reading order plus
+ * the page's pictures; Excel gets tables rebuilt from text positions; PowerPoint gets each page as a slide
  * picture. Runs in the tab; nothing is uploaded.
  */
 import { buildDocx, buildPptx, buildXlsx, type DocxPart } from './ooxml'
@@ -59,7 +59,38 @@ export async function imageRects(page: OpPage, OPS: Ops): Promise<PageImage[]> {
 /** Crop part of a rendered page (scale = canvas px per PDF pt). */
 export type Cropper = (pageNumber: number, rect: PageImage | null, scale: number) => Promise<{ bytes: Uint8Array; ext: 'png' | 'jpeg' }>
 
-export interface WordOptions { pageBreaks: boolean; images: boolean; title: string }
+export interface WordOptions { pageBreaks: boolean; images: boolean; tables?: boolean; title: string }
+
+/**
+ * Table runs in a page's blocks: two or more consecutive one-line blocks with column gaps whose
+ * rebuilt grid has at least two columns and two filled rows. Returned as [first, last] block indexes
+ * with the grid built from the page's positioned text within those lines.
+ */
+export function findTables(blocks: Block[], text: PageText): { from: number; to: number; grid: ReturnType<typeof gridFromSpans>; size: number }[] {
+  const out: { from: number; to: number; grid: ReturnType<typeof gridFromSpans>; size: number }[] = []
+  const tabular = (b: Block) => b.lines.length === 1 && b.lines[0].text.includes('\t')
+  let i = 0
+  while (i < blocks.length) {
+    if (!tabular(blocks[i])) { i++; continue }
+    let j = i
+    while (j + 1 < blocks.length && tabular(blocks[j + 1])) j++
+    if (j > i) {
+      const lines = blocks.slice(i, j + 1).map((b) => b.lines[0])
+      // Line baselines are in PDF user space (y up); spans are from the top of the page.
+      const tops = lines.map((l) => text.height - l.y)
+      const lo = Math.min(...tops) - 0.5 * Math.max(...lines.map((l) => l.size))
+      const hi = Math.max(...tops) + 0.5 * Math.max(...lines.map((l) => l.size))
+      const spans = text.spans.filter((sp) => Math.abs(sp.angle) < 1 && sp.y >= lo && sp.y <= hi)
+      const grid = gridFromSpans(spans)
+      const filled = grid.rows.filter((r) => r.filter((c) => c).length >= 2).length
+      if (grid.widths.length >= 2 && filled >= 2 && grid.rows.length === lines.length) {
+        out.push({ from: i, to: j, grid, size: lines.reduce((m, l) => m + l.size, 0) / lines.length })
+      }
+    }
+    i = j + 1
+  }
+  return out
+}
 
 function align(b: Block, pageWidth: number): 'start' | 'center' | 'end' {
   if (b.lines.length > 3) return 'start'
@@ -73,7 +104,7 @@ function align(b: Block, pageWidth: number): 'start' | 'center' | 'end' {
   return 'start'
 }
 
-export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & { OPS: Ops; crop: Cropper; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; images: number; text: boolean }> {
+export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & { OPS: Ops; crop: Cropper; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; images: number; tables: number; text: boolean }> {
   const read: { text: PageText; images: PageImage[] }[] = []
   for (let k = 0; k < pages.length; k++) {
     if (o.signal?.aborted) throw new CancelledError()
@@ -85,6 +116,7 @@ export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & 
   const body = bodySize(read.flatMap((r) => r.text.lines))
   const parts: DocxPart[] = []
   let imageCount = 0
+  let tableCount = 0
   const first = read[0].text
   // Margins: from the text's extent on the pages (within sensible bounds).
   const allLines = read.flatMap((r) => r.text.lines)
@@ -99,9 +131,20 @@ export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & 
     // Text blocks and pictures in reading order (top of the page first). Line y is a baseline in user
     // space (y up); image y is from the top in viewport space.
     const items: { top: number; part: () => Promise<DocxPart> }[] = []
-    for (const b of buildBlocks(text.lines, body)) {
-      const top = text.height - Math.max(...b.lines.map((l) => l.y + l.size))
-      items.push({ top, part: async () => ({ type: 'p', kind: b.kind, text: b.text, size: b.size, rtl: b.rtl, align: align(b, text.width) }) })
+    const blocks = buildBlocks(text.lines, body)
+    const tables = o.tables === false ? [] : findTables(blocks, text)
+    const topOf = (b: Block) => text.height - Math.max(...b.lines.map((l) => l.y + l.size))
+    for (let bi = 0; bi < blocks.length; bi++) {
+      const t = tables.find((x) => x.from === bi)
+      if (t) {
+        const { rows, widths, rtl } = t.grid
+        items.push({ top: topOf(blocks[bi]), part: async () => ({ type: 'table', rows, widths, rtl, size: t.size }) })
+        tableCount++
+        bi = t.to
+        continue
+      }
+      const b = blocks[bi]
+      items.push({ top: topOf(b), part: async () => ({ type: 'p', kind: b.kind, text: b.text, size: b.size, rtl: b.rtl, align: align(b, text.width) }) })
     }
     for (const img of images) {
       items.push({
@@ -123,7 +166,7 @@ export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & 
   }
   const hasText = allLines.some((l) => l.text.trim())
   const bytes = await buildDocx(parts, { title: o.title, pageWidth: first.width, pageHeight: first.height, margins, bodySize: Math.max(8, Math.min(14, body)) })
-  return { bytes, images: imageCount, text: hasText }
+  return { bytes, images: imageCount, tables: tableCount, text: hasText }
 }
 
 export interface ExcelOptions { perPage: boolean; numbers: boolean; title: string; sheetLabel: (n: number) => string }

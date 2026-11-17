@@ -41,8 +41,36 @@ export type DocxPart =
   | { type: 'p'; kind: BlockKind; text: string; size: number; rtl: boolean; align: 'start' | 'center' | 'end' }
   | { type: 'image'; bytes: Uint8Array; ext: 'png' | 'jpeg'; width: number; height: number }
   | { type: 'pageBreak' }
+  /** A table rebuilt from text positions: rows of cells (null = empty), column widths in points. */
+  | { type: 'table'; rows: (string | null)[][]; widths: number[]; rtl: boolean; size: number }
 
 export interface DocxOptions { title: string; pageWidth: number; pageHeight: number; margins: { top: number; right: number; bottom: number; left: number }; bodySize: number }
+
+function docxTable(t: Extract<DocxPart, { type: 'table' }>, contentW: number, bodySize: number): string {
+  const tw = (pt: number) => Math.max(1, Math.round(pt * 20))
+  const total = t.widths.reduce((a, b) => a + b, 0) || 1
+  // Columns keep their proportions from the PDF and fill the text width.
+  const cols = t.widths.map((w) => tw((w / total) * contentW))
+  const half = Math.max(2, Math.round(t.size * 2))
+  const size = Math.abs(t.size - bodySize) > 0.6 ? `<w:sz w:val="${half}"/><w:szCs w:val="${half}"/>` : ''
+  const border = (side: string) => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="A0A0A0"/>`
+  const borders = `<w:tblBorders>${['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(border).join('')}</w:tblBorders>`
+  const tblPr = `<w:tblPr>${t.rtl ? '<w:bidiVisual/>' : ''}<w:tblW w:w="${cols.reduce((a, b) => a + b, 0)}" w:type="dxa"/>${borders}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>`
+  const grid = `<w:tblGrid>${cols.map((c) => `<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid>`
+  const rows = t.rows.map((row, r) => {
+    const cells = row.map((text, c) => {
+      const value = text ?? ''
+      const rtl = t.rtl || isRtlText(value)
+      // Numbers line up on the end of the cell, as in a spreadsheet.
+      const jc = value && parseNumber(value) ? `<w:jc w:val="${rtl ? 'left' : 'right'}"/>` : ''
+      const run = value ? `<w:r><w:rPr>${r === 0 ? '<w:b/><w:bCs/>' : ''}${rtl ? '<w:rtl/>' : ''}${size}</w:rPr><w:t xml:space="preserve">${xmlText(value)}</w:t></w:r>` : ''
+      return `<w:tc><w:tcPr><w:tcW w:w="${cols[c]}" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:spacing w:before="20" w:after="20"/>${rtl ? '<w:bidi/>' : ''}${jc}</w:pPr>${run}</w:p></w:tc>`
+    })
+    return `<w:tr>${r === 0 ? '<w:trPr><w:tblHeader/></w:trPr>' : ''}${cells.join('')}</w:tr>`
+  })
+  // An empty paragraph after the table keeps two tables in a row from merging in Word.
+  return `<w:tbl>${tblPr}${grid}${rows.join('')}</w:tbl><w:p><w:pPr><w:spacing w:after="0"/></w:pPr></w:p>`
+}
 
 export async function buildDocx(parts: DocxPart[], o: DocxOptions): Promise<Uint8Array> {
   const zip = new JSZip()
@@ -53,6 +81,7 @@ export async function buildDocx(parts: DocxPart[], o: DocxOptions): Promise<Uint
   const half = (pt: number) => Math.max(2, Math.round(pt * 2))
   for (const part of parts) {
     if (part.type === 'pageBreak') { body.push('<w:p><w:r><w:br w:type="page"/></w:r></w:p>'); continue }
+    if (part.type === 'table') { body.push(docxTable(part, contentW, o.bodySize)); continue }
     if (part.type === 'image') {
       img++
       const name = `image${img}.${part.ext === 'png' ? 'png' : 'jpeg'}`
