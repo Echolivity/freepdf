@@ -7,6 +7,7 @@ npm run test:cloudflare          # desktop browser suite inside Cloudflare's Pag
 npm run qa:cloudflare            # 30-scenario real-world QA in the Pages runtime → docs/QA_REPORT.md
 npm run qa                       # the same QA against `vite preview`
 npm run fixtures                 # regenerate the compression-matrix and Arabic fixtures
+python3 scripts/make-statement-fixtures.py   # synthetic bank statements (needs LibreOffice)
 node qa/webkitgtk-smoke.mjs      # WebKit engine via WebDriver, where Playwright's WebKit can't be installed
 node qa/screenshots.mjs out/     # desktop + mobile, EN + AR screenshots of Resize and Compare
 ```

@@ -27,7 +27,7 @@ export interface ToolDef {
   icon: IconName
   /** What the tool accepts and produces (shown on the tool page). */
   input: 'pdf' | 'images' | 'text' | 'docx' | 'xlsx' | 'html'
-  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html' | 'docx' | 'xlsx' | 'pptx'
+  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html' | 'docx' | 'xlsx' | 'pptx' | 'statement'
   /** Search keywords in every language (titles and descriptions are searched too). */
   keywords: { en: string[]; ar: string[] }
   component: LazyExoticComponent<ComponentType<{ tool: ToolDef }>>
@@ -51,6 +51,7 @@ const TextToPdf = lazy(() => import('./txt-to-pdf/TextToPdfTool'))
 const PdfToText = lazy(() => import('./pdf-to-txt/PdfToTextTool'))
 const OfficeToPdf = lazy(() => import('./office-to-pdf/OfficeToPdfTool'))
 const PdfToOffice = lazy(() => import('./pdf-to-office/PdfToOfficeTool'))
+const BankStatement = lazy(() => import('./bank-statement/BankStatementTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -98,6 +99,8 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['word', 'docx', 'edit', 'editable', 'document', 'office', 'convert'], ar: ['وورد', 'مستند', 'تحرير', 'قابل للتعديل', 'تحويل'] } },
   { slug: 'pdf-to-excel', input: 'pdf', output: 'xlsx', icon: 'sheetOut', category: 'convert', component: PdfToOffice,
     keywords: { en: ['excel', 'xlsx', 'table', 'tables', 'spreadsheet', 'extract tables', 'convert'], ar: ['إكسل', 'جدول', 'جداول', 'استخراج الجداول', 'تحويل'] } },
+  { slug: 'bank-statement-to-excel', input: 'pdf', output: 'statement', icon: 'statement', category: 'convert', component: BankStatement,
+    keywords: { en: ['bank statement', 'statement', 'transactions', 'excel', 'csv', 'ofx', 'quickbooks', 'xero', 'accounting', 'bookkeeping', 'reconcile'], ar: ['كشف حساب', 'كشف بنكي', 'معاملات', 'حركات', 'إكسل', 'محاسبة', 'مطابقة'] } },
   { slug: 'pdf-to-powerpoint', input: 'pdf', output: 'pptx', icon: 'slidesOut', category: 'convert', component: PdfToOffice,
     keywords: { en: ['powerpoint', 'pptx', 'slides', 'presentation', 'ppt', 'convert'], ar: ['باوربوينت', 'شرائح', 'عرض تقديمي', 'تحويل'] } },
   { slug: 'pdf-to-webp', input: 'pdf', output: 'images', icon: 'imageOut', category: 'convert', component: PdfToImage,

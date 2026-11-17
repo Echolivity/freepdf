@@ -29,6 +29,8 @@ const paths = {
   docOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h5" /><rect x="11" y="12" width="10" height="10" rx="1.2" /><path d="M13.5 15h5M13.5 17.5h5M13.5 20h3" /></>,
   // A document coming out as a spreadsheet.
   sheetOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h5" /><rect x="11" y="12" width="10" height="10" rx="1.2" /><path d="M11 15.5h10M11 18.8h10M14.5 12v10M17.8 12v10" /></>,
+  // A statement whose balances check out.
+  statement: <><path d="M4 3h8l4 4v3" /><path d="M4 3v18h6" /><path d="M7 9h6M7 12.5h4" /><circle cx="17" cy="17" r="5" /><path d="M14.8 17.1l1.5 1.5 2.9-3" /></>,
   // A document coming out as slides.
   slidesOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h4" /><rect x="10" y="12" width="12" height="8" rx="1.2" /><path d="M16 20v2.5M13.5 22.5h5" /><path d="M12.5 17.5l2.2-2.3 1.6 1.6 1.2-1.2 2 1.9" /></>,
   imageIn: <><rect x="3" y="3" width="9" height="8" rx="1.2" /><path d="M3.5 10l2.8-3 2 2 1.2-1.2 2.2 2.2" /><path d="M14 6h3l4 4v11H9v-6" /><path d="M17 6v4h4" /></>,

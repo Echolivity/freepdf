@@ -18,20 +18,20 @@ export function xmlText(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+export const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
 const EMU = 12700 // per point
 
-function core(title: string): string {
+export function core(title: string): string {
   const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z')
   return `${XML}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xmlText(title)}</dc:title><dc:creator>FreePDF</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`
 }
-const APP = `${XML}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>FreePDF</Application><DocSecurity>0</DocSecurity></Properties>`
+export const APP = `${XML}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>FreePDF</Application><DocSecurity>0</DocSecurity></Properties>`
 
-function rootRels(main: string): string {
+export function rootRels(main: string): string {
   return `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="${main}"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`
 }
 
-async function finish(zip: JSZip): Promise<Uint8Array> {
+export async function finish(zip: JSZip): Promise<Uint8Array> {
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 }, mimeType: 'application/zip' })
 }
 
@@ -128,7 +128,7 @@ export function sheetName(name: string, used: Set<string>): string {
   return n
 }
 
-function colName(i: number): string {
+export function colName(i: number): string {
   let s = ''
   for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s
   return s

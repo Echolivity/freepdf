@@ -1,0 +1,119 @@
+{
+ "opening": 18980.4,
+ "closing": 13962.97,
+ "currency": "AED",
+ "transactions": [
+  {
+   "date": "2026-08-03",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26945557",
+   "debit": 421.2,
+   "credit": null,
+   "balance": 18559.2
+  },
+  {
+   "date": "2026-08-05",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26989532",
+   "debit": 135.09,
+   "credit": null,
+   "balance": 18424.11
+  },
+  {
+   "date": "2026-08-05",
+   "description": "REFUND ONLINE STORE ORDER",
+   "reference": "FT26226757",
+   "debit": null,
+   "credit": 115.72,
+   "balance": 18539.83
+  },
+  {
+   "date": "2026-08-06",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26249838",
+   "debit": 782.45,
+   "credit": null,
+   "balance": 17757.38
+  },
+  {
+   "date": "2026-08-07",
+   "description": "UTILITY BILL ELECTRICITY",
+   "reference": "FT26339889",
+   "debit": 488.97,
+   "credit": null,
+   "balance": 17268.41
+  },
+  {
+   "date": "2026-08-09",
+   "description": "PHARMACY",
+   "reference": "FT26298856",
+   "debit": 63.28,
+   "credit": null,
+   "balance": 17205.13
+  },
+  {
+   "date": "2026-08-10",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26885033",
+   "debit": 6.69,
+   "credit": null,
+   "balance": 17198.44
+  },
+  {
+   "date": "2026-08-11",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26912520",
+   "debit": 648.07,
+   "credit": null,
+   "balance": 16550.37
+  },
+  {
+   "date": "2026-08-12",
+   "description": "PHARMACY",
+   "reference": "FT26394074",
+   "debit": 734.61,
+   "credit": null,
+   "balance": 15815.76
+  },
+  {
+   "date": "2026-08-13",
+   "description": "FUEL STATION",
+   "reference": "FT26212690",
+   "debit": 23.45,
+   "credit": null,
+   "balance": 15792.31
+  },
+  {
+   "date": "2026-08-15",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26984414",
+   "debit": 226.97,
+   "credit": null,
+   "balance": 15565.34
+  },
+  {
+   "date": "2026-08-16",
+   "description": "POS PURCHASE GROCERY MART RIYADH",
+   "reference": "FT26784940",
+   "debit": 889.99,
+   "credit": null,
+   "balance": 14675.35
+  },
+  {
+   "date": "2026-08-17",
+   "description": "FUEL STATION",
+   "reference": "FT26652146",
+   "debit": 625.29,
+   "credit": null,
+   "balance": 14050.06
+  },
+  {
+   "date": "2026-08-18",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26226993",
+   "debit": 87.09,
+   "credit": null,
+   "balance": 13962.97
+  }
+ ]
+}

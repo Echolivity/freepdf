@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — Bank statement to Excel
+
+- **Added:** *Bank statement to Excel* (`/bank-statement-to-excel`). Reads the transaction table of a
+  text PDF statement in the browser (English or Arabic headers; separate debit/credit or one signed
+  amount column; wrapped descriptions; tables across pages; newest-first statements) and saves Excel
+  (real dates and amounts, a Check column, a summary sheet), CSV (UTF-8 with BOM, formula-safe) or
+  OFX 1.0.2. Every row is checked against the running balance; rows that don't add up are highlighted
+  with the expected balance.
+- **Tests:** synthetic statements (`scripts/make-statement-fixtures.py`: English, Arabic, signed and
+  newest-first), unit tests for parsing and exports, browser tests for all three formats. OFX output
+  was read back with `ofxparse`; workbooks were opened in LibreOffice.
+
 ## Unreleased — PDF to Word tables, editable PowerPoint text
 
 - **Added:** PDF to PowerPoint makes editable slides by default: one text box per paragraph or table

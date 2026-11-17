@@ -1,0 +1,375 @@
+{
+ "opening": 15230.75,
+ "closing": 13845.29,
+ "currency": "SAR",
+ "transactions": [
+  {
+   "date": "2026-09-02",
+   "description": "MOBILE BILL PAYMENT",
+   "reference": "FT26789129",
+   "debit": 71.62,
+   "credit": null,
+   "balance": 15159.13
+  },
+  {
+   "date": "2026-09-02",
+   "description": "ONLINE TRANSFER TO SAVINGS ACCOUNT FOR MONTHLY BUDGET AND EMERGENCY FUND",
+   "reference": "FT26518706",
+   "debit": 346.26,
+   "credit": null,
+   "balance": 14812.87
+  },
+  {
+   "date": "2026-09-04",
+   "description": "PHARMACY",
+   "reference": "FT26710098",
+   "debit": 152.83,
+   "credit": null,
+   "balance": 14660.04
+  },
+  {
+   "date": "2026-09-04",
+   "description": "ONLINE TRANSFER TO SAVINGS ACCOUNT FOR MONTHLY BUDGET AND EMERGENCY FUND",
+   "reference": "FT26056108",
+   "debit": 892.01,
+   "credit": null,
+   "balance": 13768.03
+  },
+  {
+   "date": "2026-09-05",
+   "description": "POS PURCHASE GROCERY MART RIYADH",
+   "reference": "FT26372838",
+   "debit": 191.39,
+   "credit": null,
+   "balance": 13576.64
+  },
+  {
+   "date": "2026-09-05",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26543455",
+   "debit": 850.6,
+   "credit": null,
+   "balance": 12726.04
+  },
+  {
+   "date": "2026-09-06",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26611501",
+   "debit": 134.01,
+   "credit": null,
+   "balance": 12592.03
+  },
+  {
+   "date": "2026-09-07",
+   "description": "SALARY TRANSFER EXAMPLE TRADING CO",
+   "reference": "FT26447906",
+   "debit": null,
+   "credit": 8500,
+   "balance": 21092.03
+  },
+  {
+   "date": "2026-09-08",
+   "description": "POS PURCHASE GROCERY MART RIYADH",
+   "reference": "FT26487455",
+   "debit": 772.6,
+   "credit": null,
+   "balance": 20319.43
+  },
+  {
+   "date": "2026-09-09",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26651760",
+   "debit": 233.62,
+   "credit": null,
+   "balance": 20085.81
+  },
+  {
+   "date": "2026-09-10",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26811693",
+   "debit": 776.83,
+   "credit": null,
+   "balance": 19308.98
+  },
+  {
+   "date": "2026-09-11",
+   "description": "POS PURCHASE GROCERY MART RIYADH",
+   "reference": "FT26939291",
+   "debit": 61.5,
+   "credit": null,
+   "balance": 19247.48
+  },
+  {
+   "date": "2026-09-12",
+   "description": "MOBILE BILL PAYMENT",
+   "reference": "FT26712510",
+   "debit": 538.89,
+   "credit": null,
+   "balance": 18708.59
+  },
+  {
+   "date": "2026-09-14",
+   "description": "FUEL STATION",
+   "reference": "FT26417712",
+   "debit": 599.39,
+   "credit": null,
+   "balance": 18109.2
+  },
+  {
+   "date": "2026-09-15",
+   "description": "FUEL STATION",
+   "reference": "FT26836744",
+   "debit": 632.5,
+   "credit": null,
+   "balance": 17476.7
+  },
+  {
+   "date": "2026-09-15",
+   "description": "PHARMACY",
+   "reference": "FT26591473",
+   "debit": 180.81,
+   "credit": null,
+   "balance": 17295.89
+  },
+  {
+   "date": "2026-09-16",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26996923",
+   "debit": 427.07,
+   "credit": null,
+   "balance": 16868.82
+  },
+  {
+   "date": "2026-09-17",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26961184",
+   "debit": 140.34,
+   "credit": null,
+   "balance": 16728.48
+  },
+  {
+   "date": "2026-09-18",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26560877",
+   "debit": 422.38,
+   "credit": null,
+   "balance": 16306.1
+  },
+  {
+   "date": "2026-09-18",
+   "description": "UTILITY BILL ELECTRICITY",
+   "reference": "FT26413557",
+   "debit": 773.8,
+   "credit": null,
+   "balance": 15532.3
+  },
+  {
+   "date": "2026-09-18",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26059649",
+   "debit": 174.52,
+   "credit": null,
+   "balance": 15357.78
+  },
+  {
+   "date": "2026-09-19",
+   "description": "POS PURCHASE GROCERY MART RIYADH",
+   "reference": "FT26495491",
+   "debit": 899.08,
+   "credit": null,
+   "balance": 14458.7
+  },
+  {
+   "date": "2026-09-20",
+   "description": "FUEL STATION",
+   "reference": "FT26401518",
+   "debit": 491.18,
+   "credit": null,
+   "balance": 13967.52
+  },
+  {
+   "date": "2026-09-21",
+   "description": "SALARY TRANSFER EXAMPLE TRADING CO",
+   "reference": "FT26177717",
+   "debit": null,
+   "credit": 8500,
+   "balance": 22467.52
+  },
+  {
+   "date": "2026-09-21",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26503406",
+   "debit": 42.17,
+   "credit": null,
+   "balance": 22425.35
+  },
+  {
+   "date": "2026-09-21",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26473033",
+   "debit": 134.7,
+   "credit": null,
+   "balance": 22290.65
+  },
+  {
+   "date": "2026-09-22",
+   "description": "MOBILE BILL PAYMENT",
+   "reference": "FT26996365",
+   "debit": 891.34,
+   "credit": null,
+   "balance": 21399.31
+  },
+  {
+   "date": "2026-09-24",
+   "description": "UTILITY BILL ELECTRICITY",
+   "reference": "FT26721760",
+   "debit": 630.04,
+   "credit": null,
+   "balance": 20769.27
+  },
+  {
+   "date": "2026-09-25",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26863463",
+   "debit": 317.47,
+   "credit": null,
+   "balance": 20451.8
+  },
+  {
+   "date": "2026-09-27",
+   "description": "PHARMACY",
+   "reference": "FT26905182",
+   "debit": 522.57,
+   "credit": null,
+   "balance": 19929.23
+  },
+  {
+   "date": "2026-09-28",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26488210",
+   "debit": 593.49,
+   "credit": null,
+   "balance": 19335.74
+  },
+  {
+   "date": "2026-09-29",
+   "description": "PHARMACY",
+   "reference": "FT26242444",
+   "debit": 317.52,
+   "credit": null,
+   "balance": 19018.22
+  },
+  {
+   "date": "2026-09-30",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26750361",
+   "debit": 372.78,
+   "credit": null,
+   "balance": 18645.44
+  },
+  {
+   "date": "2026-10-02",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26000780",
+   "debit": 577.76,
+   "credit": null,
+   "balance": 18067.68
+  },
+  {
+   "date": "2026-10-03",
+   "description": "MOBILE BILL PAYMENT",
+   "reference": "FT26908899",
+   "debit": 505.16,
+   "credit": null,
+   "balance": 17562.52
+  },
+  {
+   "date": "2026-10-04",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26771319",
+   "debit": 246.17,
+   "credit": null,
+   "balance": 17316.35
+  },
+  {
+   "date": "2026-10-05",
+   "description": "CARD PAYMENT COFFEE HOUSE",
+   "reference": "FT26789361",
+   "debit": 707.26,
+   "credit": null,
+   "balance": 16609.09
+  },
+  {
+   "date": "2026-10-06",
+   "description": "FUEL STATION",
+   "reference": "FT26024530",
+   "debit": 597.06,
+   "credit": null,
+   "balance": 16012.03
+  },
+  {
+   "date": "2026-10-06",
+   "description": "REFUND ONLINE STORE ORDER",
+   "reference": "FT26595696",
+   "debit": null,
+   "credit": 596.64,
+   "balance": 16608.67
+  },
+  {
+   "date": "2026-10-07",
+   "description": "REFUND ONLINE STORE ORDER",
+   "reference": "FT26746861",
+   "debit": null,
+   "credit": 194.09,
+   "balance": 16802.76
+  },
+  {
+   "date": "2026-10-08",
+   "description": "RENT PAYMENT APARTMENT 12",
+   "reference": "FT26779736",
+   "debit": 207.47,
+   "credit": null,
+   "balance": 16595.29
+  },
+  {
+   "date": "2026-10-10",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26438708",
+   "debit": 463.71,
+   "credit": null,
+   "balance": 16131.58
+  },
+  {
+   "date": "2026-10-11",
+   "description": "FUEL STATION",
+   "reference": "FT26512539",
+   "debit": 583.51,
+   "credit": null,
+   "balance": 15548.07
+  },
+  {
+   "date": "2026-10-13",
+   "description": "UTILITY BILL ELECTRICITY",
+   "reference": "FT26165649",
+   "debit": 455.26,
+   "credit": null,
+   "balance": 15092.81
+  },
+  {
+   "date": "2026-10-14",
+   "description": "ATM WITHDRAWAL KING FAHD RD",
+   "reference": "FT26585713",
+   "debit": 349.93,
+   "credit": null,
+   "balance": 14742.88
+  },
+  {
+   "date": "2026-10-15",
+   "description": "INTERNATIONAL TRANSFER FEE AND CORRESPONDENT BANK CHARGES FOR OUTGOING WIRE",
+   "reference": "FT26810892",
+   "debit": 897.59,
+   "credit": null,
+   "balance": 13845.29
+  }
+ ]
+}
