@@ -97,19 +97,6 @@ jobs:
       - run: npx playwright install --with-deps firefox
       # WebKit (Safari) projects are skipped in CI for now, at the owner's request; run them locally with ALL_BROWSERS=1.
       - run: npx playwright test --project=firefox
-      # Diagnostics only (does not change the job result): browser-process output for the Firefox a11y run.
-      - name: Firefox a11y browser log (diagnostics)
-        if: failure()
-        run: DEBUG=pw:browser npx playwright test tests/e2e/a11y.spec.ts --project=firefox --retries=0 --grep "en, light" 2>&1 | tail -n 300 || true
-      # Temporary: controlled experiments for the Firefox crash (does not change the job result).
-      - name: Firefox crash experiments (diagnostics)
-        if: always()
-        run: |
-          # Round 5: exact copy of a11y.spec.ts, then cut down. Each run starts a fresh Firefox.
-          for f in c4 c5 c6 c7 c8 c9 c10 c4; do
-            echo "--- copy $f ---"
-            FIREFOX_DIAG=1 npx playwright test tests/e2e/diag-$f.spec.ts -g "en, light" --project=firefox --retries=0 --workers=1 --reporter=list 2>&1 | grep -E "DIAG|✓|✘|Page crashed|passed|failed|^\s+> [0-9]+ \|" | head -8 || true
-          done
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

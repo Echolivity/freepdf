@@ -23,7 +23,10 @@ for (const lang of ['en', 'ar'] as const) {
       await page.goto('/split-pdf')
       await audit(page, 'tool empty')
       await upload(page, 'rich.pdf')
-      await expect(page.getByRole('list').nth(1)).toBeVisible()
+      // Wait with waitFor (it still fails if the thumbnail list never becomes visible). Polling with
+      // expect(...).toBeVisible() while PDF.js is drawing the thumbnails crashes Firefox's content
+      // process (SIGSEGV) in CI; a browser/driver bug, confirmed by isolating it in CI experiments.
+      await page.getByRole('list').nth(1).waitFor({ state: 'visible' })
       await audit(page, 'tool with file')
       await page.goto('/merge-pdf')
       await upload(page, 'text-8p.pdf', 'signed.pdf')
