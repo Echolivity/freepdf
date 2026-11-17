@@ -103,7 +103,11 @@ directly from `@playwright/test`. No exceptions are configured.
 
 ## Not covered or not executed
 
-- **Firefox:** not executed anywhere yet for 1.2.0 (configured in CI).
+- **Firefox:** runs in CI's `cross-engine` job. All functional and conversion tests pass; the four
+  axe "WCAG AA: key screens" sweeps still fail because Firefox's content process crashes (SIGSEGV) while
+  axe scans some screens (the Merge result). This is under investigation and looks like a Firefox or
+  Playwright driver bug: the same screens work in Firefox when used normally, and the same audits pass
+  in Chromium.
 - **Safari (macOS/iOS):** not executed. WebKitGTK and Playwright's WebKit share the engine but not
   Safari's media, memory or file-picker behaviour.
 - **Physical devices:** none. Tab-killing under memory pressure is only approximated by the simulated
