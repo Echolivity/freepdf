@@ -97,10 +97,6 @@ jobs:
       - run: npx playwright install --with-deps firefox
       # WebKit (Safari) projects are skipped in CI for now, at the owner's request; run them locally with ALL_BROWSERS=1.
       - run: npx playwright test --project=firefox
-      # Temporary: which axe rule crashes Firefox (does not change the job result).
-      - name: Firefox axe rule bisection (diagnostics)
-        if: always()
-        run: FIREFOX_DIAG=1 npx playwright test tests/e2e/firefox-diag.spec.ts --project=firefox --retries=0 --workers=2 --reporter=list 2>&1 | grep -E "DIAG|passed|failed" || true
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

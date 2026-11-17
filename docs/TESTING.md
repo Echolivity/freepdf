@@ -103,11 +103,11 @@ directly from `@playwright/test`. No exceptions are configured.
 
 ## Not covered or not executed
 
-- **Firefox:** runs in CI's `cross-engine` job. All functional and conversion tests pass; the four
-  axe "WCAG AA: key screens" sweeps still fail because Firefox's content process crashes (SIGSEGV) while
-  axe scans some screens (the Merge result). This is under investigation and looks like a Firefox or
-  Playwright driver bug: the same screens work in Firefox when used normally, and the same audits pass
-  in Chromium.
+- **Firefox:** runs in CI's `cross-engine` job. Known issue there: once a download has happened in a page,
+  axe's role/name rules (`aria-allowed-attr`, `aria-conditional-attr`, `aria-prohibited-attr`,
+  `label-content-name-mismatch`, `nested-interactive`) crash Playwright's Firefox content process (SIGSEGV),
+  whatever part of the page they scan. The accessibility sweep therefore audits the result screen
+  without clicking Download; downloads are tested by the functional tests.
 - **Safari (macOS/iOS):** not executed. WebKitGTK and Playwright's WebKit share the engine but not
   Safari's media, memory or file-picker behaviour.
 - **Physical devices:** none. Tab-killing under memory pressure is only approximated by the simulated

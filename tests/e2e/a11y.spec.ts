@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
-import { upload, runAndDownload } from './helpers'
+import { upload } from './helpers'
 
 /** Automated WCAG 2.1 AA checks (axe-core) in both languages, incl. colour contrast, in both themes. */
 async function audit(page: import('@playwright/test').Page, label: string) {
@@ -37,7 +37,11 @@ for (const lang of ['en', 'ar'] as const) {
       await audit(page, 'tool with file')
       await page.goto('/merge-pdf')
       await upload(page, 'text-8p.pdf', 'signed.pdf')
-      await runAndDownload(page)
+      // Audit the result screen without clicking Download (downloads are covered by the functional tests).
+      // In CI, once a download has happened, axe's role/name rules crash Playwright's Firefox (SIGSEGV),
+      // whatever part of the page they scan: isolated rule by rule and part by part in CI experiments.
+      await page.getByTestId('run').click()
+      await expect(page.getByTestId('download')).toBeVisible({ timeout: 60_000 })
       await audit(page, 'result')
       await page.goto('/resize-pdf')
       await upload(page, 'rich.pdf')
