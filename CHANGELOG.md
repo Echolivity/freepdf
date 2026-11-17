@@ -9,8 +9,8 @@
   right-to-left tables), with an option to turn it off. The result note counts the tables.
 - **Fixed:** a header and values that don't overlap horizontally no longer split one column into two
   (PDF to Word and PDF to Excel).
-- **Tests:** fixed the Firefox CI crash in the accessibility sweep (axe after a download crashes
-  Playwright's Firefox; the sweep now audits the result screen without downloading). The sweep waits for
+- **Tests:** fixed the Firefox CI crash in the accessibility sweep (five axe rules crash
+  Playwright's Firefox partway through it; they're disabled in Firefox only and still run in Chromium). The sweep waits for
   visible thumbnails to finish rendering. The cancel test holds its job so it can't finish first.
 
 ## Unreleased — PDF conversion, batch 2

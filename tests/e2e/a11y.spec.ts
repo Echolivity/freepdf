@@ -1,6 +1,8 @@
 import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
-import { upload } from './helpers'
+import { upload, runAndDownload } from './helpers'
+
+const FIREFOX_CRASHING_RULES = ['aria-allowed-attr', 'aria-conditional-attr', 'aria-prohibited-attr', 'label-content-name-mismatch', 'nested-interactive']
 
 /** Automated WCAG 2.1 AA checks (axe-core) in both languages, incl. colour contrast, in both themes. */
 async function audit(page: import('@playwright/test').Page, label: string) {
@@ -14,7 +16,12 @@ async function audit(page: import('@playwright/test').Page, label: string) {
     undefined,
     { polling: 250, timeout: 30_000 },
   )
-  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+  let builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+  // Firefox only: these five rules crash Playwright's Firefox content process (SIGSEGV) in CI partway
+  // through this sweep, whichever part of the page they scan. Isolated rule by rule in CI; the other rules
+  // pass. They still run on every screen in the Chromium projects. See docs/TESTING.md.
+  if (page.context().browser()?.browserType().name() === 'firefox') builder = builder.disableRules(FIREFOX_CRASHING_RULES)
+  const r = await builder.analyze()
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')})`)).toEqual([])
 }
@@ -37,11 +44,7 @@ for (const lang of ['en', 'ar'] as const) {
       await audit(page, 'tool with file')
       await page.goto('/merge-pdf')
       await upload(page, 'text-8p.pdf', 'signed.pdf')
-      // Audit the result screen without clicking Download (downloads are covered by the functional tests).
-      // In CI, once a download has happened, axe's role/name rules crash Playwright's Firefox (SIGSEGV),
-      // whatever part of the page they scan: isolated rule by rule and part by part in CI experiments.
-      await page.getByTestId('run').click()
-      await expect(page.getByTestId('download')).toBeVisible({ timeout: 60_000 })
+      await runAndDownload(page)
       await audit(page, 'result')
       await page.goto('/resize-pdf')
       await upload(page, 'rich.pdf')
