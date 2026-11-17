@@ -48,7 +48,8 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 `.github/workflows/ci.yml` runs on every push and pull request (details in [TESTING.md](TESTING.md)):
 1. `checks`: `npm audit --audit-level=high`, typecheck, lint, unit tests, build.
 2. `chromium`: the browser suite on emulated Chromium device profiles.
-3. `cross-engine`: the browser suite on Firefox, WebKit, iPad and iPhone SE (WebKit) profiles.
+3. `cross-engine`: the browser suite on Firefox (the WebKit profiles are skipped in CI for now; run
+   them locally with `ALL_BROWSERS=1`).
 4. `cloudflare`: the desktop browser suite and the 30-scenario real-world QA inside Cloudflare's Pages
    runtime (`wrangler pages dev`), with qpdf, pypdf and pyHanko validators.
 
