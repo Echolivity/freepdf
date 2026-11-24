@@ -11,7 +11,7 @@ import {
   type PDFObject,
   type PDFContext,
 } from 'pdf-lib'
-import pako from 'pako'
+import { deflate } from 'pako'
 import { loadPdf, saveDoc, noProgress, type NamedBytes, type ProgressFn } from './core'
 import { removeUnreachable } from './structure'
 import { msg } from '../../i18n/core'
@@ -152,7 +152,7 @@ function deflateIfUncompressed(ctx: PDFContext, ref: PDFRef, stream: PDFRawStrea
   if (!filters || filters.length) return false
   // XMP metadata is conventionally left readable; tiny streams don't benefit.
   if (dict.get(N('Type')) === N('Metadata') || stream.contents.length < 256) return false
-  const deflated = pako.deflate(stream.contents)
+  const deflated = deflate(stream.contents)
   if (deflated.length >= stream.contents.length * MIN_GAIN) return false
   dict.set(N('Filter'), N('FlateDecode'))
   ctx.assign(ref, PDFRawStream.of(dict, deflated))

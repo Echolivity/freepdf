@@ -6,6 +6,10 @@ updates:
     open-pull-requests-limit: 5
     groups:
       dev-dependencies: { dependency-type: development }
+    ignore:
+      # Keep Node's type definitions on the Node major the project runs on (see engines / CI).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }

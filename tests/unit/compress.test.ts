@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, PDFName, PDFRawStream, PDFNumber } from 'pdf-lib'
-import pako from 'pako'
+import { deflate } from 'pako'
+import { inflateSync } from 'node:zlib'
 import { compressPdf, undoPngPredictor, type ImageCodec } from '../../src/lib/pdf/compress'
 import { fixture, numberedPdf, qpdfCheck } from './helpers'
 
@@ -66,7 +67,13 @@ describe('compress', () => {
     // 2x2 RGB image, row 0 filter None, row 1 filter Up
     const rows = new Uint8Array([0, 10, 20, 30, 40, 50, 60, 2, 1, 1, 1, 1, 1, 1])
     expect(Array.from(undoPngPredictor(rows, 6, 2, 3)!)).toEqual([10, 20, 30, 40, 50, 60, 11, 21, 31, 41, 51, 61])
-    expect(pako).toBeDefined()
+  })
+
+  it('writes standard zlib (FlateDecode) data with pako', () => {
+    const data = new Uint8Array(Array.from({ length: 5000 }, (_, i) => (i * 7) % 251))
+    const z = deflate(data)
+    expect(z[0]).toBe(0x78) // zlib header, as PDF FlateDecode expects
+    expect(new Uint8Array(inflateSync(z))).toEqual(data)
   })
 })
 

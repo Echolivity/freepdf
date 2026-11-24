@@ -5,16 +5,9 @@
 // `until` date has passed, so an exception can't outlive its reason. Every entry needs a reason.
 import { execFileSync } from 'node:child_process'
 
-const ACCEPTED = [
-  {
-    id: 'GHSA-fc5q-39xc-vjpf',
-    until: '2026-12-31',
-    reason:
-      'picomatch ReDoS. Every released version (<= 4.0.7, the latest) is affected, so there is no fix to ' +
-      'upgrade to. Reached only through build tooling (vite, vitest, tinyglobby, fdir); the production ' +
-      'audit (--omit=dev) is clean and picomatch is not in the shipped bundle. Remove once a fix ships.',
-  },
-]
+// Each entry: { id: 'GHSA-…', until: 'YYYY-MM-DD', reason: '…' }. Empty: every high/critical advisory fails.
+// (GHSA-fc5q-39xc-vjpf, picomatch, was accepted from 2026-11-18 until npm stopped reporting it.)
+const ACCEPTED = []
 
 let raw
 try {

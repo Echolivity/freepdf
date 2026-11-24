@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — dependency updates
+
+- **Updated:** pako 1 → 3 (Compress PDF's Flate encoder; now a named import), Vite 8.3.8,
+  Playwright 1.65.1, Wrangler 4.162.0, @napi-rs/canvas 1.1.1. GitHub Actions: checkout, setup-node,
+  setup-python and upload-artifact v7; cloudflare/wrangler-action v4 (installs Wrangler 4, which the
+  project already uses).
+- **Kept:** @types/node on the 24 line rather than 26, to match the Node versions the project runs on;
+  Dependabot now skips major `@types/node` bumps.
+- **CI:** the picomatch advisory exception is removed: npm no longer reports it.
+- **Tests:** checks that pako's output is standard zlib data, as PDF FlateDecode streams need.
+
 ## Unreleased — Bank statement to Excel
 
 - **Added:** *Bank statement to Excel* (`/bank-statement-to-excel`). Reads the transaction table of a

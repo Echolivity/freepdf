@@ -29,7 +29,7 @@ There is no server-side attack surface: the deployment is static files only.
 | Silent quality loss | The Lossless level never touches pixels. Lossy levels are labelled "Lossy", and a per-file report lists what was re-encoded and what was skipped. | Compression matrix tests, QA L1/L2. |
 | Clickjacking / embedding | `frame-ancestors 'none'`, `X-Frame-Options: DENY`, COOP and CORP `same-origin`. | Header test. |
 | Bank statements | Parsed in the page from PDF.js text; nothing is uploaded or stored. CSV cells that a spreadsheet would run as formulas (`=`, `+`, `-`, `@`, tab, CR) get a leading apostrophe; Excel cells are written as text or numbers, never formulas. Test fixtures are synthetic (invented bank, names, accounts). |
-| Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI via `scripts/audit.mjs`, which accepts only listed advisories with a reason and an expiry date. Current exception: GHSA-fc5q-39xc-vjpf (picomatch ReDoS, no fixed release yet; build tooling only, not shipped; until 2026-12-31). Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
+| Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI via `scripts/audit.mjs`, which accepts only listed advisories with a reason and an expiry date. No exceptions are currently listed. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
 
 ## Unreleased: conversion batch 2
