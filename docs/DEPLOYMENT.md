@@ -53,7 +53,9 @@ database, KV, R2, D1 or Workers script, and nothing that costs money at normal t
 4. `cloudflare`: the desktop browser suite and the 30-scenario real-world QA inside Cloudflare's Pages
    runtime (`wrangler pages dev`), with qpdf, pypdf and pyHanko validators.
 
-The deploy job needs all four to pass.
+The deploy job needs all four to pass. On the first push to `main` it creates the Pages project
+(`freepdf`, or `CF_PAGES_PROJECT`, production branch `main`) if it doesn't exist yet, so there is
+nothing to create in the dashboard.
 
 It **deploys only when you allow it**. Configure these in **Settings → Secrets and variables → Actions**:
 
