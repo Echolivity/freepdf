@@ -6,6 +6,8 @@
   Playwright 1.65.1, Wrangler 4.162.0, @napi-rs/canvas 1.1.1. GitHub Actions: checkout, setup-node,
   setup-python and upload-artifact v7; cloudflare/wrangler-action v4 (installs Wrangler 4, which the
   project already uses).
+- **Updated (later):** react-router-dom 7.18.6; @napi-rs/canvas 1.2.0, oxlint 1.94.0, vitest 5.1.1,
+  Wrangler 4.166.0 (Wrangler now depends on Cloudflare's SDK; development tool only, not shipped).
 - **Kept:** @types/node on the 24 line rather than 26, to match the Node versions the project runs on;
   Dependabot now skips major `@types/node` bumps.
 - **CI:** the picomatch advisory exception is removed: npm no longer reports it.
