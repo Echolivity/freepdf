@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — OCR
+
+- **Added:** *OCR: make scans searchable* (`/ocr-pdf`). Scanned PDFs and photos of pages (JPG, PNG,
+  WebP, TIFF) become searchable PDFs, with an invisible text layer laid over the unchanged scan, or
+  text files. English, Arabic or both. Pages that already have text can be skipped. Recognition runs
+  in the browser with tesseract.js 7 (Apache-2.0), self-hosted under `/ocr/<version>/` and loaded only
+  when used (about 6–8 MB the first time).
+- **Added:** *Bank statement to Excel* reads scanned statements with OCR. A misread figure breaks the
+  running-balance check, so that row is highlighted; a balance OCR couldn't read is flagged too.
+- **Fixed:** statement header cells split into separate words ("Value" / "Date") are recognised; an
+  amount whose decimal point was read as a colon (`15,159:13`) is repaired.
+- **Tests:** synthetic scans (`scripts/make-ocr-fixtures.py`), unit tests for the text layer (English,
+  Arabic, rotated pages, renders identically) and OCR result conversion, browser tests for both tools.
+
 ## Unreleased — dependency updates
 
 - **Updated:** pako 1 → 3 (Compress PDF's Flate encoder; now a named import), Vite 8.3.8,

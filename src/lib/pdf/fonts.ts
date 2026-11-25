@@ -31,6 +31,10 @@ let loader: Loader = async (file) => {
   if (!res.ok) throw new Error(`font ${file}: HTTP ${res.status}`)
   return new Uint8Array(await res.arrayBuffer())
 }
+/** The raw bytes of a bundled font file (IBMPlexSansArabic-Regular.ttf / -Bold.ttf). */
+export function fontBytes(file: string): Promise<Uint8Array> {
+  return loader(file)
+}
 export function setFontLoader(fn: Loader) {
   loader = fn
 }

@@ -52,6 +52,8 @@ export interface Statement {
   rtl: boolean
   checked: number
   mismatches: number
+  /** Rows whose printed balance couldn't be read although the statement has a balance column (OCR). */
+  missingBalances: number
   /** Closing balance printed on the statement agrees with the last transaction's balance (null: no closing row). */
   closingOk: boolean | null
 }
@@ -103,6 +105,8 @@ export function parseAmount(raw: string): { value: number; sign: -1 | 0 | 1 } | 
   if (/^[-−–]/.test(s)) { sign = -1; s = s.slice(1).trim() }
   else if (/[-−–]$/.test(s)) { sign = -1; s = s.slice(0, -1).trim() }
   else if (/^\+/.test(s)) { sign = 1; s = s.slice(1).trim() }
+  // OCR often reads the decimal point as a colon or semicolon (15,159:13).
+  s = s.replace(/(\d)[:;](\d{2})$/, '$1.$2')
   if (!/^\d[\d,. '’]*$/.test(s)) return null
   // Decimal separator: the last of . or , when followed by 1–2 digits at the end.
   const m = /[.,](\d{1,2})$/.exec(s)
@@ -203,7 +207,9 @@ function headerColumns(lines: Line[], i: number): { columns: Column[]; used: num
     const spans = ls.flatMap((l) => l.spans).sort((a, b) => a.x - b.x)
     const groups: { spans: Span[]; x0: number; x1: number }[] = []
     for (const s of spans) {
-      const g = groups.find((g) => s.x < g.x1 + s.size * 0.6 && s.x + s.width > g.x0 - s.size * 0.6)
+      // Words of one header cell ("Value Date") sit about a space apart; OCR reports them as separate
+      // words with tight boxes, so allow up to a letter-height between them.
+      const g = groups.find((g) => s.x < g.x1 + s.size * 1.1 && s.x + s.width > g.x0 - s.size * 1.1)
       if (g) { g.spans.push(s); g.x0 = Math.min(g.x0, s.x); g.x1 = Math.max(g.x1, s.x + s.width) }
       else groups.push({ spans: [s], x0: s.x, x1: s.x + s.width })
     }
@@ -424,6 +430,7 @@ export function parseStatement(pages: PageText[], opts: { dateOrder?: 'dmy' | 'm
     rtl: isRtlText(allText.replace(/[\s\d.,/:\-*]+/g, '')),
     checked,
     mismatches,
+    missingBalances: roles.includes('balance') ? transactions.filter((t) => t.balance === null).length : 0,
     closingOk: closing === null || last === null ? null : Math.abs(closing - last) < 0.005,
   }
 }

@@ -26,8 +26,8 @@ export interface ToolDef {
   category: Category
   icon: IconName
   /** What the tool accepts and produces (shown on the tool page). */
-  input: 'pdf' | 'images' | 'text' | 'docx' | 'xlsx' | 'html'
-  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html' | 'docx' | 'xlsx' | 'pptx' | 'statement'
+  input: 'pdf' | 'images' | 'text' | 'docx' | 'xlsx' | 'html' | 'scans'
+  output: 'pdf' | 'pdfs' | 'images' | 'report' | 'text' | 'html' | 'docx' | 'xlsx' | 'pptx' | 'statement' | 'ocr'
   /** Search keywords in every language (titles and descriptions are searched too). */
   keywords: { en: string[]; ar: string[] }
   component: LazyExoticComponent<ComponentType<{ tool: ToolDef }>>
@@ -52,6 +52,7 @@ const PdfToText = lazy(() => import('./pdf-to-txt/PdfToTextTool'))
 const OfficeToPdf = lazy(() => import('./office-to-pdf/OfficeToPdfTool'))
 const PdfToOffice = lazy(() => import('./pdf-to-office/PdfToOfficeTool'))
 const BankStatement = lazy(() => import('./bank-statement/BankStatementTool'))
+const Ocr = lazy(() => import('./ocr/OcrTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -99,6 +100,8 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['word', 'docx', 'edit', 'editable', 'document', 'office', 'convert'], ar: ['وورد', 'مستند', 'تحرير', 'قابل للتعديل', 'تحويل'] } },
   { slug: 'pdf-to-excel', input: 'pdf', output: 'xlsx', icon: 'sheetOut', category: 'convert', component: PdfToOffice,
     keywords: { en: ['excel', 'xlsx', 'table', 'tables', 'spreadsheet', 'extract tables', 'convert'], ar: ['إكسل', 'جدول', 'جداول', 'استخراج الجداول', 'تحويل'] } },
+  { slug: 'ocr-pdf', input: 'scans', output: 'ocr', icon: 'ocr', category: 'convert', component: Ocr,
+    keywords: { en: ['ocr', 'scan', 'scanned', 'searchable', 'recognize text', 'recognise text', 'image to text', 'photo to text', 'copy text from scan', 'arabic ocr'], ar: ['ocr', 'التعرف على النصوص', 'استخراج النص', 'مسح ضوئي', 'ممسوح', 'قابل للبحث', 'صورة إلى نص'] } },
   { slug: 'bank-statement-to-excel', input: 'pdf', output: 'statement', icon: 'statement', category: 'convert', component: BankStatement,
     keywords: { en: ['bank statement', 'statement', 'transactions', 'excel', 'csv', 'ofx', 'quickbooks', 'xero', 'accounting', 'bookkeeping', 'reconcile'], ar: ['كشف حساب', 'كشف بنكي', 'معاملات', 'حركات', 'إكسل', 'محاسبة', 'مطابقة'] } },
   { slug: 'pdf-to-powerpoint', input: 'pdf', output: 'pptx', icon: 'slidesOut', category: 'convert', component: PdfToOffice,

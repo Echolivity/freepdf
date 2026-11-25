@@ -20,6 +20,8 @@ export interface StatementLabels {
   ok: string
   /** "Expected {amount}" */
   expected: string
+  /** Shown when a row's balance couldn't be read. */
+  noBalance: string
   /** Summary rows. */
   file: string
   account: string
@@ -79,6 +81,7 @@ export function statementCsv(s: Statement, l: StatementLabels): Uint8Array {
 function checkText(t: Transaction, l: StatementLabels): string {
   if (t.check === 'ok') return l.ok
   if (t.check === 'mismatch') return l.expected.replace('{amount}', money(t.expected!))
+  if (t.balance === null && l.noBalance) return l.noBalance
   return ''
 }
 
@@ -112,7 +115,7 @@ export async function statementXlsx(s: Statement, l: StatementLabels, o: { title
   const widths = [12, ...(vd ? [12] : []), 48, ...(ref ? [16] : []), 14, 14, 16, 22]
   const rows = [row(1, head.map((h) => ({ kind: 'text', v: h, s: 1 })))]
   chronological(s).forEach((t, i) => {
-    const bad = t.check === 'mismatch'
+    const bad = t.check === 'mismatch' || (t.balance === null && s.columns.includes('balance'))
     const date = (iso: string | undefined): XCell => (iso ? { kind: 'num', v: excelDate(iso), s: bad ? 4 : 2 } : null)
     const num = (n: number | null): XCell => (n === null ? (bad ? { kind: 'text', v: '', s: 6 } : null) : { kind: 'num', v: n, s: bad ? 5 : 3 })
     const text = (v: string | undefined): XCell => (v ? { kind: 'text', v, s: bad ? 6 : 0 } : bad ? { kind: 'text', v: '', s: 6 } : null)

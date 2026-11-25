@@ -39,6 +39,8 @@ export function Dropzone({
   const depth = useRef(0)
   const kinds = accept.map((k) => LABEL[k]).join(', ')
   const isPdf = accept.length === 1 && accept[0] === 'pdf'
+  // PDFs and images together (scans): "Select PDFs or images".
+  const scans = accept.length > 1 && accept.includes('pdf')
   // Single-format document inputs get their own wording ("Select Word files").
   const docKind = accept.length === 1 && ['text', 'docx', 'xlsx', 'html'].includes(accept[0]) ? (accept[0] as 'text' | 'docx' | 'xlsx' | 'html') : null
   const DOC_SELECT = { text: 'drop.selectTexts', docx: 'drop.selectWord', xlsx: 'drop.selectExcel', html: 'drop.selectHtml' } as const
@@ -82,7 +84,7 @@ export function Dropzone({
       <div {...dragHandlers} className={`rounded-xl border-2 border-dashed transition-colors ${over ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-accent/60'}`}>
         {picker}
         <button type="button" onClick={choose} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-semibold text-muted hover:text-ink">
-          <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : docKind ? DOC_MORE[docKind] : 'drop.addMoreImages')}
+          <Icon name="plus" size={18} /> {over ? t('drop.dropNow') : t(isPdf ? 'drop.addMorePdfs' : scans ? 'drop.addMoreScans' : docKind ? DOC_MORE[docKind] : 'drop.addMoreImages')}
         </button>
       </div>
     )
@@ -115,7 +117,7 @@ export function Dropzone({
           onClick={choose}
           className="relative min-h-14 rounded-2xl bg-accent px-7 py-3.5 text-lg font-semibold text-on-accent shadow-glow transition-[background-color,transform] hover:bg-accent-hover motion-safe:active:translate-y-px"
         >
-          {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : docKind ? DOC_SELECT[docKind] : multiple ? 'drop.selectImages' : 'drop.selectImage')}
+          {t(isPdf ? (multiple ? 'drop.selectPdfs' : 'drop.selectPdf') : scans ? 'drop.selectScans' : docKind ? DOC_SELECT[docKind] : multiple ? 'drop.selectImages' : 'drop.selectImage')}
         </button>
         <p className="relative mt-4 text-muted">
           {over ? t('drop.dropNow') : t(multiple ? 'drop.orMany' : 'drop.orOne')}

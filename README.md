@@ -39,7 +39,7 @@ site is plain static files, and all the work happens on your device.
 
 ## Features
 
-**24 tools on 28 pages**, all available today.
+**25 tools on 29 pages**, all available today.
 
 ### Organize PDFs
 
@@ -85,6 +85,7 @@ site is plain static files, and all the work happens on your device.
 | **PDF to Excel**            | Tables rebuilt from text positions into an `.xlsx`, with real numbers; one sheet per page or all in one.                      |
 | **PDF to PowerPoint**       | A `.pptx` with one slide per page: editable text boxes over the page, or exact pictures of the pages.                         |
 | **Bank statement to Excel** | Every transaction (date, description, debit, credit, balance) as Excel, CSV or OFX, each row checked against the running balance. |
+| **OCR (make scans searchable)** | Scanned PDFs and photos of pages become searchable PDFs (an invisible text layer over the unchanged scan) or text, in English and Arabic. |
 | **PDF to JPG / PNG / WebP** | One image per page at 72, 150 or 300 DPI, with a quality setting and an optional page range.                                  |
 | **PDF to TXT**              | The PDF's text as a `.txt` file: line by line or as paragraphs, optional page markers, LF or CRLF line endings.               |
 | **PDF to HTML**             | A self-contained web page: **flowing text** (headings and paragraphs) or **exact layout** (page images with selectable text). |
@@ -126,7 +127,8 @@ slide renderer that runs in a browser, and files are never sent to a server.
 | PDF to Word / Excel                | Built from the PDF's text layer, so scans give no text (Word then gets the pictures only). Paragraphs, headings and table columns are inferred from positions: multi-column layouts, exact fonts and spacing are not reproduced; Word rebuilds tables whose columns line up as real tables (merged and wrapped cells aren't detected). Excel recognises tables whose columns line up; cells spanning columns and wrapped cell text aren't detected. Numbers like `1,234.50`, `(500)` and `12%` become numbers; values with leading zeros stay text.      |
 | PDF to PowerPoint                  | By default each paragraph becomes an editable text box (in Arial, colour taken from the page) over a picture of the rest of the page, so line lengths and spacing are approximate and mixed styles within a paragraph (bold, a coloured word) are not kept. Choose **Pictures** for slides that look identical but aren't editable. Scanned and rotated pages stay pictures. |
 | PDF to TXT / HTML                  | They read the PDF's text layer, so scans give no text (OCR is planned). Reading order is rebuilt from positions: multi-column pages may interleave and tables become lines of text. Arabic stored as presentation forms or in visual order is put back into reading order. HTML files have no scripts, carry a strict CSP and embed page images as `data:` URLs; flowing text leaves images out. Password-protected PDFs can be opened with their password.                                      |
-| Bank statement to Excel            | Text PDFs from online banking, in English or Arabic, with a header row naming the columns. Every row is checked: previous balance + credit − debit must equal the printed balance; rows that don't are highlighted with the expected balance. Written oldest first. Scanned statements need OCR (planned). Tested on synthetic statements only: no real bank's layout is claimed. |
+| Bank statement to Excel            | Text PDFs from online banking, in English or Arabic, with a header row naming the columns. Every row is checked: previous balance + credit − debit must equal the printed balance; rows that don't are highlighted with the expected balance. Written oldest first. Scanned statements are read with OCR; a misread figure breaks the balance check, so that row is flagged. Tested on synthetic statements only: no real bank's layout is claimed. |
+| OCR                                | Tesseract (via tesseract.js) in the browser, English and Arabic "best_int" models. Clear, straight scans of printed text at 300 dpi read well; handwriting, faint or tiny print, photos taken at an angle and complex layouts read worse, and any OCR can misread words (in Arabic, `%` before a number is often read as `96`). The first use downloads the engine and language data (about 6–8 MB) from the site itself. Pages aren't straightened or rotated automatically. |
 
 Tools that rewrite a PDF **warn before processing** when a file is digitally signed or certified,
 because any change makes the signature invalid. They also warn when a file is password-protected and
@@ -260,6 +262,19 @@ audit in both languages and themes. Office files FreePDF writes were opened with
 python-pptx and LibreOffice (locally). Microsoft Office itself, Safari and physical devices were not
 tested; Firefox runs in CI.
 
+### OCR (unreleased)
+
+| Suite                                                                           | Tests | Result |
+| ------------------------------------------------------------------------------- | ----: | :----: |
+| Unit and integration, including 4 OCR tests                                     |   233 |   ✅   |
+| Browser tests on 5 Chromium device profiles, including 5 OCR tests\*            |   243 |   ✅   |
+
+\* Plus the 1 Cloudflare-only test, skipped there. OCR runs for real in these tests (tesseract.js in
+the browser). Scans are synthetic: text fixtures rendered at 250 dpi, tilted slightly, with scanner
+specks. On those, an English page reads at about 92–93% average confidence and the 39 rows of a
+scanned two-page statement come out with 38 exact and one flagged. Firefox and the Cloudflare runtime
+run in CI.
+
 ### Bank statement to Excel (unreleased)
 
 | Suite                                                                           | Tests | Result |
@@ -376,6 +391,8 @@ FreePDF is built on these open-source projects:
 | [fontkit (pdf-lib fork)](https://github.com/Hopding/fontkit) | MIT                       |
 | [UTIF.js (utif2)](https://github.com/photopea/UTIF.js)       | MIT                       |
 | [docx-preview](https://github.com/VolodymyrBaydalka/docxjs)  | Apache-2.0                |
+| [tesseract.js](https://github.com/naptha/tesseract.js) and its WebAssembly core | Apache-2.0 |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) models ([tessdata_best](https://github.com/tesseract-ocr/tessdata_best), English and Arabic) | Apache-2.0 |
 | [React](https://github.com/react/react)                      | MIT                       |
 
 **Fonts** (all SIL Open Font License): Bricolage Grotesque, Atkinson Hyperlegible Next, Readex Pro,

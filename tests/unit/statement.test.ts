@@ -99,14 +99,14 @@ describe('statement parsing helpers', () => {
 })
 
 describe('statement exports', () => {
-  const labels = { sheet: 'Transactions', summary: 'Summary', date: 'Date', valueDate: 'Value date', description: 'Description', reference: 'Reference', debit: 'Debit', credit: 'Credit', balance: 'Balance', check: 'Check', ok: 'OK', expected: 'Expected {amount}', file: 'File', account: 'Account', currency: 'Currency', period: 'Period', opening: 'Opening balance', closing: 'Closing balance', totalDebit: 'Total debits', totalCredit: 'Total credits', count: 'Transactions', checked: 'Checked', mismatches: 'Mismatches' }
+  const labels = { sheet: 'Transactions', summary: 'Summary', date: 'Date', valueDate: 'Value date', description: 'Description', reference: 'Reference', debit: 'Debit', credit: 'Credit', balance: 'Balance', check: 'Check', ok: 'OK', expected: 'Expected {amount}', noBalance: 'Balance not read', file: 'File', account: 'Account', currency: 'Currency', period: 'Period', opening: 'Opening balance', closing: 'Closing balance', totalDebit: 'Total debits', totalCredit: 'Total credits', count: 'Transactions', checked: 'Checked', mismatches: 'Mismatches' }
   const st = (): Statement => ({
     transactions: [
       { date: '2026-03-03', description: '=HYPERLINK("x")', reference: 'R3', debit: 100, credit: null, balance: 1250, page: 1, check: 'mismatch', expected: 1200 },
       { date: '2026-03-01', description: 'Salary, March "bonus" & <more>', debit: null, credit: 500, balance: 1500, page: 1, check: 'ok' },
       { date: '2026-03-01', description: 'Salary, March "bonus" & <more>', debit: null, credit: 500, balance: 2000, page: 1, check: 'ok' },
     ],
-    opening: 1000, closing: 1250, order: 'newest-first', dateOrder: 'dmy', currency: 'SAR', account: '4821', columns: ['date', 'description', 'reference', 'debit', 'credit', 'balance'], rtl: false, checked: 3, mismatches: 1, closingOk: true,
+    opening: 1000, closing: 1250, order: 'newest-first', dateOrder: 'dmy', currency: 'SAR', account: '4821', columns: ['date', 'description', 'reference', 'debit', 'credit', 'balance'], rtl: false, checked: 3, mismatches: 1, missingBalances: 0, closingOk: true,
   })
   it('writes CSV oldest first, with a BOM, quoting and formula protection', () => {
     const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(statementCsv(st(), labels))
