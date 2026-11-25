@@ -17,6 +17,8 @@ import type { DocLike } from '../../lib/convert/pdfExport'
 import { UserFacingError, type FileKind } from '../../lib/validate'
 import { CancelledError } from '../../lib/workerClient'
 import { useI18n } from '../../i18n/context'
+import type { Message } from '../../i18n/core'
+import { textReader } from '../../lib/ocr/reader'
 
 const ACCEPT: FileKind[] = ['pdf']
 type Target = 'docx' | 'xlsx' | 'pptx'
@@ -86,6 +88,7 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
   const [numbers, setNumbers] = useState(true)
   const [dpi, setDpi] = useState<150 | 220>(150)
   const [editable, setEditable] = useState(true)
+  const [useOcr, setUseOcr] = useState(true)
   const rangeError = batchRangeError(range)
   const startOver = () => { job.reset(); sel.clear(); pw.reset(); setRange('') }
 
@@ -97,24 +100,30 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
         const f = sel.files[fi]
         const doc = await openPdf(await readBytes(f), { name: f.name, password: pw.passwordOf(f), forExport: true })
         const c = cropper(doc)
+        // Scanned pages (no text layer) are read with OCR when allowed; not for PowerPoint, whose slides
+        // already show the page and only cut real text out of it.
+        const step = (key: 'p2o.working' | 'ocr.loading' | 'ocr.pageOnly', n = 0): Message =>
+          sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step: t(key, { n }) } } : { key, params: { n } }
+        let last = 0
+        const reader = textReader(doc, { ocr: useOcr && target !== 'pptx', signal, onOcr: (s, n) => progress(last, step(s === 'loading' ? 'ocr.loading' : 'ocr.pageOnly', n)) })
         try {
           const pages = batchPages(range, doc.numPages).map((i) => i + 1)
           if (!pages.length) throw new UserFacingError('err.rangeNoPages', { name: f.name, count: doc.numPages })
-          const onProgress = (v: number) => progress((fi + v) / sel.files.length, sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step: t('p2o.working') } } : { key: 'p2o.working' })
+          const onProgress = (v: number) => { last = (fi + v) / sel.files.length; progress(last, step('p2o.working')) }
           const title = f.name.replace(/\.pdf$/i, '')
           const d = doc as unknown as DocLike
           let bytes: Uint8Array
           let note: OutputFile['note']
           if (target === 'docx') {
-            const r = await office.pdfToDocx(d, pages, { pageBreaks, images, tables, title, OPS: pdfjsOps(), crop: c.crop, signal, onProgress })
+            const r = await office.pdfToDocx(d, pages, { pageBreaks, images, tables, title, OPS: pdfjsOps(), crop: c.crop, readText: reader.read, signal, onProgress })
             if (!r.text && !r.images) throw new UserFacingError('err.noTextLayer', { count: 1 })
             bytes = r.bytes
-            note = { key: r.text ? 'p2o.noteWord' : 'p2o.noteWordScan', params: { count: pages.length, images: r.images, tables: r.tables } }
+            note = reader.ocrPages ? { key: 'p2o.noteWordOcr', params: { count: pages.length, ocr: reader.ocrPages, images: r.images, tables: r.tables } } : { key: r.text ? 'p2o.noteWord' : 'p2o.noteWordScan', params: { count: pages.length, images: r.images, tables: r.tables } }
           } else if (target === 'xlsx') {
-            const r = await office.pdfToXlsx(d, pages, { perPage, numbers, title, sheetLabel: (n) => t('p2t.pageMarker', { n }), signal, onProgress })
+            const r = await office.pdfToXlsx(d, pages, { perPage, numbers, title, sheetLabel: (n) => t('p2t.pageMarker', { n }), readText: reader.read, signal, onProgress })
             if (!r.rows) throw new UserFacingError('err.noTextLayer', { count: 1 })
             bytes = r.bytes
-            note = { key: 'p2o.noteExcel', params: { count: perPage ? pages.length : 1, rows: r.rows } }
+            note = reader.ocrPages ? { key: 'p2o.noteExcelOcr', params: { count: perPage ? pages.length : 1, rows: r.rows, ocr: reader.ocrPages } } : { key: 'p2o.noteExcel', params: { count: perPage ? pages.length : 1, rows: r.rows } }
           } else {
             const r = await office.pdfToPptx(d, pages, { title, dpi, editable, crop: c.crop, render: slideRenderer(doc), signal, onProgress })
             bytes = r.bytes
@@ -122,6 +131,7 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
           }
           out.push({ name: deriveName(f.name, '', target), blob: new Blob([bytes as BlobPart], { type: MIME[target] }), note })
         } finally {
+          await reader.dispose()
           c.dispose()
           await closePdf(doc)
         }
@@ -196,6 +206,12 @@ export default function PdfToOfficeTool({ tool }: { tool: ToolDef }) {
                   onChange={setDpi}
                   options={[{ value: 150, label: t('p2o.standard'), hint: t('p2i.dpi', { n: 150 }) }, { value: 220, label: t('p2o.high'), hint: t('p2i.dpi', { n: 220 }) }]}
                 />
+              )}
+              {target !== 'pptx' && (
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
+                  <input type="checkbox" className="h-5 w-5" checked={useOcr} onChange={(e) => setUseOcr(e.target.checked)} data-testid="conv-ocr" />
+                  {t('conv.ocr')}
+                </label>
               )}
               <PageRangeField value={range} onChange={setRange} error={rangeError} />
               {pw.locked.length > 0 && <Notice tone="info">{t('p2i.unlockFirst', { count: pw.locked.length })}</Notice>}

@@ -61,6 +61,9 @@ export type Cropper = (pageNumber: number, rect: PageImage | null, scale: number
 
 export interface WordOptions { pageBreaks: boolean; images: boolean; tables?: boolean; title: string }
 
+/** Reads a page's text; defaults to the page's own text layer. Tools pass one that adds OCR for scans. */
+export type ReadText = (n: number) => Promise<PageText & { ocr?: boolean }>
+
 /**
  * Table runs in a page's blocks: two or more consecutive one-line blocks with column gaps whose
  * rebuilt grid has at least two columns and two filled rows. Returned as [first, last] block indexes
@@ -104,12 +107,15 @@ function align(b: Block, pageWidth: number): 'start' | 'center' | 'end' {
   return 'start'
 }
 
-export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & { OPS: Ops; crop: Cropper; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; images: number; tables: number; text: boolean }> {
+export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & { OPS: Ops; crop: Cropper; readText?: ReadText; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; images: number; tables: number; text: boolean }> {
   const read: { text: PageText; images: PageImage[] }[] = []
   for (let k = 0; k < pages.length; k++) {
     if (o.signal?.aborted) throw new CancelledError()
-    const text = await readPageText(doc, pages[k])
-    const images = o.images ? await imageRects((await doc.getPage(pages[k])) as unknown as OpPage, o.OPS) : []
+    const text: PageText & { ocr?: boolean } = o.readText ? await o.readText(pages[k]) : await readPageText(doc, pages[k])
+    let images = o.images ? await imageRects((await doc.getPage(pages[k])) as unknown as OpPage, o.OPS) : []
+    // A page recognised with OCR is a scan: its text is now in the document, so the page-sized scan
+    // picture itself would only repeat it. Smaller pictures on the page stay.
+    if (text.ocr) images = images.filter((im) => im.w * im.h < text.width * text.height * 0.5)
     read.push({ text, images })
     o.onProgress?.(((k + 1) / pages.length) * 0.6)
   }
@@ -171,13 +177,13 @@ export async function pdfToDocx(doc: DocLike, pages: number[], o: WordOptions & 
 
 export interface ExcelOptions { perPage: boolean; numbers: boolean; title: string; sheetLabel: (n: number) => string }
 
-export async function pdfToXlsx(doc: DocLike, pages: number[], o: ExcelOptions & { signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; rows: number }> {
+export async function pdfToXlsx(doc: DocLike, pages: number[], o: ExcelOptions & { readText?: ReadText; signal?: AbortSignal; onProgress?: (f: number) => void }): Promise<{ bytes: Uint8Array; rows: number }> {
   const sheets: { name: string; grid: ReturnType<typeof gridFromSpans> }[] = []
   let all: ReturnType<typeof gridFromSpans> | null = null
   let rows = 0
   for (let k = 0; k < pages.length; k++) {
     if (o.signal?.aborted) throw new CancelledError()
-    const page = await readPageText(doc, pages[k])
+    const page = o.readText ? await o.readText(pages[k]) : await readPageText(doc, pages[k])
     const grid = gridFromSpans(page.spans)
     rows += grid.rows.length
     if (o.perPage) sheets.push({ name: o.sheetLabel(pages[k]), grid })

@@ -138,7 +138,7 @@ test.describe('PDF to TXT', () => {
     expect(text).toContain('Contract reference: FP-2026-001 — مرجع العقد.')
   })
 
-  test('a PDF with no text layer explains that OCR is not available', async ({ page }) => {
+  test('with OCR off, a PDF with no text layer says so and points to OCR', async ({ page }) => {
     await page.goto('/txt-to-pdf')
     // Make an image-only PDF in the app itself: an image converted to PDF has no text.
     await page.goto('/jpg-to-pdf')
@@ -146,8 +146,9 @@ test.describe('PDF to TXT', () => {
     const { bytes } = await runAndDownload(page)
     await page.goto('/pdf-to-txt')
     await page.getByTestId('file-input').first().setInputFiles({ name: 'photo.pdf', mimeType: 'application/pdf', buffer: bytes })
+    await page.getByTestId('conv-ocr').uncheck()
     await page.getByTestId('run').click()
-    await expect(page.getByRole('alert')).toContainText(/no text to extract.*OCR/)
+    await expect(page.getByRole('alert')).toContainText(/no text to extract.*Read scanned pages with OCR/)
   })
 })
 

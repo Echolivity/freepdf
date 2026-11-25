@@ -7,6 +7,9 @@
   text files. English, Arabic or both. Pages that already have text can be skipped. Recognition runs
   in the browser with tesseract.js 7 (Apache-2.0), self-hosted under `/ocr/<version>/` and loaded only
   when used (about 6–8 MB the first time).
+- **Added:** PDF to Word, PDF to Excel and PDF to Text / HTML read scanned pages with OCR (on by default,
+  English and Arabic; pages with text are read directly). Word leaves out the page-sized scan picture on
+  recognised pages. PowerPoint keeps scans as picture slides.
 - **Added:** *Bank statement to Excel* reads scanned statements with OCR. A misread figure breaks the
   running-balance check, so that row is highlighted; a balance OCR couldn't read is flagged too.
 - **Fixed:** statement header cells split into separate words ("Value" / "Date") are recognised; an

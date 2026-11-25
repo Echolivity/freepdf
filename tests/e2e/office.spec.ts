@@ -146,12 +146,13 @@ test.describe('PDF to Word, Excel and PowerPoint', () => {
     await expect(page.getByText(/^2 slides$/)).toBeVisible()
   })
 
-  test('PDF to Excel on a PDF without text explains why', async ({ page }) => {
+  test('PDF to Excel on a PDF without text, with OCR off, explains why', async ({ page }) => {
     await page.goto('/jpg-to-pdf')
     await upload(page, 'photo.jpg')
     const { bytes } = await runAndDownload(page)
     await page.goto('/pdf-to-excel')
     await page.getByTestId('file-input').first().setInputFiles({ name: 'scan.pdf', mimeType: 'application/pdf', buffer: bytes })
+    await page.getByTestId('conv-ocr').uncheck()
     await page.getByTestId('run').click()
     await expect(page.getByRole('alert')).toContainText(/no text to extract/)
   })

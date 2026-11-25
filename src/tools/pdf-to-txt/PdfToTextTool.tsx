@@ -12,10 +12,11 @@ import { deriveName } from '../../lib/files'
 import type { OutputFile } from '../../lib/output'
 import { batchPages, batchRangeError } from '../../lib/ranges'
 import { closePdf, openPdf, releaseCanvas, renderPage, canvasToBlob, type PDFDocumentProxy } from '../../lib/render/pdfjs'
-import { hasText, readPageText, toFlowHtml, toLayoutHtml, toPlainText, type PageText, type TextExportOptions } from '../../lib/convert/pdfExport'
+import { hasText, toFlowHtml, toLayoutHtml, toPlainText, type PageText, type TextExportOptions } from '../../lib/convert/pdfExport'
 import { UserFacingError, type FileKind } from '../../lib/validate'
 import { CancelledError } from '../../lib/workerClient'
 import { useI18n } from '../../i18n/context'
+import { textReader } from '../../lib/ocr/reader'
 
 const ACCEPT: FileKind[] = ['pdf']
 type HtmlMode = 'flow' | 'layout'
@@ -34,6 +35,7 @@ export default function PdfToTextTool({ tool }: { tool: ToolDef }) {
   const [eol, setEol] = useState<TextExportOptions['lineEnding']>('lf')
   const [mode, setMode] = useState<HtmlMode>('flow')
   const [dpi, setDpi] = useState<Dpi>(150)
+  const [useOcr, setUseOcr] = useState(true)
   const rangeError = batchRangeError(range)
   const startOver = () => { job.reset(); sel.clear(); pw.reset(); setRange('') }
 
@@ -46,6 +48,12 @@ export default function PdfToTextTool({ tool }: { tool: ToolDef }) {
       for (let fi = 0; fi < sel.files.length; fi++) {
         const f = sel.files[fi]
         const doc = await openPdf(await readBytes(f), { name: f.name, password: pw.passwordOf(f), forExport: true })
+        let frac = 0
+        const reader = textReader(doc, {
+          ocr: useOcr,
+          signal,
+          onOcr: (s, n) => progress(frac, sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step: t(s === 'loading' ? 'ocr.loading' : 'ocr.pageOnly', { n }) } } : { key: s === 'loading' ? 'ocr.loading' : 'ocr.pageOnly', params: { n } }),
+        })
         try {
           const pages = batchPages(range, doc.numPages)
           if (!pages.length) throw new UserFacingError('err.rangeNoPages', { name: f.name, count: doc.numPages })
@@ -53,8 +61,9 @@ export default function PdfToTextTool({ tool }: { tool: ToolDef }) {
           for (let k = 0; k < pages.length; k++) {
             if (signal.aborted) throw new CancelledError()
             const step = t('p2i.pageProgress', { page: k + 1, total: pages.length })
-            progress((fi + k / pages.length) / sel.files.length, sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step } } : { key: 'p2i.pageProgress', params: { page: k + 1, total: pages.length } })
-            const page: PageText & { image?: string } = await readPageText(doc, pages[k] + 1)
+            frac = (fi + k / pages.length) / sel.files.length
+            progress(frac, sel.files.length > 1 ? { key: 'cmp.fileProgress', params: { name: f.name, step } } : { key: 'p2i.pageProgress', params: { page: k + 1, total: pages.length } })
+            const page: PageText & { image?: string } = await reader.read(pages[k] + 1)
             if (html && mode === 'layout') page.image = await pageImage(doc, pages[k] + 1, dpi)
             read.push(page)
           }
@@ -66,17 +75,18 @@ export default function PdfToTextTool({ tool }: { tool: ToolDef }) {
             out.push({
               name: deriveName(f.name, '', 'html'),
               blob: new Blob([body], { type: 'text/html;charset=utf-8' }),
-              note: { key: found ? 'p2t.noteHtml' : 'p2t.noteNoText', params: { count: read.length } },
+              note: { key: !found ? 'p2t.noteNoText' : reader.ocrPages ? 'p2t.noteHtmlOcr' : 'p2t.noteHtml', params: { count: read.length, ocr: reader.ocrPages } },
             })
           } else {
             const text = toPlainText(read, { layout, pageMarkers: markers, lineEnding: eol }, labels.page)
             out.push({
               name: deriveName(f.name, '', 'txt'),
               blob: new Blob([text], { type: 'text/plain;charset=utf-8' }),
-              note: { key: found ? 'p2t.noteText' : 'p2t.noteNoText', params: { count: read.length, chars: [...text.replace(/\s/g, '')].length } },
+              note: { key: !found ? 'p2t.noteNoText' : reader.ocrPages ? 'p2t.noteTextOcr' : 'p2t.noteText', params: { count: read.length, chars: [...text.replace(/\s/g, '')].length, ocr: reader.ocrPages } },
             })
           }
         } finally {
+          await reader.dispose()
           await closePdf(doc)
         }
       }
@@ -149,6 +159,10 @@ export default function PdfToTextTool({ tool }: { tool: ToolDef }) {
                   </label>
                 </>
               )}
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
+                <input type="checkbox" className="h-5 w-5" checked={useOcr} onChange={(e) => setUseOcr(e.target.checked)} data-testid="conv-ocr" />
+                {t('conv.ocr')}
+              </label>
               <PageRangeField value={range} onChange={setRange} error={rangeError} />
               {pw.locked.length > 0 && <Notice tone="info">{t('p2i.unlockFirst', { count: pw.locked.length })}</Notice>}
               <Button variant="primary" size="lg" icon={html ? 'htmlOut' : 'textOut'} className="w-full" disabled={pw.locked.length > 0 || pw.checking || !!rangeError} onClick={convert} data-testid="run">

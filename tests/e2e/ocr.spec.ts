@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import JSZip from 'jszip'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { upload, runAndDownload } from './helpers'
@@ -89,5 +90,40 @@ test.describe('OCR', () => {
     const exact = rows.filter((r, i) => r.startsWith(expected[i].date) && r.includes(`,${expected[i].balance.toFixed(2)},`)).length
     expect(exact).toBeGreaterThanOrEqual(37)
     expect(rows.filter((r) => !/,OK$/.test(r)).length).toBe(39 - exact)
+  })
+
+  test('scans in the converters: PDF to Word reads the scan as text, without repeating the page picture', async ({ page }) => {
+    await page.goto('/pdf-to-word')
+    await upload(page, 'ocr/scan-en.pdf')
+    const { bytes } = await runAndDownload(page)
+    await expect(page.getByText(/1 page · 1 read with OCR/)).toBeVisible()
+    const zip = await JSZip.loadAsync(bytes)
+    const xml = await zip.file('word/document.xml')!.async('string')
+    const words = [...xml.matchAll(/<w:t[^>]*>([^<]*)</g)].map((m) => m[1]).join(' ')
+    for (const phrase of ['Quarterly Report', 'Revenue grew 12%', 'Publish the report']) expect(words).toContain(phrase)
+    // The page-sized scan isn't included as a picture; the text replaces it.
+    const media = Object.keys(zip.files).filter((n) => n.startsWith('word/media/'))
+    for (const m of media) expect((await zip.file(m)!.async('uint8array')).length).toBeLessThan(150_000)
+  })
+
+  test('scans in the converters: PDF to Excel reads a scanned statement into rows and real numbers', async ({ page }) => {
+    await page.goto('/pdf-to-excel')
+    await upload(page, 'ocr/scan-statement.pdf')
+    await page.getByTestId('page-range').fill('1')
+    const { bytes } = await runAndDownload(page)
+    await expect(page.getByText(/1 sheet · \d+ rows · 1 page\(s\) read with OCR/)).toBeVisible()
+    const sheet = await (await JSZip.loadAsync(bytes)).file('xl/worksheets/sheet1.xml')!.async('string')
+    expect(sheet).toContain('<v>15230.75</v>')
+    expect(sheet).toContain('MOBILE BILL PAYMENT')
+  })
+
+  test('scans in the converters: PDF to Text reads text pages directly and scanned pages with OCR', async ({ page }) => {
+    await page.goto('/pdf-to-txt')
+    await upload(page, 'ocr/mixed.pdf')
+    const { bytes } = await runAndDownload(page)
+    await expect(page.getByText(/2 pages · [\d,]+ characters · 1 read with OCR/)).toBeVisible()
+    const text = bytes.toString('utf8').replace(/\s+/g, ' ')
+    expect(text).toContain('Quarterly Report')
+    expect(text).toContain('هذه فقرة ثانية')
   })
 })
