@@ -49,7 +49,7 @@ function removeBackground(ctx: CanvasRenderingContext2D, width: number, height: 
   ctx.putImageData(img, 0, 0)
 }
 
-export function SignatureDialog({ onDone, onClose }: { onDone: (s: Signature) => void; onClose: () => void }) {
+export function SignatureDialog({ onDone, onClose, kind = 'signature' }: { onDone: (s: Signature) => void; onClose: () => void; kind?: 'signature' | 'initials' }) {
   const { t } = useI18n()
   const ref = useRef<HTMLDialogElement>(null)
   const pad = useRef<HTMLCanvasElement>(null)
@@ -165,7 +165,7 @@ export function SignatureDialog({ onDone, onClose }: { onDone: (s: Signature) =>
   return (
     <dialog ref={ref} onClose={onClose} aria-labelledby={titleId} className="m-auto w-[min(36rem,94vw)] rounded-2xl border border-line bg-paper p-0 text-ink shadow-2xl backdrop:bg-black/50" data-testid="signature-dialog">
       <div className="space-y-4 p-5">
-        <h2 id={titleId} className="font-display text-xl font-bold">{t('fs.sigTitle')}</h2>
+        <h2 id={titleId} className="font-display text-xl font-bold">{t(kind === 'initials' ? 'fs.initialsTitle' : 'fs.sigTitle')}</h2>
         <Segmented<Mode>
           label={t('fs.sigHow')}
           value={mode}
@@ -192,7 +192,7 @@ export function SignatureDialog({ onDone, onClose }: { onDone: (s: Signature) =>
         )}
         {mode === 'type' && (
           <div className="space-y-2">
-            <label htmlFor={typedId} className="block font-semibold">{t('fs.sigName')}</label>
+            <label htmlFor={typedId} className="block font-semibold">{t(kind === 'initials' ? 'fs.initialsName' : 'fs.sigName')}</label>
             <input id={typedId} dir="auto" value={typed} onChange={(e) => setTyped(e.target.value)} className="h-11 w-full rounded-xl border border-line-strong bg-paper px-3 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15" data-testid="signature-typed" />
             {typed.trim() && <p dir="auto" className="rounded-xl bg-white px-4 py-3 text-4xl italic text-[#111827]" style={{ fontFamily: '"Segoe Script", "Brush Script MT", "Snell Roundhand", cursive' }}>{typed}</p>}
           </div>

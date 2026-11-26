@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Fill & Sign: initials
+
+- **Added:** *Initials*: draw, type or upload your initials once and they're placed in the bottom-right
+  corner of every page, each movable on its own. Any placed item (text, date, tick, signature) can be
+  copied to every page at the same position. Today's date is filled in when a date is added.
+
 ## Unreleased — Redact PDF
 
 - **Added:** *Redact PDF* (`/redact-pdf`), the first tool in the Security category. Drag boxes on the

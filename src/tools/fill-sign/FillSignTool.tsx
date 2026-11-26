@@ -47,7 +47,7 @@ type Value = string | boolean | string[]
 interface Item {
   id: string
   page: number
-  kind: 'text' | 'date' | 'check' | 'cross' | 'signature'
+  kind: 'text' | 'date' | 'check' | 'cross' | 'signature' | 'initials'
   x: number
   y: number
   w: number
@@ -130,8 +130,9 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
   const [items, setItems] = useState<Item[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [flatten, setFlatten] = useState(false)
-  const [sigOpen, setSigOpen] = useState(false)
+  const [sigOpen, setSigOpen] = useState<'signature' | 'initials' | null>(null)
   const [signature, setSignature] = useState<Signature | null>(null)
+  const [initials, setInitials] = useState<Signature | null>(null)
   const visible = useRef(0)
   const onVisible = useCallback((n: number) => { visible.current = n }, [])
   const startOver = () => { job.reset(); sel.clear(); setValues({}); setItems([]); setSelected(null) }
@@ -152,11 +153,32 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
     const page = Math.min(visible.current, form.pages.length - 1)
     const p = form.pages[page]
     const size = 12
-    const dims: Record<Item['kind'], [number, number]> = { text: [180, size * 1.6], date: [90, size * 1.6], check: [16, 16], cross: [16, 16], signature: [150, sig ? (150 * sig.height) / sig.width : 50] }
+    const dims: Record<Item['kind'], [number, number]> = { text: [180, size * 1.6], date: [90, size * 1.6], check: [16, 16], cross: [16, 16], signature: [150, sig ? (150 * sig.height) / sig.width : 50], initials: [50, sig ? (50 * sig.height) / sig.width : 25] }
     const [w, h] = dims[kind]
     const item: Item = { id: uid(), page, kind, x: (p.w - w) / 2, y: Math.min(p.h - h, p.h * 0.45), w, h, size, ...(kind === 'date' ? { text: today() } : kind === 'text' ? { text: '' } : {}), ...(sig ? { sig } : {}) }
     setItems((l) => [...l, item])
     setSelected(item.id)
+  }
+  /** Copies of an item on every other page, at the same place relative to each page's size. */
+  const copyToEveryPage = (it: Item) => {
+    if (!form) return
+    const from = form.pages[it.page]
+    const copies = form.pages.flatMap((p, page): Item[] => {
+      if (page === it.page) return []
+      const x = Math.max(0, Math.min(p.w - it.w, (it.x / from.w) * p.w))
+      const y = Math.max(0, Math.min(p.h - it.h, (it.y / from.h) * p.h))
+      return [{ ...it, id: uid(), page, x, y }]
+    })
+    setItems((l) => [...l, ...copies])
+  }
+  /** Initials: one in the bottom-right corner of every page, each movable on its own. */
+  const addInitials = (sig: Signature) => {
+    if (!form) return
+    const w = 50
+    const h = (w * sig.height) / sig.width
+    const list = form.pages.map((p, page): Item => ({ id: uid(), page, kind: 'initials', x: Math.max(0, p.w - w - 36), y: Math.max(0, p.h - h - 36), w, h, sig }))
+    setItems((l) => [...l, ...list])
+    setSelected(list[0]?.id ?? null)
   }
   const update = (id: string, patch: Partial<Item>) => setItems((l) => l.map((i) => (i.id === id ? { ...i, ...patch } : i)))
   const remove = (id: string) => { setItems((l) => l.filter((i) => i.id !== id)); setSelected(null) }
@@ -316,7 +338,7 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
         aria-label={t('fs.itemLabel', { item: itemLabel(it), page: it.page + 1 })}
         onKeyDown={(e) => onItemKey(e, it)}
         onFocus={() => setSelected(it.id)}
-        onPointerDown={(e) => { if ((e.target as HTMLElement).dataset.handle === 'move' || it.kind === 'check' || it.kind === 'cross' || it.kind === 'signature') drag(e, it, k, 'move') }}
+        onPointerDown={(e) => { if ((e.target as HTMLElement).dataset.handle === 'move' || it.kind === 'check' || it.kind === 'cross' || it.kind === 'signature' || it.kind === 'initials') drag(e, it, k, 'move') }}
         className={`absolute touch-none select-none ${on ? 'ring-2 ring-accent' : 'ring-1 ring-accent/30 hover:ring-accent/60'} ${it.kind === 'text' || it.kind === 'date' ? '' : 'cursor-move'}`}
         style={{ left: pct(it.x, info.w), top: pct(it.y, info.h), width: pct(it.w, info.w), height: pct(it.h, info.h) }}
         data-testid={`fs-item-${it.kind}`}
@@ -343,12 +365,17 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
             {it.kind === 'check' ? <path d="M1.9 8 6.4 12.9 14.4 2.4" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /> : <path d="M2.4 2.4l11.2 11.2M13.6 2.4 2.4 13.6" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" />}
           </svg>
         )}
-        {it.kind === 'signature' && it.sig && <img src={it.sig.url} alt="" className="pointer-events-none h-full w-full" draggable={false} />}
+        {(it.kind === 'signature' || it.kind === 'initials') && it.sig && <img src={it.sig.url} alt="" className="pointer-events-none h-full w-full" draggable={false} />}
         {on && (
           <>
             <button type="button" aria-label={t('fs.remove', { item: itemLabel(it) })} onPointerDown={(e) => e.stopPropagation()} onClick={() => remove(it.id)} className="absolute -top-7 end-0 grid h-6 w-6 place-items-center rounded-full bg-danger text-white shadow" data-testid="fs-item-remove">
               <Icon name="x" size={14} />
             </button>
+            {(form?.pages.length ?? 0) > 1 && (
+              <button type="button" aria-label={t('fs.everyPage', { item: itemLabel(it) })} title={t('fs.everyPage', { item: itemLabel(it) })} onPointerDown={(e) => e.stopPropagation()} onClick={() => copyToEveryPage(it)} className="absolute -top-7 end-7 grid h-6 w-6 place-items-center rounded-full bg-accent text-on-accent shadow" data-testid="fs-item-every-page">
+                <Icon name="copy" size={14} />
+              </button>
+            )}
             <span aria-hidden="true" onPointerDown={(e) => drag(e, it, k, 'resize')} className="absolute -bottom-2 -end-2 h-4 w-4 cursor-nwse-resize rounded-sm border-2 border-white bg-accent shadow" data-testid="fs-item-resize" />
           </>
         )}
@@ -379,8 +406,9 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
                   <Button size="sm" icon="calendar" onClick={() => add('date')} data-testid="fs-add-date">{t('fs.addDate')}</Button>
                   <Button size="sm" onClick={() => add('check')} aria-label={t('fs.addCheck')} data-testid="fs-add-check">✓</Button>
                   <Button size="sm" onClick={() => add('cross')} aria-label={t('fs.addCross')} data-testid="fs-add-cross">✗</Button>
-                  <Button size="sm" variant={tool.slug === 'sign-pdf' ? 'primary' : 'secondary'} icon="signature" onClick={() => (signature ? add('signature', signature) : setSigOpen(true))} data-testid="fs-add-signature">{t('fs.addSignature')}</Button>
-                  {signature && <Button size="sm" variant="ghost" onClick={() => setSigOpen(true)} data-testid="fs-new-signature">{t('fs.newSignature')}</Button>}
+                  <Button size="sm" variant={tool.slug === 'sign-pdf' ? 'primary' : 'secondary'} icon="signature" onClick={() => (signature ? add('signature', signature) : setSigOpen('signature'))} data-testid="fs-add-signature">{t('fs.addSignature')}</Button>
+                  <Button size="sm" icon="signature" onClick={() => (initials ? addInitials(initials) : setSigOpen('initials'))} data-testid="fs-add-initials">{t('fs.addInitials')}</Button>
+                  {(signature || initials) && <Button size="sm" variant="ghost" onClick={() => setSigOpen(signature ? 'signature' : 'initials')} data-testid="fs-new-signature">{t(signature ? 'fs.newSignature' : 'fs.newInitials')}</Button>}
                 </div>
               )}
               {form && doc && (
@@ -399,8 +427,12 @@ export default function FillSignTool({ tool }: { tool: ToolDef }) {
               )}
               {sigOpen && (
                 <SignatureDialog
-                  onClose={() => setSigOpen(false)}
-                  onDone={(s) => { setSignature(s); setSigOpen(false); add('signature', s) }}
+                  kind={sigOpen}
+                  onClose={() => setSigOpen(null)}
+                  onDone={(s) => {
+                    setSigOpen(null)
+                    if (sigOpen === 'initials') { setInitials(s); addInitials(s) } else { setSignature(s); add('signature', s) }
+                  }}
                 />
               )}
             </div>

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from './fixtures'
-import { PDFDocument, PDFName } from 'pdf-lib'
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib'
 import { upload, runAndDownload } from './helpers'
 
 // The form fixture comes from scripts/make-form-fixtures.mjs: English and Arabic text fields, a comb
@@ -101,6 +101,36 @@ test.describe('Fill & Sign', () => {
     const text = await pdfText(bytes)
     expect(text).toContain('Approved by L. Haddad')
     expect(text).toMatch(/\d{2}\/\d{2}\/\d{4}/)
+  })
+
+  test('initials on every page, and a date copied to every page', async ({ page }) => {
+    await page.goto('/sign-pdf')
+    await upload(page, 'text-8p.pdf')
+    await page.getByTestId('fs-add-initials').click()
+    const dialog = page.getByTestId('signature-dialog')
+    await expect(dialog).toContainText('initials')
+    await dialog.getByText('Type', { exact: true }).click()
+    await page.getByTestId('signature-typed').fill('LH')
+    await page.getByTestId('signature-use').click()
+    await expect(page.getByTestId('fs-item-initials')).toHaveCount(8)
+    await page.getByTestId('fs-add-date').click()
+    await page.getByTestId('fs-item-every-page').click()
+    await expect(page.getByTestId('fs-item-date')).toHaveCount(8)
+    const { bytes } = await runAndDownload(page)
+    await expect(page.getByText('Saved · 16 item(s) added')).toBeVisible()
+    const doc = await PDFDocument.load(bytes)
+    for (const p of doc.getPages()) {
+      const xo = p.node.Resources()?.lookupMaybe(PDFName.of('XObject'), PDFDict)
+      expect(xo?.keys().length ?? 0).toBeGreaterThanOrEqual(1)
+    }
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const task = pdfjs.getDocument({ data: new Uint8Array(bytes) } as never)
+    const pdf = await task.promise
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const c = await (await pdf.getPage(i)).getTextContent()
+      expect(c.items.map((it) => ('str' in it ? it.str : '')).join(' ')).toMatch(/\d{2}\/\d{2}\/\d{4}/)
+    }
+    await task.destroy()
   })
 
   test('typed signature is reused for the next placement', async ({ page }) => {
