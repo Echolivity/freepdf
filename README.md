@@ -269,7 +269,7 @@ tested; Firefox runs in CI.
 
 | Suite                                                                           | Tests | Result |
 | ------------------------------------------------------------------------------- | ----: | :----: |
-| Unit and integration, including 3 Fill & Sign tests                             |   236 |   ✅   |
+| Unit and integration, including 3 Fill & Sign tests                             |   237 |   ✅   |
 | Browser tests on 5 Chromium device profiles, including 4 Fill & Sign tests\*    |   250 |   ✅   |
 
 \* Plus the 1 Cloudflare-only test, skipped there. Both new pages also pass the WCAG AA audit in both
