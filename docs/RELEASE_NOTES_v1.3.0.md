@@ -65,7 +65,7 @@ no uploads, no account, no quotas, no watermark of ours, no ads, in English and 
 |-------|--------|
 | Unit / integration | 245 / 245 |
 | Browser, 5 Chromium device profiles | 254 passed, 1 skipped (Cloudflare-only) |
-| Accessibility (axe WCAG 2.1 AA), every new screen, EN/AR, light/dark | Pass in Chromium; in Firefox five rules are disabled (they crash Playwright's Firefox) |
+| Accessibility (axe WCAG 2.1 AA), every new screen, EN/AR, light/dark | Pass in Chromium and Firefox; in Firefox five rules are skipped on the screen right after a download, where they crash Playwright's Firefox |
 | CI on `main` (checks, Chromium, Firefox, Cloudflare runtime) | Green |
 | `npm audit` | 0 vulnerabilities |
 | Safari, physical devices, Microsoft Office, Adobe Acrobat | **Not tested** |

@@ -105,11 +105,12 @@ directly from `@playwright/test`. No exceptions are configured.
 
 ## Not covered or not executed
 
-- **Firefox:** runs in CI's `cross-engine` job. Known issue there: partway through the accessibility
-  sweep, five axe rules (`aria-allowed-attr`, `aria-conditional-attr`, `aria-prohibited-attr`,
-  `label-content-name-mismatch`, `nested-interactive`) crash Playwright's Firefox content process (SIGSEGV),
-  whichever part of the page they scan. They are disabled in Firefox only; every screen is still checked
-  with them in the Chromium projects, and with all other rules in Firefox.
+- **Firefox:** runs in CI's `cross-engine` job. Known issue there: five axe rules (`aria-allowed-attr`,
+  `aria-conditional-attr`, `aria-prohibited-attr`, `label-content-name-mismatch`, `nested-interactive`)
+  crash Playwright's Firefox content process on the screen shown right after a download. A CI probe
+  (axe-core 4.14.1, PR #12) ran each rule alone on several screens: all clean except the merge result,
+  where every one crashed. They are skipped on that one screen in Firefox; everything else, in both
+  engines, is checked with all rules.
 - **Safari (macOS/iOS):** not executed. WebKitGTK and Playwright's WebKit share the engine but not
   Safari's media, memory or file-picker behaviour.
 - **Physical devices:** none. Tab-killing under memory pressure is only approximated by the simulated

@@ -2,7 +2,11 @@ import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
 import { upload, runAndDownload } from './helpers'
 
-const FIREFOX_CRASHING_RULES = ['aria-allowed-attr', 'aria-conditional-attr', 'aria-prohibited-attr', 'label-content-name-mismatch', 'nested-interactive']
+// These rules crash Playwright's Firefox on the screen shown right after a download, and only there: a
+// CI probe (axe-core 4.14.1) ran each one alone on the home page, a tool with a file, Fill & Sign and
+// Redact without trouble, but every one of them crashed the page on the merge result. So in Firefox
+// they're skipped on that screen only; they run everywhere else, and everywhere in Chromium.
+const FIREFOX_AFTER_DOWNLOAD_RULES = ['aria-allowed-attr', 'aria-conditional-attr', 'aria-prohibited-attr', 'label-content-name-mismatch', 'nested-interactive']
 
 /** Automated WCAG 2.1 AA checks (axe-core) in both languages, incl. colour contrast, in both themes. */
 async function audit(page: import('@playwright/test').Page, label: string) {
@@ -20,7 +24,7 @@ async function audit(page: import('@playwright/test').Page, label: string) {
   // Firefox only: these five rules crash Playwright's Firefox content process (SIGSEGV) in CI partway
   // through this sweep, whichever part of the page they scan. Isolated rule by rule in CI; the other rules
   // pass. They still run on every screen in the Chromium projects. See docs/TESTING.md.
-  if (page.context().browser()?.browserType().name() === 'firefox') builder = builder.disableRules(FIREFOX_CRASHING_RULES)
+  if (label === 'result' && page.context().browser()?.browserType().name() === 'firefox') builder = builder.disableRules(FIREFOX_AFTER_DOWNLOAD_RULES)
   const r = await builder.analyze()
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')})`)).toEqual([])
