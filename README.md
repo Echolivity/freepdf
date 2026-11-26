@@ -57,6 +57,8 @@ site is plain static files, and all the work happens on your device.
 | -------------------- | ----------------------------------------------------------------------------------------------------------- |
 | **Rotate PDF**       | Rotate every page of one or more PDFs, losslessly.                                                          |
 | **Crop PDF**         | Drag a crop box or type margins, for all pages, selected pages or each page separately.                     |
+| **Fill PDF forms**   | Fill in a form's fields on the page (text, Arabic, checkboxes, choices), or type, date and tick anywhere on flat and scanned forms. Keep it editable or lock it. |
+| **Sign PDF**         | Draw, type or upload a signature (the paper background is removed) and place it, with dates and initials, anywhere on the page. |
 | **Add page numbers** | Header or footer, any alignment, prefix/suffix, 1-2-3, Roman or Arabic-Indic numerals, with a live preview. |
 | **Watermark PDF**    | Text or a JPG/PNG image; 9 positions or tiled; rotation and opacity; over or behind the content.            |
 | **Resize PDF**       | A4, Letter, A3, A5, Legal or a custom size: fit page, fit width, or change the paper without scaling.       |
@@ -114,6 +116,7 @@ slide renderer that runs in a browser, and files are never sent to a server.
 | Rotate PDF                         | Adds to the existing rotation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Crop PDF                           | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them.                                                                                                                                                                                                                                                                                                                                                                      |
 | Add page numbers                   | Real text on a separate layer; pages aren't re-rendered. Font, size, colour, selected pages and skipping the cover are configurable. Arabic text uses an embedded Arabic+Latin font (about 100 KB).                                                                                                                                                                                                                                                                                              |
+| Fill PDF forms / Sign PDF          | Standard (AcroForm) fields: text, comb, multiline, checkboxes, radio buttons, dropdowns and lists. Answers get their own appearance (an embedded Arabic font where needed), so they show the same in every viewer; "Locked" flattens them into the page. Form scripts and calculations don't run, XFA-only forms can't be filled (text and signatures can still be added), and existing signature fields are left alone. A signature is a picture of your signature on the page, not a certificate-based digital signature; saving a digitally signed file invalidates its signature, and the file list warns about this first. |
 | Watermark PDF                      | A separate layer, so quality is unchanged and the image is stored once. Font, size and selected pages are configurable. A watermark is a visible mark, not protection.                                                                                                                                                                                                                                                                                                                           |
 | Resize PDF                         | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. Works on all or selected pages.                                                                                                                                                                                                                                              |
 | Compress PDF                       | The report lists what was re-encoded and what was skipped, and why. Transparent, CMYK and special-colour images are never re-encoded. Vector content is never rasterised. You get the original back if nothing can be saved.                                                                                                                                                                                                                                                                     |
@@ -261,6 +264,18 @@ project only; the WebKit (Safari) projects are skipped for now and can be run lo
 audit in both languages and themes. Office files FreePDF writes were opened with python-docx, openpyxl,
 python-pptx and LibreOffice (locally). Microsoft Office itself, Safari and physical devices were not
 tested; Firefox runs in CI.
+
+### Fill & Sign (unreleased)
+
+| Suite                                                                           | Tests | Result |
+| ------------------------------------------------------------------------------- | ----: | :----: |
+| Unit and integration, including 3 Fill & Sign tests                             |   236 |   ✅   |
+| Browser tests on 5 Chromium device profiles, including 4 Fill & Sign tests\*    |   250 |   ✅   |
+
+\* Plus the 1 Cloudflare-only test, skipped there. Both new pages also pass the WCAG AA audit in both
+languages and themes. The form is synthetic (`scripts/make-form-fixtures.mjs`); filled and locked files
+were read back with pdf-lib and PDF.js. Forms from real issuers, Adobe Acrobat, Firefox, Safari and
+physical devices were not tested locally; Firefox runs in CI.
 
 ### OCR (unreleased)
 

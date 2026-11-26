@@ -9,6 +9,7 @@ import type { ResizeOptions } from '../lib/pdf/resizePlan'
 import type { DiffRun } from '../lib/compare/diff'
 import type { TextToPdfOptions, TextToPdfResult } from '../lib/convert/textToPdf'
 import type { LayerPage } from '../lib/ocr/textLayer'
+import type { FillSignOptions, FillSignResult } from '../lib/pdf/fillSign'
 
 export interface RawImage {
   name: string
@@ -35,6 +36,7 @@ export interface WorkerOps {
   diffTokens: [{ a: Int32Array; b: Int32Array }, DiffRun[]]
   textToPdf: [{ file: NamedBytes; options: TextToPdfOptions }, TextToPdfResult]
   textLayer: [{ file: NamedBytes; pages: LayerPage[] }, Uint8Array]
+  fillSign: [{ file: NamedBytes; options: FillSignOptions }, FillSignResult]
 }
 
 export type OpName = keyof WorkerOps

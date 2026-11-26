@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased — Fill & Sign
+
+- **Added:** *Fill PDF forms* (`/fill-pdf-form`) and *Sign PDF* (`/sign-pdf`), one editor behind two
+  pages. A form's fields appear as inputs on the page itself: text (English or Arabic, comb and
+  multiline), checkboxes, radio buttons, dropdowns and lists. On any page, flat or scanned, you can add
+  text, today's date, ticks, crosses and signatures; drag, resize, nudge with the arrow keys, remove
+  with Delete. Signatures are drawn, typed or uploaded (white paper made transparent) and reused for
+  later placements. The download keeps the form editable or locks the answers into the page.
+- **How:** answers get their own appearance streams (IBM Plex Sans Arabic embedded when the text
+  needs it, right-aligned for Arabic paragraphs), so they look the same in every viewer. Locking
+  flattens the fields and removes the leftover form dictionary and dangling annotation references.
+  Hybrid XFA forms have their XFA removed when filled so viewers show the filled AcroForm.
+- **Limits:** form scripts and calculations don't run; XFA-only forms can't be filled; a signature is
+  an image, not a certificate-based digital signature.
+- **Tests:** a synthetic form fixture (`scripts/make-form-fixtures.mjs`), unit tests for filling,
+  flattening and placing items on rotated pages, and browser tests for filling, locking, placing items
+  and drawn and typed signatures.
+
 ## Unreleased — OCR
 
 - **Added:** *OCR: make scans searchable* (`/ocr-pdf`). Scanned PDFs and photos of pages (JPG, PNG,

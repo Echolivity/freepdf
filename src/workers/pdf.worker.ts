@@ -40,6 +40,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       case 'crop': result = await cropPdf(req.args.file, req.args.pages, progress); break
       case 'resize': result = await resizePdf(req.args.file, req.args.options, progress); break
       case 'diffTokens': result = diffTokens(req.args.a, req.args.b); break
+      case 'fillSign': result = await (await import('../lib/pdf/fillSign')).fillSign(req.args.file, req.args.options, progress); break
       case 'textLayer': result = await (await import('../lib/ocr/textLayer')).addTextLayer(req.args.file, req.args.pages, progress); break
       case 'textToPdf': result = await (await import('../lib/convert/textToPdf')).textToPdf(req.args.file, req.args.options, progress); break
       case 'imagesToPdf': {

@@ -31,6 +31,13 @@ const paths = {
   sheetOut: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h5" /><rect x="11" y="12" width="10" height="10" rx="1.2" /><path d="M11 15.5h10M11 18.8h10M14.5 12v10M17.8 12v10" /></>,
   // A scanned page with recognised text: a page with a magnifier over text lines.
   ocr: <><path d="M4 3h8l4 4v4" /><path d="M4 3v18h7" /><path d="M7 9h6M7 12.5h3" /><circle cx="16.5" cy="16.5" r="3.5" /><path d="M19 19l2.5 2.5" /></>,
+  // Letter T: add text.
+  type: <><path d="M5 6V4h14v2" /><path d="M12 4v16" /><path d="M9 20h6" /></>,
+  calendar: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>,
+  // A pen stroke over a line: signature.
+  signature: <><path d="M3 17c3-1 4-9 6.5-9S10 16 12 16s2.5-4 4-4 1 3 2.5 3H21" /><path d="M3 21h18" /></>,
+  // A form page with a filled field and a tick.
+  form: <><path d="M5 3h10l4 4v14H5z" /><path d="M8 10h8M8 14h3" /><path d="M13 16.5l1.6 1.6 3-3.2" /></>,
   // A statement whose balances check out.
   statement: <><path d="M4 3h8l4 4v3" /><path d="M4 3v18h6" /><path d="M7 9h6M7 12.5h4" /><circle cx="17" cy="17" r="5" /><path d="M14.8 17.1l1.5 1.5 2.9-3" /></>,
   // A document coming out as slides.

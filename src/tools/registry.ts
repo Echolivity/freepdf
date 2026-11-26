@@ -53,6 +53,7 @@ const OfficeToPdf = lazy(() => import('./office-to-pdf/OfficeToPdfTool'))
 const PdfToOffice = lazy(() => import('./pdf-to-office/PdfToOfficeTool'))
 const BankStatement = lazy(() => import('./bank-statement/BankStatementTool'))
 const Ocr = lazy(() => import('./ocr/OcrTool'))
+const FillSign = lazy(() => import('./fill-sign/FillSignTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -72,6 +73,10 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['page size', 'a4', 'letter', 'a3', 'scale', 'paper size', 'fit'], ar: ['تغيير الحجم', 'مقاس الصفحة', 'حجم الورق', 'A4', 'تكبير', 'تصغير الصفحة'] } },
   { slug: 'crop-pdf', input: 'pdf', output: 'pdf', icon: 'crop', category: 'edit', component: Crop,
     keywords: { en: ['trim', 'margins', 'cut edges', 'crop box', 'whitespace'], ar: ['قص', 'اقتصاص', 'هوامش', 'تشذيب', 'حواف'] } },
+  { slug: 'fill-pdf-form', input: 'pdf', output: 'pdf', icon: 'form', category: 'edit', component: FillSign,
+    keywords: { en: ['fill', 'form', 'fill in', 'fillable', 'acroform', 'application', 'type on pdf', 'add text', 'checkbox', 'flatten'], ar: ['تعبئة', 'نموذج', 'استمارة', 'تعبئة نموذج', 'كتابة على PDF', 'إضافة نص'] } },
+  { slug: 'sign-pdf', input: 'pdf', output: 'pdf', icon: 'signature', category: 'edit', component: FillSign,
+    keywords: { en: ['sign', 'signature', 'e-sign', 'esign', 'initials', 'draw signature', 'contract'], ar: ['توقيع', 'توقيع إلكتروني', 'وقّع', 'عقد', 'الأحرف الأولى'] } },
   { slug: 'add-page-numbers', input: 'pdf', output: 'pdf', icon: 'hash', category: 'edit', component: PageNumbers,
     keywords: { en: ['page numbers', 'numbering', 'paginate', 'footer', 'header', 'roman'], ar: ['ترقيم', 'أرقام الصفحات', 'ترقيم الصفحات', 'تذييل', 'ترويسة'] } },
   { slug: 'watermark-pdf', input: 'pdf', output: 'pdf', icon: 'stamp', category: 'edit', component: Watermark,
