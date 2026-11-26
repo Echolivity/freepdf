@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — Redact PDF
+
+- **Added:** *Redact PDF* (`/redact-pdf`), the first tool in the Security category. Drag boxes on the
+  page, redact whole pages, or find text and patterns to mark: emails, phone numbers, IBANs (checksum
+  verified), card numbers (Luhn checked) and Saudi ID/Iqama numbers, with Arabic-Indic digits too.
+- **How:** each page with redactions is rebuilt from a 200 dpi picture of itself with the boxes burnt
+  in; the old page and every unreachable object are deleted, so nothing under a box can be recovered.
+  Words outside the boxes come back as an invisible text layer. Form fields on redacted pages and the
+  structure tree are removed; metadata, bookmarks, attachments and scripts too (optional, on by
+  default).
+- **Changed:** the page viewer is shared by Fill & Sign and Redact (`components/PageView`); the OCR
+  text layer can be drawn onto an open document (`drawTextLayer`).
+- **Tests:** a synthetic bilingual letter (`scripts/make-redact-fixtures.mjs`); unit tests that scan
+  every object of the output for redacted strings (metadata, bookmarks, form values and structure
+  tree included), rotated pages and pattern matching; browser tests for search, hand-drawn boxes,
+  whole-page and image-only redaction.
+
 ## Unreleased — Fill & Sign
 
 - **Added:** *Fill PDF forms* (`/fill-pdf-form`) and *Sign PDF* (`/sign-pdf`), one editor behind two

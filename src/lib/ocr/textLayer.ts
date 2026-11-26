@@ -8,7 +8,7 @@
  * exactly that width, so selection highlights line up with the scanned words. Mixed-direction words
  * are drawn as directional runs in visual order, like other text FreePDF writes.
  */
-import { beginText, endText, popGraphicsState, pushGraphicsState, setCharacterSqueeze, setFontAndSize, setTextMatrix, setTextRenderingMode, showText, TextRenderingMode } from 'pdf-lib'
+import { type PDFDocument, beginText, endText, popGraphicsState, pushGraphicsState, setCharacterSqueeze, setFontAndSize, setTextMatrix, setTextRenderingMode, showText, TextRenderingMode } from 'pdf-lib'
 import { loadPdf, noProgress, saveDoc, type NamedBytes, type ProgressFn } from '../pdf/core'
 import { fontBytes } from '../pdf/fonts'
 import { visualRuns } from '../pdf/text'
@@ -27,6 +27,12 @@ export interface LayerPage { index: number; words: LayerWord[] }
 
 export async function addTextLayer(input: NamedBytes, pages: LayerPage[], onProgress: ProgressFn = noProgress): Promise<Uint8Array> {
   const doc = await loadPdf(input.bytes, input.name)
+  await drawTextLayer(doc, pages, onProgress)
+  return saveDoc(doc)
+}
+
+/** Draw invisible text-layer words onto pages of an open document (also used by Redact PDF). */
+export async function drawTextLayer(doc: PDFDocument, pages: LayerPage[], onProgress: ProgressFn = noProgress): Promise<void> {
   const count = doc.getPageCount()
   for (const p of pages) if (!Number.isInteger(p.index) || p.index < 0 || p.index >= count) throw new UserFacingError('err.pageMissing', { page: p.index + 1, count })
   const withWords = pages.filter((p) => p.words.length)
@@ -62,5 +68,4 @@ export async function addTextLayer(input: NamedBytes, pages: LayerPage[], onProg
       onProgress((k + 1) / withWords.length)
     })
   }
-  return saveDoc(doc)
 }

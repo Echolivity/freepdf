@@ -9,7 +9,8 @@ import { usePdfDoc } from '../../components/usePdfDoc'
 import { Icon } from '../../components/Icon'
 import type { ToolDef } from '../registry'
 import { deriveName } from '../../lib/files'
-import { releaseCanvas, renderPage, type PDFDocumentProxy } from '../../lib/render/pdfjs'
+import type { PDFDocumentProxy } from '../../lib/render/pdfjs'
+import { PageView, type PageInfo } from '../../components/PageView'
 import { runInWorker } from '../../lib/workerClient'
 import type { FieldValue, PlacedItem } from '../../lib/pdf/fillSign'
 import type { FileKind } from '../../lib/validate'
@@ -41,12 +42,6 @@ interface Field {
 }
 type Value = string | boolean | string[]
 
-interface PageInfo {
-  w: number
-  h: number
-  /** Displayed (x, y) in points → PDF user space. */
-  toPdf: (x: number, y: number) => [number, number]
-}
 
 /** Something added on a page; position and size in points of the displayed page. */
 interface Item {
@@ -112,46 +107,6 @@ function useForm(doc: PDFDocumentProxy | null) {
     return () => { dead = true }
   }, [doc])
   return state?.doc === doc ? state : null
-}
-
-/** One page: rendered when it scrolls into view, at the width it's shown. */
-function PageView({ doc, n, info, label, children, onVisible }: { doc: PDFDocumentProxy; n: number; info: PageInfo; label: string; children: (k: number) => React.ReactNode; onVisible: (n: number) => void }) {
-  const box = useRef<HTMLDivElement>(null)
-  const holder = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
-  const [seen, setSeen] = useState(false)
-  useEffect(() => {
-    const el = box.current
-    if (!el) return
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width))
-    ro.observe(el)
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen(true); onVisible(n) } }, { rootMargin: '400px 0px', threshold: 0 })
-    io.observe(el)
-    return () => { ro.disconnect(); io.disconnect() }
-  }, [n, onVisible])
-  useEffect(() => {
-    if (!seen || !width || !holder.current) return
-    let dead = false
-    let canvas: HTMLCanvasElement | null = null
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
-    renderPage(doc, n + 1, (width / info.w) * dpr).then((r) => {
-      canvas = r.canvas
-      if (dead || !holder.current) { releaseCanvas(canvas); return }
-      canvas.className = 'absolute inset-0 h-full w-full'
-      canvas.setAttribute('aria-hidden', 'true')
-      holder.current.replaceChildren(canvas)
-    }).catch(() => {})
-    return () => { dead = true; if (canvas) releaseCanvas(canvas) }
-  }, [seen, width, doc, n, info.w])
-  const k = width ? width / info.w : 0
-  return (
-    <section aria-label={label} className="relative">
-      <div ref={box} className="relative w-full overflow-hidden rounded-lg bg-white shadow-card ring-1 ring-line" style={{ aspectRatio: `${info.w} / ${info.h}` }} data-testid={`fs-page-${n + 1}`}>
-        <div ref={holder} className="absolute inset-0" />
-        {k > 0 && children(k)}
-      </div>
-    </section>
-  )
 }
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`

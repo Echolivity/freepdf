@@ -24,6 +24,7 @@
   --cat-to: #a4520f;
   --cat-from: #6b44b8;
   --cat-advanced: #a8326a;
+  --cat-security: #0b6477;
   --grid-dot: rgba(19, 20, 24, 0.085);
   --shadow-sm: 0 1px 0 rgba(19, 20, 24, 0.03), 0 1px 3px rgba(19, 20, 24, 0.05);
   --shadow-md: 0 1px 0 rgba(19, 20, 24, 0.03), 0 14px 32px -18px rgba(19, 20, 24, 0.28);
@@ -53,6 +54,7 @@
   --cat-to: #efa463;
   --cat-from: #b9a1ff;
   --cat-advanced: #f3a3c9;
+  --cat-security: #72d4e6;
   --grid-dot: rgba(238, 235, 227, 0.065);
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.25);
   --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.3), 0 16px 36px -20px rgba(0, 0, 0, 0.8);

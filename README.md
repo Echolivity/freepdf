@@ -95,6 +95,12 @@ site is plain static files, and all the work happens on your device.
 All conversions run in your browser. **PowerPoint to PDF is not offered**: there is no open-source
 slide renderer that runs in a browser, and files are never sent to a server.
 
+### Protect
+
+| Tool           | What it does                                                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Redact PDF** | Black out areas by hand or find names, emails, phone numbers, IBANs, card and Saudi ID/Iqama numbers (English or Arabic); what's under the boxes is deleted. |
+
 ### Compare
 
 | Tool            | What it does                                                                                                                    |
@@ -116,6 +122,7 @@ slide renderer that runs in a browser, and files are never sent to a server.
 | Rotate PDF                         | Adds to the existing rotation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Crop PDF                           | Sets the CropBox: content outside is hidden, **not deleted** (the tool says so). Rotated pages are cropped as you see them.                                                                                                                                                                                                                                                                                                                                                                      |
 | Add page numbers                   | Real text on a separate layer; pages aren't re-rendered. Font, size, colour, selected pages and skipping the cover are configurable. Arabic text uses an embedded Arabic+Latin font (about 100 KB).                                                                                                                                                                                                                                                                                              |
+| Redact PDF                         | Pages with redactions are rebuilt as 200 dpi images with the boxes burnt in, then the old page and every unreachable object are deleted, so nothing under a box survives. Words outside the boxes stay searchable (optional). Links, form fields and comments on those pages are removed, and the document loses its accessibility tags. Search covers the text layer only: scans, faces and handwriting must be marked by hand. Positions inside a text run are estimated, so check every box before redacting. |
 | Fill PDF forms / Sign PDF          | Standard (AcroForm) fields: text, comb, multiline, checkboxes, radio buttons, dropdowns and lists. Answers get their own appearance (an embedded Arabic font where needed), so they show the same in every viewer; "Locked" flattens them into the page. Form scripts and calculations don't run, XFA-only forms can't be filled (text and signatures can still be added), and existing signature fields are left alone. A signature is a picture of your signature on the page, not a certificate-based digital signature; saving a digitally signed file invalidates its signature, and the file list warns about this first. |
 | Watermark PDF                      | A separate layer, so quality is unchanged and the image is stored once. Font, size and selected pages are configurable. A watermark is a visible mark, not protection.                                                                                                                                                                                                                                                                                                                           |
 | Resize PDF                         | Content is scaled with a transformation, never rasterised: text stays selectable, and links, form fields and annotations move with it. Internal link targets may land slightly off the exact spot on resized pages. Works on all or selected pages.                                                                                                                                                                                                                                              |
@@ -264,6 +271,20 @@ project only; the WebKit (Safari) projects are skipped for now and can be run lo
 audit in both languages and themes. Office files FreePDF writes were opened with python-docx, openpyxl,
 python-pptx and LibreOffice (locally). Microsoft Office itself, Safari and physical devices were not
 tested; Firefox runs in CI.
+
+### Redact PDF (unreleased)
+
+| Suite                                                                           | Tests | Result |
+| ------------------------------------------------------------------------------- | ----: | :----: |
+| Unit and integration, including 7 Redact tests                                  |   245 |   ✅   |
+| Browser tests on 5 Chromium device profiles, including 3 Redact tests\*         |   253 |   ✅   |
+
+\* Plus the 1 Cloudflare-only test, skipped there. The Redact page passes the WCAG AA audit in both
+languages and themes. Both suites read the redacted file back and search every object in it, streams
+decompressed, for the redacted strings: page text, metadata, bookmarks, form values, the structure tree
+and pictures from resources shared with other pages. The letter is synthetic
+(`scripts/make-redact-fixtures.mjs`). PDFs from real banks and government forms, Adobe Acrobat,
+Firefox, Safari and physical devices were not tested locally; Firefox runs in CI.
 
 ### Fill & Sign (unreleased)
 

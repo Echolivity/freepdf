@@ -33,6 +33,17 @@ There is no server-side attack surface: the deployment is static files only.
 | Supply chain | Lockfile with `npm ci`. `npm audit --audit-level=high` in CI via `scripts/audit.mjs`, which accepts only listed advisories with a reason and an expiry date. No exceptions are currently listed. Dependabot. | `npm audit`: 0 vulnerabilities (all dependencies, including dev). 40 production packages. |
 | Unauthorised or untested deploys | CI deploys only when the `DEPLOY_ENABLED=true` variable is set **and** secrets exist, and only after the checks, Chromium, cross-engine and Cloudflare-runtime jobs all pass. | `ci.yml`. |
 
+## Unreleased: Redact PDF and Fill & Sign
+
+| Area | Control |
+|------|---------|
+| Redaction is real | A redacted page is rebuilt from a rendered picture of itself (200 dpi JPEG) with the boxes painted in before encoding. Its old content streams, resources, annotations, thumbnail, piece info and metadata are dropped, and every object no longer reachable from the trailer is deleted before saving, so the original page can't be recovered from the file (no incremental update, no orphaned objects). |
+| Text layer after redaction | Words outside the boxes come back as invisible text. A word is kept only if its estimated box clears every redaction (hand-drawn boxes get an extra margin of 0.3× the type size, because positions inside a text run are estimated) **and** it contains none of the searched text or patterns. Can be turned off for image-only pages. |
+| What else goes | Form fields with widgets on a redacted page are removed from the form; the tagged-PDF structure tree is always removed (alt text and actual text can hold page text). "Remove hidden information" (on by default) also removes the document information dictionary, XMP metadata, bookmarks, open actions and document scripts, attached files (embedded files and file-attachment annotations), media annotations and XFA. |
+| Verified | Unit tests scan every object of the output (streams decompressed) for the redacted strings, including in metadata, bookmarks, form values and the structure tree; qpdf `--check` passes; browser tests check the downloaded file the same way. |
+| Limits | Search finds text in the PDF's text layer, not faces, handwriting or text inside images (scans); those must be marked by hand. Text on other pages is not searched for leaks of the same words unless they are also marked. |
+| Fill & Sign | Field values are written into appearance streams by FreePDF (no form scripts run). A signature is an image placed on the page; nothing is stored between visits. |
+
 ## Unreleased: conversion batch 2
 
 | Area | Control |

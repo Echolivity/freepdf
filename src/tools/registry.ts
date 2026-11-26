@@ -4,7 +4,7 @@ import { LANGS, translate, type MessageKey } from '../i18n/core'
 
 export type Category = 'organize' | 'edit' | 'convert' | 'security' | 'optimize' | 'advanced' | 'ai'
 
-/** Home-page order. Categories without working tools (security, ai for now) are not shown. */
+/** Home-page order. Categories without working tools (ai for now) are not shown. */
 export const CATEGORIES: Category[] = ['organize', 'edit', 'convert', 'security', 'optimize', 'advanced', 'ai']
 
 /** Each category's colour (a CSS variable from index.css), used for its dot, card tile and tool header. */
@@ -12,7 +12,7 @@ export const CAT_VAR: Record<Category, string> = {
   organize: 'var(--cat-organize)',
   edit: 'var(--cat-from)',
   convert: 'var(--cat-to)',
-  security: 'var(--cat-organize)',
+  security: 'var(--cat-security)',
   optimize: 'var(--cat-optimize)',
   advanced: 'var(--cat-advanced)',
   ai: 'var(--cat-advanced)',
@@ -54,6 +54,7 @@ const PdfToOffice = lazy(() => import('./pdf-to-office/PdfToOfficeTool'))
 const BankStatement = lazy(() => import('./bank-statement/BankStatementTool'))
 const Ocr = lazy(() => import('./ocr/OcrTool'))
 const FillSign = lazy(() => import('./fill-sign/FillSignTool'))
+const Redact = lazy(() => import('./redact/RedactTool'))
 
 /** Only tools that actually work are listed. Nothing here is a placeholder. Texts live in src/i18n. */
 export const TOOLS: ToolDef[] = [
@@ -73,6 +74,8 @@ export const TOOLS: ToolDef[] = [
     keywords: { en: ['page size', 'a4', 'letter', 'a3', 'scale', 'paper size', 'fit'], ar: ['تغيير الحجم', 'مقاس الصفحة', 'حجم الورق', 'A4', 'تكبير', 'تصغير الصفحة'] } },
   { slug: 'crop-pdf', input: 'pdf', output: 'pdf', icon: 'crop', category: 'edit', component: Crop,
     keywords: { en: ['trim', 'margins', 'cut edges', 'crop box', 'whitespace'], ar: ['قص', 'اقتصاص', 'هوامش', 'تشذيب', 'حواف'] } },
+  { slug: 'redact-pdf', input: 'pdf', output: 'pdf', icon: 'redact', category: 'security', component: Redact,
+    keywords: { en: ['redact', 'redaction', 'black out', 'censor', 'hide text', 'remove personal data', 'anonymize', 'iban', 'gdpr'], ar: ['تنقيح', 'حجب', 'إخفاء النص', 'طمس', 'إزالة البيانات الشخصية', 'إخفاء الهوية'] } },
   { slug: 'fill-pdf-form', input: 'pdf', output: 'pdf', icon: 'form', category: 'edit', component: FillSign,
     keywords: { en: ['fill', 'form', 'fill in', 'fillable', 'acroform', 'application', 'type on pdf', 'add text', 'checkbox', 'flatten'], ar: ['تعبئة', 'نموذج', 'استمارة', 'تعبئة نموذج', 'كتابة على PDF', 'إضافة نص'] } },
   { slug: 'sign-pdf', input: 'pdf', output: 'pdf', icon: 'signature', category: 'edit', component: FillSign,
