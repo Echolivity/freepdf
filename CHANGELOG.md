@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — faster pages
+
+- **Changed:** PDF.js (about 130 KB gzipped) loads when the first PDF is opened, not with the tool
+  page: a typical tool page now downloads 205 KB gzipped before a file is chosen, down from 377 KB.
+- **Changed:** on English pages the "العربية" language button uses the system font, so English visitors
+  no longer download IBM Plex Sans Arabic (about 45 KB) for that one word. Home page: 192 KB, was
+  236 KB.
+- **Docs:** draft release notes and checklist for 1.3.0 (`docs/RELEASE_NOTES_v1.3.0.md`,
+  `docs/RELEASE_CHECKLIST_v1.3.0.md`); nothing tagged or published.
+
 ## Unreleased — Fill & Sign: initials
 
 - **Added:** *Initials*: draw, type or upload your initials once and they're placed in the bottom-right

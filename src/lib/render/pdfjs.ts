@@ -1,12 +1,29 @@
-import * as pdfjs from 'pdfjs-dist'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import rendererSrc from 'pdfjs-dist/build/pdf.renderer.min.mjs?url'
 import { LIMITS } from '../../config'
 import { UserFacingError } from '../validate'
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
-pdfjs.GlobalWorkerOptions.rendererSrc = rendererSrc
+type PdfJs = typeof import('pdfjs-dist')
+let lib: PdfJs | null = null
+let loading: Promise<PdfJs> | null = null
+/**
+ * PDF.js (about 130 KB compressed) is loaded the first time a PDF is opened, not with the tool page, so
+ * tool pages show sooner. Rendering always follows opening, so later calls find it loaded.
+ */
+export function loadPdfJs(): Promise<PdfJs> {
+  loading ??= import('pdfjs-dist').then((m) => {
+    m.GlobalWorkerOptions.workerSrc = workerSrc
+    m.GlobalWorkerOptions.rendererSrc = rendererSrc
+    lib = m
+    return m
+  }).catch((err) => { loading = null; throw err })
+  return loading
+}
+const loaded = (): PdfJs => {
+  if (!lib) throw new Error('PDF.js is not loaded yet: open a document first.')
+  return lib
+}
 
 export type { PDFDocumentProxy }
 
@@ -29,15 +46,15 @@ export async function closePdf(doc: PDFDocumentProxy | null | undefined) {
   try { await task?.destroy() } catch { /* already gone */ }
 }
 
-// Versioned path (see scripts/copy-pdfjs-assets.mjs) so these files can be cached as immutable.
-const BASE = `${import.meta.env.BASE_URL}pdfjs/${pdfjs.version}/`
-
 /**
  * Open a PDF with PDF.js. Takes ownership of `data`: PDF.js transfers (detaches) the buffer, so callers
  * pass freshly read bytes and don't reuse them (no extra copy of large files).
  * `forExport` renders on this thread so canvases stay readable with toBlob().
  */
 export async function openPdf(data: Uint8Array, opts: { password?: string; name?: string; forExport?: boolean } = {}): Promise<PDFDocumentProxy> {
+  const pdfjs = await loadPdfJs()
+  // Versioned path (see scripts/copy-pdfjs-assets.mjs) so these files can be cached as immutable.
+  const BASE = `${import.meta.env.BASE_URL}pdfjs/${pdfjs.version}/`
   const task = pdfjs.getDocument({
     data,
     password: opts.password,
@@ -92,7 +109,7 @@ export async function renderPage(
     // Text inside annotations (filled-in form fields, stamps) is part of the picture and stays.
     let operationsFilter: ((i: number, list: { fnArray: number[] }) => boolean) | undefined
     if (opts.noText) {
-      const O = pdfjs.OPS
+      const O = loaded().OPS
       const textOps = new Set([O.showText, O.showSpacedText, O.nextLineShowText, O.nextLineSetSpacingShowText])
       const skip = new WeakMap<object, Uint8Array>()
       operationsFilter = (i, list) => {
@@ -147,5 +164,5 @@ export function releaseCanvas(canvas: HTMLCanvasElement) {
 
 /** PDF.js operator codes (for reading where images are painted). */
 export function pdfjsOps(): Record<string, number> {
-  return pdfjs.OPS as unknown as Record<string, number>
+  return loaded().OPS as unknown as Record<string, number>
 }

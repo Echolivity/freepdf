@@ -41,7 +41,9 @@ export function Layout() {
           <button
             type="button"
             onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-            className={`${ctrlCls} px-3 text-[15px] font-semibold`}
+            // On English pages this is the only Arabic text: the system's Arabic font draws it, so English
+            // visitors don't download IBM Plex Sans Arabic (about 45 KB) for one word.
+            className={`${ctrlCls} px-3 text-[15px] font-semibold ${lang === 'en' ? '[font-family:system-ui,sans-serif]' : ''}`}
             // The visible language name (in its own language) is the accessible name (WCAG 2.5.3);
             // the longer description goes in the tooltip.
             title={t('lang.otherLabel')}
