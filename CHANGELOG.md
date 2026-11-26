@@ -7,9 +7,9 @@
 - **Changed:** on English pages the "العربية" language button uses the system font, so English visitors
   no longer download IBM Plex Sans Arabic (about 45 KB) for that one word. Home page: 192 KB, was
   236 KB.
-- **Tests:** Firefox's accessibility sweep runs all axe rules again on every screen except the one shown
-  right after a download, where five rules still crash Playwright's Firefox (found with a CI probe).
-  axe-core 4.14.1.
+- **Tests:** Firefox's accessibility sweep runs all axe rules again until the page's first download;
+  after it, five rules still crash Playwright's Firefox and are skipped there (found with a CI probe and
+  a follow-up run). axe-core 4.14.1.
 - **Docs:** draft release notes and checklist for 1.3.0 (`docs/RELEASE_NOTES_v1.3.0.md`,
   `docs/RELEASE_CHECKLIST_v1.3.0.md`); nothing tagged or published.
 

@@ -255,9 +255,8 @@ project only; the WebKit (Safari) projects are skipped for now and can be run lo
 `ALL_BROWSERS=1`.
 
 > [!NOTE]
-> In CI, five axe rules crash Playwright's Firefox on the screen shown right after a download, so they
-> are skipped on that one screen in Firefox; they run everywhere else, and Chromium runs them on every
-> screen. See
+> In CI, five axe rules crash Playwright's Firefox once a page has been through a download, so Firefox
+> skips them from that point in the sweep; Chromium runs them on every screen. See
 > [docs/TESTING.md](docs/TESTING.md).
 
 ### PDF conversion, batches 1 and 2 (unreleased)

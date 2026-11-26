@@ -2,10 +2,12 @@ import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
 import { upload, runAndDownload } from './helpers'
 
-// These rules crash Playwright's Firefox on the screen shown right after a download, and only there: a
-// CI probe (axe-core 4.14.1) ran each one alone on the home page, a tool with a file, Fill & Sign and
-// Redact without trouble, but every one of them crashed the page on the merge result. So in Firefox
-// they're skipped on that screen only; they run everywhere else, and everywhere in Chromium.
+// These rules crash Playwright's Firefox once the page has been through a download. In CI they ran
+// cleanly on the home, privacy, empty-tool and tool-with-file screens of the sweep (and, each alone on
+// a fresh page, on Fill & Sign and Redact: PR #12), but crashed on every screen after the merge
+// download in the same page. So in Firefox they're skipped from that point on; Chromium runs them on
+// every screen.
+const downloaded = new WeakSet<object>()
 const FIREFOX_AFTER_DOWNLOAD_RULES = ['aria-allowed-attr', 'aria-conditional-attr', 'aria-prohibited-attr', 'label-content-name-mismatch', 'nested-interactive']
 
 /** Automated WCAG 2.1 AA checks (axe-core) in both languages, incl. colour contrast, in both themes. */
@@ -24,7 +26,7 @@ async function audit(page: import('@playwright/test').Page, label: string) {
   // Firefox only: these five rules crash Playwright's Firefox content process (SIGSEGV) in CI partway
   // through this sweep, whichever part of the page they scan. Isolated rule by rule in CI; the other rules
   // pass. They still run on every screen in the Chromium projects. See docs/TESTING.md.
-  if (label === 'result' && page.context().browser()?.browserType().name() === 'firefox') builder = builder.disableRules(FIREFOX_AFTER_DOWNLOAD_RULES)
+  if (downloaded.has(page) && page.context().browser()?.browserType().name() === 'firefox') builder = builder.disableRules(FIREFOX_AFTER_DOWNLOAD_RULES)
   const r = await builder.analyze()
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious.map((v) => `${label}: ${v.id} — ${v.help} (${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')})`)).toEqual([])
@@ -49,6 +51,7 @@ for (const lang of ['en', 'ar'] as const) {
       await page.goto('/merge-pdf')
       await upload(page, 'text-8p.pdf', 'signed.pdf')
       await runAndDownload(page)
+      downloaded.add(page)
       await audit(page, 'result')
       await page.goto('/resize-pdf')
       await upload(page, 'rich.pdf')

@@ -107,10 +107,10 @@ directly from `@playwright/test`. No exceptions are configured.
 
 - **Firefox:** runs in CI's `cross-engine` job. Known issue there: five axe rules (`aria-allowed-attr`,
   `aria-conditional-attr`, `aria-prohibited-attr`, `label-content-name-mismatch`, `nested-interactive`)
-  crash Playwright's Firefox content process on the screen shown right after a download. A CI probe
-  (axe-core 4.14.1, PR #12) ran each rule alone on several screens: all clean except the merge result,
-  where every one crashed. They are skipped on that one screen in Firefox; everything else, in both
-  engines, is checked with all rules.
+  crash Playwright's Firefox content process once the page has been through a download. In CI they run
+  cleanly on the screens of the sweep before the first download (and each alone on a fresh page on
+  Fill & Sign and Redact, PR #12), and crash on every screen after it. In Firefox they're skipped from
+  the first download on; Chromium runs them on every screen.
 - **Safari (macOS/iOS):** not executed. WebKitGTK and Playwright's WebKit share the engine but not
   Safari's media, memory or file-picker behaviour.
 - **Physical devices:** none. Tab-killing under memory pressure is only approximated by the simulated

@@ -34,7 +34,7 @@ hardware, accounts or a person. Nothing here has been tagged, published or deplo
 | 14 | Browser, 5 Chromium profiles: 254 passed, 1 Cloudflare-only skip | PASS |
 | 15 | Accessibility (axe WCAG 2.1 AA) on every new screen, EN/AR, light/dark | PASS (Chromium) |
 | 16 | CI on the release commit: checks, Chromium, cross-engine (Firefox), Cloudflare runtime | OPEN (green on every commit so far; re-check on the release commit) |
-| 17 | Firefox accessibility: all rules on every screen except the one right after a download (probe in PR #12) | PASS (pending CI on the commit) |
+| 17 | Firefox accessibility: all rules on the sweep's screens before its first download; five rules skipped after it (they crash Playwright's Firefox) | PASS (pending CI) |
 
 ## Deployment and manual checks (maintainer; steps in [DEPLOYMENT.md](DEPLOYMENT.md))
 
