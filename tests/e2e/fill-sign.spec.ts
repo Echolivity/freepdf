@@ -1,6 +1,5 @@
-import { test, expect } from './fixtures'
+import { test, expect, type Page } from './fixtures'
 import { PDFDocument, PDFName } from 'pdf-lib'
-import type { Page } from '@playwright/test'
 import { upload, runAndDownload } from './helpers'
 
 // The form fixture comes from scripts/make-form-fixtures.mjs: English and Arabic text fields, a comb
