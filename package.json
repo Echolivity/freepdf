@@ -39,7 +39,7 @@
     "utif2": "4.1.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
+    "@axe-core/playwright": "^4.14.1",
     "@expo-google-fonts/ibm-plex-sans-arabic": "0.4.2",
     "@napi-rs/canvas": "^1.2.0",
     "@playwright/test": "^1.65.1",
