@@ -39,7 +39,7 @@ site is plain static files, and all the work happens on your device.
 
 ## Features
 
-**25 tools on 29 pages**, all available today.
+**28 tools on 32 pages**, all available today.
 
 ### Organize PDFs
 
@@ -58,7 +58,7 @@ site is plain static files, and all the work happens on your device.
 | **Rotate PDF**       | Rotate every page of one or more PDFs, losslessly.                                                          |
 | **Crop PDF**         | Drag a crop box or type margins, for all pages, selected pages or each page separately.                     |
 | **Fill PDF forms**   | Fill in a form's fields on the page (text, Arabic, checkboxes, choices), or type, date and tick anywhere on flat and scanned forms. Keep it editable or lock it. |
-| **Sign PDF**         | Draw, type or upload a signature (the paper background is removed) and place it, with dates and initials, anywhere on the page. |
+| **Sign PDF**         | Draw, type or upload a signature (the paper background is removed) and place it anywhere, with dates; add your initials to every page in one click. |
 | **Add page numbers** | Header or footer, any alignment, prefix/suffix, 1-2-3, Roman or Arabic-Indic numerals, with a live preview. |
 | **Watermark PDF**    | Text or a JPG/PNG image; 9 positions or tiled; rotation and opacity; over or behind the content.            |
 | **Resize PDF**       | A4, Letter, A3, A5, Legal or a custom size: fit page, fit width, or change the paper without scaling.       |
@@ -380,6 +380,8 @@ Before releasing, follow the [release checklist](docs/RELEASE_CHECKLIST.md). Ful
 
 | Document                                            | Contents                                     |
 | --------------------------------------------------- | -------------------------------------------- |
+| [Release notes 1.3.0 (draft)](docs/RELEASE_NOTES_v1.3.0.md) | What's coming in the next release (not yet released) |
+| [Release checklist 1.3.0](docs/RELEASE_CHECKLIST_v1.3.0.md) | What's done and still open for 1.3.0 |
 | [Release notes 1.2.0](docs/RELEASE_NOTES_v1.2.0.md) | What's new in this release                   |
 | [Changelog](CHANGELOG.md)                           | Every release                                |
 | [Architecture](docs/ARCHITECTURE.md)                | Design, tool-by-tool feasibility and roadmap |
@@ -400,10 +402,8 @@ available**, and are not shown in the app.
 | ---------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Headers and footers                |                                                                                                  |
 | Password protection and unlock     | Via qpdf-wasm. Unlock requires the password; passwords are never cracked.                        |
-| Metadata removal                   |                                                                                                  |
-| Redaction                          | True removal needs content-stream rewriting; some structures may get "can't guarantee" warnings. |
-| PDF editing and annotations        | Text, images, drawing, signatures, forms.                                                        |
-| OCR                                | English first. Arabic OCR will be tested separately and isn't promised until measured.           |
+| Metadata removal                   | As its own tool (Redact PDF already removes metadata when redacting).                            |
+| PDF editing and annotations        | Editing existing text, images, drawing and comments. (Filling forms, signatures and added text are available in Fill & Sign.) |
 
 **Not planned:** PowerPoint to PDF (there is no open-source slide renderer that runs in the browser,
 and files are never sent to a server), PDF/A conversion (proper validation needs veraPDF, which
