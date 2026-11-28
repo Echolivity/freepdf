@@ -160,6 +160,29 @@ jobs:
         with:
           name: dist
           path: dist
+      # Pre-flight: check the saved credentials without printing them, so a mistyped or badly pasted secret
+      # fails here with a plain message instead of an opaque Wrangler error.
+      - name: Check Cloudflare credentials
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ok=1
+          lines=$(printf '%s' "$CF_TOKEN" | awk 'END { print NR }')
+          echo "Token: ${#CF_TOKEN} characters, ${lines} line(s)."
+          if [ -z "$CF_TOKEN" ]; then echo "::error::CLOUDFLARE_API_TOKEN is empty."; ok=0; fi
+          case "$CF_TOKEN" in [Bb]earer*) echo "::error::CLOUDFLARE_API_TOKEN starts with 'Bearer': save the token alone."; ok=0;; esac
+          if [ "$lines" -gt 1 ]; then echo "::error::CLOUDFLARE_API_TOKEN has more than one line: paste only the token."; ok=0; fi
+          if printf '%s' "$CF_TOKEN" | grep -q '[[:space:]]'; then echo "::error::CLOUDFLARE_API_TOKEN contains spaces or line breaks."; ok=0; fi
+          if printf '%s' "$CF_TOKEN" | LC_ALL=C grep -q '[^A-Za-z0-9_.-]'; then echo "::error::CLOUDFLARE_API_TOKEN contains characters a Cloudflare token doesn't have (quotes, punctuation or non-Latin characters)."; ok=0; fi
+          echo "Account ID: ${#CF_ACCOUNT} characters."
+          if ! printf '%s' "$CF_ACCOUNT" | grep -Eq '^[0-9a-f]{32}$'; then echo "::error::CLOUDFLARE_ACCOUNT_ID should be 32 lowercase hex characters, with nothing else."; ok=0; fi
+          [ "$ok" = 1 ] || exit 1
+          code=$(curl -s -o verify.json -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
+          status=$(jq -r '.result.status // "unknown"' verify.json 2>/dev/null)
+          rm -f verify.json
+          echo "Cloudflare token check: HTTP $code, status $status."
+          if [ "$code" != 200 ] || [ "$status" != active ]; then echo "::error::Cloudflare didn't accept the token (HTTP $code, status $status). Create or roll it again and re-save the secret."; exit 1; fi
       # First deploy: create the Pages project (production branch main) if it doesn't exist yet. When it
       # already exists this step fails harmlessly; a real problem (bad token) also fails the deploy below.
       - name: Create the Cloudflare Pages project if needed
